@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"qahub/internal/user/dto"
 	"qahub/internal/user/model"
 	"qahub/internal/user/store"
 
@@ -11,19 +12,18 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var jwtSecret = []byte("satiu")
+// IMPORTANT: This secret key should be loaded from a secure configuration, not hardcoded.
+var jwtSecret = []byte("your-super-secret-key-change-it")
 
 type UserService interface {
-	// 定义用户服务接口方法
-	Register(username, email, password string) (*model.User, error)
+	Register(username, email, password string) (*dto.UserResponse, error)
 	Login(username, password string) (string, error)
-	GetUserProfile(userID int64) (*model.User, error)
-	UpdateUserProfile(user *model.User) error
+	GetUserProfile(userID int64) (*dto.UserResponse, error)
+	UpdateUserProfile(user *model.User) error // Note: Input might also become a DTO
 	DeleteUser(userID int64) error
 }
 
 type userService struct {
-	// 定义用户服务的依赖，例如存储接口
 	userStore store.UserStore
 }
 
@@ -31,71 +31,57 @@ func NewUserService(store store.UserStore) UserService {
 	return &userService{userStore: store}
 }
 
-func (s *userService) Register(username, email, password string) (*model.User, error) {
-	// 1. 验证输入
-	if username == "" || email == "" || password == "" {
-		return nil, errors.New("username, email, and password are required")
-	}
-
-	// 2. 检查邮箱是否已存在
-	// 注意: GetUserByEmail 方法需要在 store 层中添加
+func (s *userService) Register(username, email, password string) (*dto.UserResponse, error) {
+	// 检查用户名是否已存在
 	if existingUser, _ := s.userStore.GetUserByEmail(email); existingUser != nil {
-		return nil, errors.New("email already exists")
+		return nil, errors.New("username already exists")
 	}
-
-	// 3. 哈希密码
+	// 验证密码
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
 	}
 
-	// 4. 创建用户记录
 	newUser := &model.User{
 		Username: username,
 		Email:    email,
 		Password: string(hashedPassword),
 	}
 
-	// 5. 存入数据库
 	newID, err := s.userStore.CreateUser(newUser)
 	if err != nil {
 		return nil, err
 	}
-	newUser.ID = newID
 
-	// 6. 返回新创建的用户（不包含密码）
-	newUser.Password = ""
-	return newUser, nil
+	// 转换为DTO
+	response := &dto.UserResponse{
+		ID:       newID,
+		Username: username,
+		Email:    email,
+	}
+
+	return response, nil
 }
 
 func (s *userService) Login(username, password string) (string, error) {
-	// 1. 根据用户名查找用户
 	user, err := s.userStore.GetUserByUsername(username)
 	if err != nil {
-		// 无论是数据库错误还是用户不存在，都返回相同的错误信息以防信息泄露
 		return "", errors.New("invalid username or password")
 	}
 
-	// 2. 比较哈希密码和用户输入的密码
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
-		// 密码不匹配
 		return "", errors.New("invalid username or password")
 	}
 
-	// 3. 密码正确，生成JWT
-	// 创建载荷 (Claims)
 	claims := jwt.MapClaims{
 		"user_id":  user.ID,
 		"username": user.Username,
-		"exp":      time.Now().Add(time.Hour * 72).Unix(), // 令牌有效期72小时
-		"iat":      time.Now().Unix(),                     // 签发时间
+		"exp":      time.Now().Add(time.Hour * 72).Unix(), // token于72小时后过期
+		"iat":      time.Now().Unix(),                     // token的签发时间
 	}
 
-	// 创建令牌对象
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	// 使用密钥签名，获取完整的令牌字符串
 	tokenString, err := token.SignedString(jwtSecret)
 	if err != nil {
 		return "", err
@@ -104,27 +90,25 @@ func (s *userService) Login(username, password string) (string, error) {
 	return tokenString, nil
 }
 
-func (s *userService) GetUserProfile(userID int64) (*model.User, error) {
-	// 实现获取用户资料逻辑
+func (s *userService) GetUserProfile(userID int64) (*dto.UserResponse, error) {
 	user, err := s.userStore.GetUserByID(userID)
 	if err != nil {
 		return nil, err
 	}
-	// 返回的用户信息不应包含密码
-	user.Password = ""
-	return user, nil
+	// 转换为DTO
+	response := &dto.UserResponse{
+		ID:       user.ID,
+		Username: user.Username,
+		Email:    user.Email,
+	}
+
+	return response, nil
 }
 
 func (s *userService) UpdateUserProfile(user *model.User) error {
-	// 实现更新用户资料逻辑
-	// 注意：这里应该有权限检查，确保用户只能更新自己的资料
-	// 密码更新应该有单独的接口和逻辑
-
 	return s.userStore.UpdateUser(user)
 }
 
 func (s *userService) DeleteUser(userID int64) error {
-	// 实现删除用户逻辑
-	// 注意：这里应该有权限检查
 	return s.userStore.DeleteUser(userID)
 }
