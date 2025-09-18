@@ -13,10 +13,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var userServiceConfig = config.Conf.Services.UserService
-
-var jwtSecret = []byte(userServiceConfig.JWTSecret)
-
 type UserService interface {
 	Register(username, email, bio, password string) (*dto.UserResponse, error)
 	Login(username, password string) (string, error)
@@ -81,10 +77,11 @@ func (s *userService) Login(username, password string) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id":  user.ID,
 		"username": user.Username,
-		"exp":      time.Now().Add(time.Hour * time.Duration(userServiceConfig.TokenExpireHours)).Unix(), // token于72小时后过期
-		"iat":      time.Now().Unix(),                                                                    // token的签发时间
+		"exp":      time.Now().Add(time.Hour * time.Duration(config.Conf.Services.UserService.TokenExpireHours)).Unix(), // token于72小时后过期
+		"iat":      time.Now().Unix(),                                                                                   // token的签发时间
 	}
 
+	var jwtSecret = []byte(config.Conf.Services.UserService.JWTSecret)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(jwtSecret)
 	if err != nil {

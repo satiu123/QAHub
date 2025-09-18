@@ -74,8 +74,8 @@ func (s *mySQLUserStore) GetUserByEmail(email string) (*model.User, error) {
 }
 
 func (s *mySQLUserStore) UpdateUser(user *model.User) error {
-	query := "UPDATE users SET username = ?, email = ?,bio =? , password = ? WHERE id = ?"
-	_, err := s.db.Exec(query, user.Username, user.Email, user.Bio, user.Password, user.ID)
+	query := "UPDATE users SET username = ?, email = ?, bio = ? WHERE id = ?"
+	_, err := s.db.Exec(query, user.Username, user.Email, user.Bio, user.ID)
 	if err != nil {
 		return err
 	}
