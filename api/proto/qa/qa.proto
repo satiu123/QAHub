@@ -21,6 +21,16 @@ message Question {
   google.protobuf.Timestamp updated_at = 6;
 }
 
+// 评论
+message Comment {
+  int64 id = 1;
+  int64 answer_id = 2;
+  int64 user_id = 3;
+  string content = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
 // 回答
 message Answer {
   int64 id = 1;
@@ -39,24 +49,23 @@ message Answer {
 // 问答服务定义
 service QAService {
   // --- 问题相关 (Question RPCs) ---
-  // 创建新问题
   rpc CreateQuestion(CreateQuestionRequest) returns (Question);
-  // 获取问题详情（包括所有回答）
-  rpc GetQuestion(GetQuestionRequest) returns (GetQuestionResponse);
-  // 获取问题列表（分页）
+  rpc GetQuestion(GetQuestionRequest) returns (Question); // 返回单个问题
   rpc ListQuestions(ListQuestionsRequest) returns (ListQuestionsResponse);
-  // 更新问题
   rpc UpdateQuestion(UpdateQuestionRequest) returns (Question);
-  // 删除问题
   rpc DeleteQuestion(DeleteQuestionRequest) returns (google.protobuf.Empty);
 
   // --- 回答相关 (Answer RPCs) ---
-  // 创建新回答
   rpc CreateAnswer(CreateAnswerRequest) returns (Answer);
-  // 更新回答
   rpc UpdateAnswer(UpdateAnswerRequest) returns (Answer);
-  // 删除答案
   rpc DeleteAnswer(DeleteAnswerRequest) returns (google.protobuf.Empty);
+  rpc ListAnswers(ListAnswersRequest) returns (ListAnswersResponse);
+
+  // --- 评论相关 (Comment RPCs) ---
+  rpc CreateComment(CreateCommentRequest) returns (Comment);
+  rpc UpdateComment(UpdateCommentRequest) returns (Comment);
+  rpc DeleteComment(DeleteCommentRequest) returns (google.protobuf.Empty);
+  rpc ListComments(ListCommentsRequest) returns (ListCommentsResponse);
 }
 
 // ==================================
@@ -64,8 +73,6 @@ service QAService {
 // ==================================
 
 // --- 问题 (Question) ---
-
-// 创建问题请求
 message CreateQuestionRequest {
   string title = 1;
   string content = 2;
@@ -73,30 +80,20 @@ message CreateQuestionRequest {
       3; // 注：在实际应用中，此ID应从gRPC元数据中的认证令牌（如JWT）解析得出，而非由客户端直接提供。
 }
 
-// 获取问题请求
 message GetQuestionRequest {
   int64 id = 1; // 问题ID
 }
 
-// 获取问题响应
-message GetQuestionResponse {
-  Question question = 1;
-  repeated Answer answers = 2; // 该问题下的所有回答
-}
-
-// 问题列表请求
 message ListQuestionsRequest {
   int32 page = 1;      // 页码
   int32 page_size = 2; // 每页数量
 }
 
-// 问题列表响应
 message ListQuestionsResponse {
   repeated Question questions = 1;
   int32 total_count = 2;
 }
 
-// 更新问题请求
 message UpdateQuestionRequest {
   int64 id = 1; // 要更新的问题ID
   string title = 2;
@@ -104,30 +101,65 @@ message UpdateQuestionRequest {
   int64 user_id = 4; // 用于权限验证
 }
 
-// 删除问题请求
 message DeleteQuestionRequest {
   int64 id = 1;      // 要删除的问题ID
   int64 user_id = 2; // 用于权限验证
 }
 
 // --- 回答 (Answer) ---
-
-// 创建回答请求
 message CreateAnswerRequest {
   int64 question_id = 1; // 回答所属的问题ID
   string content = 2;
   int64 user_id = 3; // 回答者ID，同样应从认证信息中获取
 }
 
-// 更新回答请求
 message UpdateAnswerRequest {
   int64 id = 1; // 要更新的回答ID
   string content = 2;
   int64 user_id = 3; // 用于权限验证
 }
 
-// 删除答案请求
 message DeleteAnswerRequest {
   int64 id = 1;      // 要删除的回答ID
   int64 user_id = 2; // 用于权限验证
+}
+
+message ListAnswersRequest {
+  int64 question_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message ListAnswersResponse {
+  repeated Answer answers = 1;
+  int32 total_count = 2;
+}
+
+// --- 评论 (Comment) ---
+message CreateCommentRequest {
+  int64 answer_id = 1; // 评论所属的回答ID
+  string content = 2;
+  int64 user_id = 3; // 评论者ID，同样应从认证信息中获取
+}
+
+message UpdateCommentRequest {
+  int64 id = 1; // 要更新的评论ID
+  string content = 2;
+  int64 user_id = 3; // 用于权限验证
+}
+
+message DeleteCommentRequest {
+  int64 id = 1;      // 要删除的评论ID
+  int64 user_id = 2; // 用于权限验证
+}
+
+message ListCommentsRequest {
+  int64 answer_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message ListCommentsResponse {
+  repeated Comment comments = 1;
+  int32 total_count = 2;
 }

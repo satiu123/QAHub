@@ -28,6 +28,11 @@ const (
 	QAService_CreateAnswer_FullMethodName   = "/qa.QAService/CreateAnswer"
 	QAService_UpdateAnswer_FullMethodName   = "/qa.QAService/UpdateAnswer"
 	QAService_DeleteAnswer_FullMethodName   = "/qa.QAService/DeleteAnswer"
+	QAService_ListAnswers_FullMethodName    = "/qa.QAService/ListAnswers"
+	QAService_CreateComment_FullMethodName  = "/qa.QAService/CreateComment"
+	QAService_UpdateComment_FullMethodName  = "/qa.QAService/UpdateComment"
+	QAService_DeleteComment_FullMethodName  = "/qa.QAService/DeleteComment"
+	QAService_ListComments_FullMethodName   = "/qa.QAService/ListComments"
 )
 
 // QAServiceClient is the client API for QAService service.
@@ -37,23 +42,21 @@ const (
 // 问答服务定义
 type QAServiceClient interface {
 	// --- 问题相关 (Question RPCs) ---
-	// 创建新问题
 	CreateQuestion(ctx context.Context, in *CreateQuestionRequest, opts ...grpc.CallOption) (*Question, error)
-	// 获取问题详情（包括所有回答）
-	GetQuestion(ctx context.Context, in *GetQuestionRequest, opts ...grpc.CallOption) (*GetQuestionResponse, error)
-	// 获取问题列表（分页）
+	GetQuestion(ctx context.Context, in *GetQuestionRequest, opts ...grpc.CallOption) (*Question, error)
 	ListQuestions(ctx context.Context, in *ListQuestionsRequest, opts ...grpc.CallOption) (*ListQuestionsResponse, error)
-	// 更新问题
 	UpdateQuestion(ctx context.Context, in *UpdateQuestionRequest, opts ...grpc.CallOption) (*Question, error)
-	// 删除问题
 	DeleteQuestion(ctx context.Context, in *DeleteQuestionRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// --- 回答相关 (Answer RPCs) ---
-	// 创建新回答
 	CreateAnswer(ctx context.Context, in *CreateAnswerRequest, opts ...grpc.CallOption) (*Answer, error)
-	// 更新回答
 	UpdateAnswer(ctx context.Context, in *UpdateAnswerRequest, opts ...grpc.CallOption) (*Answer, error)
-	// 删除答案
 	DeleteAnswer(ctx context.Context, in *DeleteAnswerRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	ListAnswers(ctx context.Context, in *ListAnswersRequest, opts ...grpc.CallOption) (*ListAnswersResponse, error)
+	// --- 评论相关 (Comment RPCs) ---
+	CreateComment(ctx context.Context, in *CreateCommentRequest, opts ...grpc.CallOption) (*Comment, error)
+	UpdateComment(ctx context.Context, in *UpdateCommentRequest, opts ...grpc.CallOption) (*Comment, error)
+	DeleteComment(ctx context.Context, in *DeleteCommentRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	ListComments(ctx context.Context, in *ListCommentsRequest, opts ...grpc.CallOption) (*ListCommentsResponse, error)
 }
 
 type qAServiceClient struct {
@@ -74,9 +77,9 @@ func (c *qAServiceClient) CreateQuestion(ctx context.Context, in *CreateQuestion
 	return out, nil
 }
 
-func (c *qAServiceClient) GetQuestion(ctx context.Context, in *GetQuestionRequest, opts ...grpc.CallOption) (*GetQuestionResponse, error) {
+func (c *qAServiceClient) GetQuestion(ctx context.Context, in *GetQuestionRequest, opts ...grpc.CallOption) (*Question, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetQuestionResponse)
+	out := new(Question)
 	err := c.cc.Invoke(ctx, QAService_GetQuestion_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -144,6 +147,56 @@ func (c *qAServiceClient) DeleteAnswer(ctx context.Context, in *DeleteAnswerRequ
 	return out, nil
 }
 
+func (c *qAServiceClient) ListAnswers(ctx context.Context, in *ListAnswersRequest, opts ...grpc.CallOption) (*ListAnswersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListAnswersResponse)
+	err := c.cc.Invoke(ctx, QAService_ListAnswers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *qAServiceClient) CreateComment(ctx context.Context, in *CreateCommentRequest, opts ...grpc.CallOption) (*Comment, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Comment)
+	err := c.cc.Invoke(ctx, QAService_CreateComment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *qAServiceClient) UpdateComment(ctx context.Context, in *UpdateCommentRequest, opts ...grpc.CallOption) (*Comment, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Comment)
+	err := c.cc.Invoke(ctx, QAService_UpdateComment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *qAServiceClient) DeleteComment(ctx context.Context, in *DeleteCommentRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, QAService_DeleteComment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *qAServiceClient) ListComments(ctx context.Context, in *ListCommentsRequest, opts ...grpc.CallOption) (*ListCommentsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListCommentsResponse)
+	err := c.cc.Invoke(ctx, QAService_ListComments_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QAServiceServer is the server API for QAService service.
 // All implementations must embed UnimplementedQAServiceServer
 // for forward compatibility.
@@ -151,23 +204,21 @@ func (c *qAServiceClient) DeleteAnswer(ctx context.Context, in *DeleteAnswerRequ
 // 问答服务定义
 type QAServiceServer interface {
 	// --- 问题相关 (Question RPCs) ---
-	// 创建新问题
 	CreateQuestion(context.Context, *CreateQuestionRequest) (*Question, error)
-	// 获取问题详情（包括所有回答）
-	GetQuestion(context.Context, *GetQuestionRequest) (*GetQuestionResponse, error)
-	// 获取问题列表（分页）
+	GetQuestion(context.Context, *GetQuestionRequest) (*Question, error)
 	ListQuestions(context.Context, *ListQuestionsRequest) (*ListQuestionsResponse, error)
-	// 更新问题
 	UpdateQuestion(context.Context, *UpdateQuestionRequest) (*Question, error)
-	// 删除问题
 	DeleteQuestion(context.Context, *DeleteQuestionRequest) (*emptypb.Empty, error)
 	// --- 回答相关 (Answer RPCs) ---
-	// 创建新回答
 	CreateAnswer(context.Context, *CreateAnswerRequest) (*Answer, error)
-	// 更新回答
 	UpdateAnswer(context.Context, *UpdateAnswerRequest) (*Answer, error)
-	// 删除答案
 	DeleteAnswer(context.Context, *DeleteAnswerRequest) (*emptypb.Empty, error)
+	ListAnswers(context.Context, *ListAnswersRequest) (*ListAnswersResponse, error)
+	// --- 评论相关 (Comment RPCs) ---
+	CreateComment(context.Context, *CreateCommentRequest) (*Comment, error)
+	UpdateComment(context.Context, *UpdateCommentRequest) (*Comment, error)
+	DeleteComment(context.Context, *DeleteCommentRequest) (*emptypb.Empty, error)
+	ListComments(context.Context, *ListCommentsRequest) (*ListCommentsResponse, error)
 	mustEmbedUnimplementedQAServiceServer()
 }
 
@@ -181,7 +232,7 @@ type UnimplementedQAServiceServer struct{}
 func (UnimplementedQAServiceServer) CreateQuestion(context.Context, *CreateQuestionRequest) (*Question, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateQuestion not implemented")
 }
-func (UnimplementedQAServiceServer) GetQuestion(context.Context, *GetQuestionRequest) (*GetQuestionResponse, error) {
+func (UnimplementedQAServiceServer) GetQuestion(context.Context, *GetQuestionRequest) (*Question, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetQuestion not implemented")
 }
 func (UnimplementedQAServiceServer) ListQuestions(context.Context, *ListQuestionsRequest) (*ListQuestionsResponse, error) {
@@ -201,6 +252,21 @@ func (UnimplementedQAServiceServer) UpdateAnswer(context.Context, *UpdateAnswerR
 }
 func (UnimplementedQAServiceServer) DeleteAnswer(context.Context, *DeleteAnswerRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteAnswer not implemented")
+}
+func (UnimplementedQAServiceServer) ListAnswers(context.Context, *ListAnswersRequest) (*ListAnswersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListAnswers not implemented")
+}
+func (UnimplementedQAServiceServer) CreateComment(context.Context, *CreateCommentRequest) (*Comment, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateComment not implemented")
+}
+func (UnimplementedQAServiceServer) UpdateComment(context.Context, *UpdateCommentRequest) (*Comment, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateComment not implemented")
+}
+func (UnimplementedQAServiceServer) DeleteComment(context.Context, *DeleteCommentRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteComment not implemented")
+}
+func (UnimplementedQAServiceServer) ListComments(context.Context, *ListCommentsRequest) (*ListCommentsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListComments not implemented")
 }
 func (UnimplementedQAServiceServer) mustEmbedUnimplementedQAServiceServer() {}
 func (UnimplementedQAServiceServer) testEmbeddedByValue()                   {}
@@ -367,6 +433,96 @@ func _QAService_DeleteAnswer_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _QAService_ListAnswers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListAnswersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QAServiceServer).ListAnswers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: QAService_ListAnswers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QAServiceServer).ListAnswers(ctx, req.(*ListAnswersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _QAService_CreateComment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateCommentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QAServiceServer).CreateComment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: QAService_CreateComment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QAServiceServer).CreateComment(ctx, req.(*CreateCommentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _QAService_UpdateComment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateCommentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QAServiceServer).UpdateComment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: QAService_UpdateComment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QAServiceServer).UpdateComment(ctx, req.(*UpdateCommentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _QAService_DeleteComment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteCommentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QAServiceServer).DeleteComment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: QAService_DeleteComment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QAServiceServer).DeleteComment(ctx, req.(*DeleteCommentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _QAService_ListComments_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListCommentsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QAServiceServer).ListComments(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: QAService_ListComments_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QAServiceServer).ListComments(ctx, req.(*ListCommentsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // QAService_ServiceDesc is the grpc.ServiceDesc for QAService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -405,6 +561,26 @@ var QAService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteAnswer",
 			Handler:    _QAService_DeleteAnswer_Handler,
+		},
+		{
+			MethodName: "ListAnswers",
+			Handler:    _QAService_ListAnswers_Handler,
+		},
+		{
+			MethodName: "CreateComment",
+			Handler:    _QAService_CreateComment_Handler,
+		},
+		{
+			MethodName: "UpdateComment",
+			Handler:    _QAService_UpdateComment_Handler,
+		},
+		{
+			MethodName: "DeleteComment",
+			Handler:    _QAService_DeleteComment_Handler,
+		},
+		{
+			MethodName: "ListComments",
+			Handler:    _QAService_ListComments_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

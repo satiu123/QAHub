@@ -108,6 +108,91 @@ func (x *Question) GetUpdatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+// 评论
+type Comment struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	AnswerId      int64                  `protobuf:"varint,2,opt,name=answer_id,json=answerId,proto3" json:"answer_id,omitempty"`
+	UserId        int64                  `protobuf:"varint,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Content       string                 `protobuf:"bytes,4,opt,name=content,proto3" json:"content,omitempty"`
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Comment) Reset() {
+	*x = Comment{}
+	mi := &file_api_proto_qa_qa_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Comment) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Comment) ProtoMessage() {}
+
+func (x *Comment) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_qa_qa_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Comment.ProtoReflect.Descriptor instead.
+func (*Comment) Descriptor() ([]byte, []int) {
+	return file_api_proto_qa_qa_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *Comment) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *Comment) GetAnswerId() int64 {
+	if x != nil {
+		return x.AnswerId
+	}
+	return 0
+}
+
+func (x *Comment) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *Comment) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
+}
+
+func (x *Comment) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *Comment) GetUpdatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return nil
+}
+
 // 回答
 type Answer struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -124,7 +209,7 @@ type Answer struct {
 
 func (x *Answer) Reset() {
 	*x = Answer{}
-	mi := &file_api_proto_qa_qa_proto_msgTypes[1]
+	mi := &file_api_proto_qa_qa_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -136,7 +221,7 @@ func (x *Answer) String() string {
 func (*Answer) ProtoMessage() {}
 
 func (x *Answer) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_qa_qa_proto_msgTypes[1]
+	mi := &file_api_proto_qa_qa_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -149,7 +234,7 @@ func (x *Answer) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Answer.ProtoReflect.Descriptor instead.
 func (*Answer) Descriptor() ([]byte, []int) {
-	return file_api_proto_qa_qa_proto_rawDescGZIP(), []int{1}
+	return file_api_proto_qa_qa_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *Answer) GetId() int64 {
@@ -201,7 +286,7 @@ func (x *Answer) GetUpdatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
-// 创建问题请求
+// --- 问题 (Question) ---
 type CreateQuestionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Title         string                 `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
@@ -213,7 +298,7 @@ type CreateQuestionRequest struct {
 
 func (x *CreateQuestionRequest) Reset() {
 	*x = CreateQuestionRequest{}
-	mi := &file_api_proto_qa_qa_proto_msgTypes[2]
+	mi := &file_api_proto_qa_qa_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -225,7 +310,7 @@ func (x *CreateQuestionRequest) String() string {
 func (*CreateQuestionRequest) ProtoMessage() {}
 
 func (x *CreateQuestionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_qa_qa_proto_msgTypes[2]
+	mi := &file_api_proto_qa_qa_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -238,7 +323,7 @@ func (x *CreateQuestionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateQuestionRequest.ProtoReflect.Descriptor instead.
 func (*CreateQuestionRequest) Descriptor() ([]byte, []int) {
-	return file_api_proto_qa_qa_proto_rawDescGZIP(), []int{2}
+	return file_api_proto_qa_qa_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *CreateQuestionRequest) GetTitle() string {
@@ -262,7 +347,6 @@ func (x *CreateQuestionRequest) GetUserId() int64 {
 	return 0
 }
 
-// 获取问题请求
 type GetQuestionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"` // 问题ID
@@ -272,7 +356,7 @@ type GetQuestionRequest struct {
 
 func (x *GetQuestionRequest) Reset() {
 	*x = GetQuestionRequest{}
-	mi := &file_api_proto_qa_qa_proto_msgTypes[3]
+	mi := &file_api_proto_qa_qa_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -284,7 +368,7 @@ func (x *GetQuestionRequest) String() string {
 func (*GetQuestionRequest) ProtoMessage() {}
 
 func (x *GetQuestionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_qa_qa_proto_msgTypes[3]
+	mi := &file_api_proto_qa_qa_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -297,7 +381,7 @@ func (x *GetQuestionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetQuestionRequest.ProtoReflect.Descriptor instead.
 func (*GetQuestionRequest) Descriptor() ([]byte, []int) {
-	return file_api_proto_qa_qa_proto_rawDescGZIP(), []int{3}
+	return file_api_proto_qa_qa_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *GetQuestionRequest) GetId() int64 {
@@ -307,60 +391,6 @@ func (x *GetQuestionRequest) GetId() int64 {
 	return 0
 }
 
-// 获取问题响应
-type GetQuestionResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Question      *Question              `protobuf:"bytes,1,opt,name=question,proto3" json:"question,omitempty"`
-	Answers       []*Answer              `protobuf:"bytes,2,rep,name=answers,proto3" json:"answers,omitempty"` // 该问题下的所有回答
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetQuestionResponse) Reset() {
-	*x = GetQuestionResponse{}
-	mi := &file_api_proto_qa_qa_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetQuestionResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetQuestionResponse) ProtoMessage() {}
-
-func (x *GetQuestionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_qa_qa_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetQuestionResponse.ProtoReflect.Descriptor instead.
-func (*GetQuestionResponse) Descriptor() ([]byte, []int) {
-	return file_api_proto_qa_qa_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *GetQuestionResponse) GetQuestion() *Question {
-	if x != nil {
-		return x.Question
-	}
-	return nil
-}
-
-func (x *GetQuestionResponse) GetAnswers() []*Answer {
-	if x != nil {
-		return x.Answers
-	}
-	return nil
-}
-
-// 问题列表请求
 type ListQuestionsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Page          int32                  `protobuf:"varint,1,opt,name=page,proto3" json:"page,omitempty"`                         // 页码
@@ -413,7 +443,6 @@ func (x *ListQuestionsRequest) GetPageSize() int32 {
 	return 0
 }
 
-// 问题列表响应
 type ListQuestionsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Questions     []*Question            `protobuf:"bytes,1,rep,name=questions,proto3" json:"questions,omitempty"`
@@ -466,7 +495,6 @@ func (x *ListQuestionsResponse) GetTotalCount() int32 {
 	return 0
 }
 
-// 更新问题请求
 type UpdateQuestionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"` // 要更新的问题ID
@@ -535,7 +563,6 @@ func (x *UpdateQuestionRequest) GetUserId() int64 {
 	return 0
 }
 
-// 删除问题请求
 type DeleteQuestionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`                       // 要删除的问题ID
@@ -588,7 +615,7 @@ func (x *DeleteQuestionRequest) GetUserId() int64 {
 	return 0
 }
 
-// 创建回答请求
+// --- 回答 (Answer) ---
 type CreateAnswerRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	QuestionId    int64                  `protobuf:"varint,1,opt,name=question_id,json=questionId,proto3" json:"question_id,omitempty"` // 回答所属的问题ID
@@ -649,7 +676,6 @@ func (x *CreateAnswerRequest) GetUserId() int64 {
 	return 0
 }
 
-// 更新回答请求
 type UpdateAnswerRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"` // 要更新的回答ID
@@ -710,7 +736,6 @@ func (x *UpdateAnswerRequest) GetUserId() int64 {
 	return 0
 }
 
-// 删除答案请求
 type DeleteAnswerRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`                       // 要删除的回答ID
@@ -763,6 +788,403 @@ func (x *DeleteAnswerRequest) GetUserId() int64 {
 	return 0
 }
 
+type ListAnswersRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	QuestionId    int64                  `protobuf:"varint,1,opt,name=question_id,json=questionId,proto3" json:"question_id,omitempty"`
+	Page          int32                  `protobuf:"varint,2,opt,name=page,proto3" json:"page,omitempty"`
+	PageSize      int32                  `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAnswersRequest) Reset() {
+	*x = ListAnswersRequest{}
+	mi := &file_api_proto_qa_qa_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAnswersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAnswersRequest) ProtoMessage() {}
+
+func (x *ListAnswersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_qa_qa_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAnswersRequest.ProtoReflect.Descriptor instead.
+func (*ListAnswersRequest) Descriptor() ([]byte, []int) {
+	return file_api_proto_qa_qa_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *ListAnswersRequest) GetQuestionId() int64 {
+	if x != nil {
+		return x.QuestionId
+	}
+	return 0
+}
+
+func (x *ListAnswersRequest) GetPage() int32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *ListAnswersRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+type ListAnswersResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Answers       []*Answer              `protobuf:"bytes,1,rep,name=answers,proto3" json:"answers,omitempty"`
+	TotalCount    int32                  `protobuf:"varint,2,opt,name=total_count,json=totalCount,proto3" json:"total_count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAnswersResponse) Reset() {
+	*x = ListAnswersResponse{}
+	mi := &file_api_proto_qa_qa_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAnswersResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAnswersResponse) ProtoMessage() {}
+
+func (x *ListAnswersResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_qa_qa_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAnswersResponse.ProtoReflect.Descriptor instead.
+func (*ListAnswersResponse) Descriptor() ([]byte, []int) {
+	return file_api_proto_qa_qa_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *ListAnswersResponse) GetAnswers() []*Answer {
+	if x != nil {
+		return x.Answers
+	}
+	return nil
+}
+
+func (x *ListAnswersResponse) GetTotalCount() int32 {
+	if x != nil {
+		return x.TotalCount
+	}
+	return 0
+}
+
+// --- 评论 (Comment) ---
+type CreateCommentRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AnswerId      int64                  `protobuf:"varint,1,opt,name=answer_id,json=answerId,proto3" json:"answer_id,omitempty"` // 评论所属的回答ID
+	Content       string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
+	UserId        int64                  `protobuf:"varint,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // 评论者ID，同样应从认证信息中获取
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateCommentRequest) Reset() {
+	*x = CreateCommentRequest{}
+	mi := &file_api_proto_qa_qa_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateCommentRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateCommentRequest) ProtoMessage() {}
+
+func (x *CreateCommentRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_qa_qa_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateCommentRequest.ProtoReflect.Descriptor instead.
+func (*CreateCommentRequest) Descriptor() ([]byte, []int) {
+	return file_api_proto_qa_qa_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *CreateCommentRequest) GetAnswerId() int64 {
+	if x != nil {
+		return x.AnswerId
+	}
+	return 0
+}
+
+func (x *CreateCommentRequest) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
+}
+
+func (x *CreateCommentRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+type UpdateCommentRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"` // 要更新的评论ID
+	Content       string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
+	UserId        int64                  `protobuf:"varint,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // 用于权限验证
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateCommentRequest) Reset() {
+	*x = UpdateCommentRequest{}
+	mi := &file_api_proto_qa_qa_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateCommentRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateCommentRequest) ProtoMessage() {}
+
+func (x *UpdateCommentRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_qa_qa_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateCommentRequest.ProtoReflect.Descriptor instead.
+func (*UpdateCommentRequest) Descriptor() ([]byte, []int) {
+	return file_api_proto_qa_qa_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *UpdateCommentRequest) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *UpdateCommentRequest) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
+}
+
+func (x *UpdateCommentRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+type DeleteCommentRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`                       // 要删除的评论ID
+	UserId        int64                  `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // 用于权限验证
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteCommentRequest) Reset() {
+	*x = DeleteCommentRequest{}
+	mi := &file_api_proto_qa_qa_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteCommentRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteCommentRequest) ProtoMessage() {}
+
+func (x *DeleteCommentRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_qa_qa_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteCommentRequest.ProtoReflect.Descriptor instead.
+func (*DeleteCommentRequest) Descriptor() ([]byte, []int) {
+	return file_api_proto_qa_qa_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *DeleteCommentRequest) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *DeleteCommentRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+type ListCommentsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AnswerId      int64                  `protobuf:"varint,1,opt,name=answer_id,json=answerId,proto3" json:"answer_id,omitempty"`
+	Page          int32                  `protobuf:"varint,2,opt,name=page,proto3" json:"page,omitempty"`
+	PageSize      int32                  `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListCommentsRequest) Reset() {
+	*x = ListCommentsRequest{}
+	mi := &file_api_proto_qa_qa_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListCommentsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListCommentsRequest) ProtoMessage() {}
+
+func (x *ListCommentsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_qa_qa_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListCommentsRequest.ProtoReflect.Descriptor instead.
+func (*ListCommentsRequest) Descriptor() ([]byte, []int) {
+	return file_api_proto_qa_qa_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *ListCommentsRequest) GetAnswerId() int64 {
+	if x != nil {
+		return x.AnswerId
+	}
+	return 0
+}
+
+func (x *ListCommentsRequest) GetPage() int32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *ListCommentsRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+type ListCommentsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Comments      []*Comment             `protobuf:"bytes,1,rep,name=comments,proto3" json:"comments,omitempty"`
+	TotalCount    int32                  `protobuf:"varint,2,opt,name=total_count,json=totalCount,proto3" json:"total_count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListCommentsResponse) Reset() {
+	*x = ListCommentsResponse{}
+	mi := &file_api_proto_qa_qa_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListCommentsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListCommentsResponse) ProtoMessage() {}
+
+func (x *ListCommentsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_qa_qa_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListCommentsResponse.ProtoReflect.Descriptor instead.
+func (*ListCommentsResponse) Descriptor() ([]byte, []int) {
+	return file_api_proto_qa_qa_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *ListCommentsResponse) GetComments() []*Comment {
+	if x != nil {
+		return x.Comments
+	}
+	return nil
+}
+
+func (x *ListCommentsResponse) GetTotalCount() int32 {
+	if x != nil {
+		return x.TotalCount
+	}
+	return 0
+}
+
 var File_api_proto_qa_qa_proto protoreflect.FileDescriptor
 
 const file_api_proto_qa_qa_proto_rawDesc = "" +
@@ -773,6 +1195,15 @@ const file_api_proto_qa_qa_proto_rawDesc = "" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x18\n" +
 	"\acontent\x18\x03 \x01(\tR\acontent\x12\x17\n" +
 	"\auser_id\x18\x04 \x01(\x03R\x06userId\x129\n" +
+	"\n" +
+	"created_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
+	"\n" +
+	"updated_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\xdf\x01\n" +
+	"\aComment\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x1b\n" +
+	"\tanswer_id\x18\x02 \x01(\x03R\banswerId\x12\x17\n" +
+	"\auser_id\x18\x03 \x01(\x03R\x06userId\x12\x18\n" +
+	"\acontent\x18\x04 \x01(\tR\acontent\x129\n" +
 	"\n" +
 	"created_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
@@ -793,11 +1224,7 @@ const file_api_proto_qa_qa_proto_rawDesc = "" +
 	"\acontent\x18\x02 \x01(\tR\acontent\x12\x17\n" +
 	"\auser_id\x18\x03 \x01(\x03R\x06userId\"$\n" +
 	"\x12GetQuestionRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\x03R\x02id\"e\n" +
-	"\x13GetQuestionResponse\x12(\n" +
-	"\bquestion\x18\x01 \x01(\v2\f.qa.QuestionR\bquestion\x12$\n" +
-	"\aanswers\x18\x02 \x03(\v2\n" +
-	".qa.AnswerR\aanswers\"G\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\"G\n" +
 	"\x14ListQuestionsRequest\x12\x12\n" +
 	"\x04page\x18\x01 \x01(\x05R\x04page\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\"d\n" +
@@ -824,10 +1251,39 @@ const file_api_proto_qa_qa_proto_rawDesc = "" +
 	"\auser_id\x18\x03 \x01(\x03R\x06userId\">\n" +
 	"\x13DeleteAnswerRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\x03R\x06userId2\xf7\x03\n" +
+	"\auser_id\x18\x02 \x01(\x03R\x06userId\"f\n" +
+	"\x12ListAnswersRequest\x12\x1f\n" +
+	"\vquestion_id\x18\x01 \x01(\x03R\n" +
+	"questionId\x12\x12\n" +
+	"\x04page\x18\x02 \x01(\x05R\x04page\x12\x1b\n" +
+	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\"\\\n" +
+	"\x13ListAnswersResponse\x12$\n" +
+	"\aanswers\x18\x01 \x03(\v2\n" +
+	".qa.AnswerR\aanswers\x12\x1f\n" +
+	"\vtotal_count\x18\x02 \x01(\x05R\n" +
+	"totalCount\"f\n" +
+	"\x14CreateCommentRequest\x12\x1b\n" +
+	"\tanswer_id\x18\x01 \x01(\x03R\banswerId\x12\x18\n" +
+	"\acontent\x18\x02 \x01(\tR\acontent\x12\x17\n" +
+	"\auser_id\x18\x03 \x01(\x03R\x06userId\"Y\n" +
+	"\x14UpdateCommentRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x18\n" +
+	"\acontent\x18\x02 \x01(\tR\acontent\x12\x17\n" +
+	"\auser_id\x18\x03 \x01(\x03R\x06userId\"?\n" +
+	"\x14DeleteCommentRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\x03R\x06userId\"c\n" +
+	"\x13ListCommentsRequest\x12\x1b\n" +
+	"\tanswer_id\x18\x01 \x01(\x03R\banswerId\x12\x12\n" +
+	"\x04page\x18\x02 \x01(\x05R\x04page\x12\x1b\n" +
+	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\"`\n" +
+	"\x14ListCommentsResponse\x12'\n" +
+	"\bcomments\x18\x01 \x03(\v2\v.qa.CommentR\bcomments\x12\x1f\n" +
+	"\vtotal_count\x18\x02 \x01(\x05R\n" +
+	"totalCount2\xa2\x06\n" +
 	"\tQAService\x129\n" +
-	"\x0eCreateQuestion\x12\x19.qa.CreateQuestionRequest\x1a\f.qa.Question\x12>\n" +
-	"\vGetQuestion\x12\x16.qa.GetQuestionRequest\x1a\x17.qa.GetQuestionResponse\x12D\n" +
+	"\x0eCreateQuestion\x12\x19.qa.CreateQuestionRequest\x1a\f.qa.Question\x123\n" +
+	"\vGetQuestion\x12\x16.qa.GetQuestionRequest\x1a\f.qa.Question\x12D\n" +
 	"\rListQuestions\x12\x18.qa.ListQuestionsRequest\x1a\x19.qa.ListQuestionsResponse\x129\n" +
 	"\x0eUpdateQuestion\x12\x19.qa.UpdateQuestionRequest\x1a\f.qa.Question\x12C\n" +
 	"\x0eDeleteQuestion\x12\x19.qa.DeleteQuestionRequest\x1a\x16.google.protobuf.Empty\x123\n" +
@@ -835,7 +1291,12 @@ const file_api_proto_qa_qa_proto_rawDesc = "" +
 	".qa.Answer\x123\n" +
 	"\fUpdateAnswer\x12\x17.qa.UpdateAnswerRequest\x1a\n" +
 	".qa.Answer\x12?\n" +
-	"\fDeleteAnswer\x12\x17.qa.DeleteAnswerRequest\x1a\x16.google.protobuf.EmptyB\aZ\x05./;qab\x06proto3"
+	"\fDeleteAnswer\x12\x17.qa.DeleteAnswerRequest\x1a\x16.google.protobuf.Empty\x12>\n" +
+	"\vListAnswers\x12\x16.qa.ListAnswersRequest\x1a\x17.qa.ListAnswersResponse\x126\n" +
+	"\rCreateComment\x12\x18.qa.CreateCommentRequest\x1a\v.qa.Comment\x126\n" +
+	"\rUpdateComment\x12\x18.qa.UpdateCommentRequest\x1a\v.qa.Comment\x12A\n" +
+	"\rDeleteComment\x12\x18.qa.DeleteCommentRequest\x1a\x16.google.protobuf.Empty\x12A\n" +
+	"\fListComments\x12\x17.qa.ListCommentsRequest\x1a\x18.qa.ListCommentsResponseB\aZ\x05./;qab\x06proto3"
 
 var (
 	file_api_proto_qa_qa_proto_rawDescOnce sync.Once
@@ -849,13 +1310,13 @@ func file_api_proto_qa_qa_proto_rawDescGZIP() []byte {
 	return file_api_proto_qa_qa_proto_rawDescData
 }
 
-var file_api_proto_qa_qa_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_api_proto_qa_qa_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_api_proto_qa_qa_proto_goTypes = []any{
 	(*Question)(nil),              // 0: qa.Question
-	(*Answer)(nil),                // 1: qa.Answer
-	(*CreateQuestionRequest)(nil), // 2: qa.CreateQuestionRequest
-	(*GetQuestionRequest)(nil),    // 3: qa.GetQuestionRequest
-	(*GetQuestionResponse)(nil),   // 4: qa.GetQuestionResponse
+	(*Comment)(nil),               // 1: qa.Comment
+	(*Answer)(nil),                // 2: qa.Answer
+	(*CreateQuestionRequest)(nil), // 3: qa.CreateQuestionRequest
+	(*GetQuestionRequest)(nil),    // 4: qa.GetQuestionRequest
 	(*ListQuestionsRequest)(nil),  // 5: qa.ListQuestionsRequest
 	(*ListQuestionsResponse)(nil), // 6: qa.ListQuestionsResponse
 	(*UpdateQuestionRequest)(nil), // 7: qa.UpdateQuestionRequest
@@ -863,38 +1324,57 @@ var file_api_proto_qa_qa_proto_goTypes = []any{
 	(*CreateAnswerRequest)(nil),   // 9: qa.CreateAnswerRequest
 	(*UpdateAnswerRequest)(nil),   // 10: qa.UpdateAnswerRequest
 	(*DeleteAnswerRequest)(nil),   // 11: qa.DeleteAnswerRequest
-	(*timestamppb.Timestamp)(nil), // 12: google.protobuf.Timestamp
-	(*emptypb.Empty)(nil),         // 13: google.protobuf.Empty
+	(*ListAnswersRequest)(nil),    // 12: qa.ListAnswersRequest
+	(*ListAnswersResponse)(nil),   // 13: qa.ListAnswersResponse
+	(*CreateCommentRequest)(nil),  // 14: qa.CreateCommentRequest
+	(*UpdateCommentRequest)(nil),  // 15: qa.UpdateCommentRequest
+	(*DeleteCommentRequest)(nil),  // 16: qa.DeleteCommentRequest
+	(*ListCommentsRequest)(nil),   // 17: qa.ListCommentsRequest
+	(*ListCommentsResponse)(nil),  // 18: qa.ListCommentsResponse
+	(*timestamppb.Timestamp)(nil), // 19: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),         // 20: google.protobuf.Empty
 }
 var file_api_proto_qa_qa_proto_depIdxs = []int32{
-	12, // 0: qa.Question.created_at:type_name -> google.protobuf.Timestamp
-	12, // 1: qa.Question.updated_at:type_name -> google.protobuf.Timestamp
-	12, // 2: qa.Answer.created_at:type_name -> google.protobuf.Timestamp
-	12, // 3: qa.Answer.updated_at:type_name -> google.protobuf.Timestamp
-	0,  // 4: qa.GetQuestionResponse.question:type_name -> qa.Question
-	1,  // 5: qa.GetQuestionResponse.answers:type_name -> qa.Answer
+	19, // 0: qa.Question.created_at:type_name -> google.protobuf.Timestamp
+	19, // 1: qa.Question.updated_at:type_name -> google.protobuf.Timestamp
+	19, // 2: qa.Comment.created_at:type_name -> google.protobuf.Timestamp
+	19, // 3: qa.Comment.updated_at:type_name -> google.protobuf.Timestamp
+	19, // 4: qa.Answer.created_at:type_name -> google.protobuf.Timestamp
+	19, // 5: qa.Answer.updated_at:type_name -> google.protobuf.Timestamp
 	0,  // 6: qa.ListQuestionsResponse.questions:type_name -> qa.Question
-	2,  // 7: qa.QAService.CreateQuestion:input_type -> qa.CreateQuestionRequest
-	3,  // 8: qa.QAService.GetQuestion:input_type -> qa.GetQuestionRequest
-	5,  // 9: qa.QAService.ListQuestions:input_type -> qa.ListQuestionsRequest
-	7,  // 10: qa.QAService.UpdateQuestion:input_type -> qa.UpdateQuestionRequest
-	8,  // 11: qa.QAService.DeleteQuestion:input_type -> qa.DeleteQuestionRequest
-	9,  // 12: qa.QAService.CreateAnswer:input_type -> qa.CreateAnswerRequest
-	10, // 13: qa.QAService.UpdateAnswer:input_type -> qa.UpdateAnswerRequest
-	11, // 14: qa.QAService.DeleteAnswer:input_type -> qa.DeleteAnswerRequest
-	0,  // 15: qa.QAService.CreateQuestion:output_type -> qa.Question
-	4,  // 16: qa.QAService.GetQuestion:output_type -> qa.GetQuestionResponse
-	6,  // 17: qa.QAService.ListQuestions:output_type -> qa.ListQuestionsResponse
-	0,  // 18: qa.QAService.UpdateQuestion:output_type -> qa.Question
-	13, // 19: qa.QAService.DeleteQuestion:output_type -> google.protobuf.Empty
-	1,  // 20: qa.QAService.CreateAnswer:output_type -> qa.Answer
-	1,  // 21: qa.QAService.UpdateAnswer:output_type -> qa.Answer
-	13, // 22: qa.QAService.DeleteAnswer:output_type -> google.protobuf.Empty
-	15, // [15:23] is the sub-list for method output_type
-	7,  // [7:15] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	2,  // 7: qa.ListAnswersResponse.answers:type_name -> qa.Answer
+	1,  // 8: qa.ListCommentsResponse.comments:type_name -> qa.Comment
+	3,  // 9: qa.QAService.CreateQuestion:input_type -> qa.CreateQuestionRequest
+	4,  // 10: qa.QAService.GetQuestion:input_type -> qa.GetQuestionRequest
+	5,  // 11: qa.QAService.ListQuestions:input_type -> qa.ListQuestionsRequest
+	7,  // 12: qa.QAService.UpdateQuestion:input_type -> qa.UpdateQuestionRequest
+	8,  // 13: qa.QAService.DeleteQuestion:input_type -> qa.DeleteQuestionRequest
+	9,  // 14: qa.QAService.CreateAnswer:input_type -> qa.CreateAnswerRequest
+	10, // 15: qa.QAService.UpdateAnswer:input_type -> qa.UpdateAnswerRequest
+	11, // 16: qa.QAService.DeleteAnswer:input_type -> qa.DeleteAnswerRequest
+	12, // 17: qa.QAService.ListAnswers:input_type -> qa.ListAnswersRequest
+	14, // 18: qa.QAService.CreateComment:input_type -> qa.CreateCommentRequest
+	15, // 19: qa.QAService.UpdateComment:input_type -> qa.UpdateCommentRequest
+	16, // 20: qa.QAService.DeleteComment:input_type -> qa.DeleteCommentRequest
+	17, // 21: qa.QAService.ListComments:input_type -> qa.ListCommentsRequest
+	0,  // 22: qa.QAService.CreateQuestion:output_type -> qa.Question
+	0,  // 23: qa.QAService.GetQuestion:output_type -> qa.Question
+	6,  // 24: qa.QAService.ListQuestions:output_type -> qa.ListQuestionsResponse
+	0,  // 25: qa.QAService.UpdateQuestion:output_type -> qa.Question
+	20, // 26: qa.QAService.DeleteQuestion:output_type -> google.protobuf.Empty
+	2,  // 27: qa.QAService.CreateAnswer:output_type -> qa.Answer
+	2,  // 28: qa.QAService.UpdateAnswer:output_type -> qa.Answer
+	20, // 29: qa.QAService.DeleteAnswer:output_type -> google.protobuf.Empty
+	13, // 30: qa.QAService.ListAnswers:output_type -> qa.ListAnswersResponse
+	1,  // 31: qa.QAService.CreateComment:output_type -> qa.Comment
+	1,  // 32: qa.QAService.UpdateComment:output_type -> qa.Comment
+	20, // 33: qa.QAService.DeleteComment:output_type -> google.protobuf.Empty
+	18, // 34: qa.QAService.ListComments:output_type -> qa.ListCommentsResponse
+	22, // [22:35] is the sub-list for method output_type
+	9,  // [9:22] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_api_proto_qa_qa_proto_init() }
@@ -908,7 +1388,7 @@ func file_api_proto_qa_qa_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_proto_qa_qa_proto_rawDesc), len(file_api_proto_qa_qa_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   12,
+			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
