@@ -1,0 +1,39 @@
+services:
+  # MariaDB 服务
+  mariadb:
+    image: mariadb:12.0.2
+    container_name: qahub-mariadb
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 12345678 # 请务必修改为强密码
+      MYSQL_DATABASE: qahub # 项目使用的数据库名
+      MYSQL_USER: qahub_user # 为项目创建一个专用用户
+      MYSQL_PASSWORD: 12345678 
+    ports:
+      - "3307:3306" # 将容器的3306端口映射到主机的3307端口
+    volumes:
+      - mariadb_data:/var/lib/mysql # 将数据库文件持久化到名为 mariadb_data 的数据卷中
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-u", "root", "-p$${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis 服务
+  redis:
+    image: redis:7.0-alpine 
+    container_name: qahub-redis
+    restart: always
+    ports:
+      - "6380:6379" # 将容器的6379端口映射到主机的6380端口
+    volumes:
+      - redis_data:/data # 将 Redis 数据持久化到名为 redis_data 的数据卷中
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mariadb_data:
+  redis_data:

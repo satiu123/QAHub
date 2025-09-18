@@ -11,7 +11,7 @@ log:
 # MySQL 数据库配置 (供用户服务和问答服务使用)
 mysql:
   host: "127.0.0.1"
-  port: 3306
+  port: 3307
   user: "root"
   password: "password" # 重要：建议通过环境变量 MYSQL_PASSWORD 来覆盖此值
   dbname: "qahub"
@@ -21,8 +21,8 @@ mysql:
 
 # Redis 配置
 redis:
-  addr: "127.0.0.1:6379"
-  password: "" # 如果没有密码则留空
+  addr: "127.0.0.1:6380"
+  password: "" 
   db: 0
 
 # Kafka 配置 (供搜索和通知服务使用)
