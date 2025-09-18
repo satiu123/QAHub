@@ -1,39 +1,21 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"net"
+
+	pb "qahub/api/proto/user"
 	"qahub/internal/user/handler"
 	"qahub/internal/user/service"
 	"qahub/internal/user/store"
 	"qahub/pkg/config"
 	"qahub/pkg/database"
-	"qahub/pkg/middleware" // 导入中间件包
+	"qahub/pkg/middleware"
 	"qahub/pkg/redis"
 
-	"github.com/gin-gonic/gin"
+	"google.golang.org/grpc"
 )
-
-func RegisterRoutes(handler *handler.UserHandler, port string) {
-	router := gin.Default()
-	api := router.Group("/api")
-	userGroup := api.Group("/users")
-	{
-		// 公开路由
-		userGroup.POST("/register", handler.Register)
-		userGroup.POST("/login", handler.Login)
-		userGroup.GET("/:id", handler.GetProfile) // 查看任何人信息是公开的
-
-		// 需要认证的路由
-		authRequired := userGroup.Group("/")
-		authRequired.Use(middleware.AuthMiddleware())
-		{
-			authRequired.PUT("/:id", handler.UpdateProfile) // 更新用户信息
-			authRequired.DELETE("/:id", handler.DeleteUser) // 删除用户
-		}
-	}
-
-	router.Run(":" + port)
-}
 
 func main() {
 	// 加载配置
@@ -56,7 +38,25 @@ func main() {
 	userStore := store.NewMySQLUserStore(db)
 	cacheStore := store.NewUserCacheStore(redisClient, userStore)
 	userService := service.NewUserService(cacheStore)
-	UserHandler := handler.NewUserHandler(userService)
-	RegisterRoutes(UserHandler, config.Conf.Server.Port)
 
+	// 设置 gRPC 服务器
+	grpcPort := config.Conf.Services.UserService.GrpcPort
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", grpcPort))
+	if err != nil {
+		log.Fatalf("无法监听端口 %s: %v", grpcPort, err)
+	}
+
+	// 创建 gRPC 服务器并注册拦截器
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(middleware.GrpcAuthInterceptor()),
+	)
+
+	userGrpcServer := handler.NewUserGrpcServer(userService)
+	pb.RegisterUserServiceServer(grpcServer, userGrpcServer)
+
+	log.Printf("gRPC 用户服务正在监听端口: %s", grpcPort)
+
+	if err := grpcServer.Serve(lis); err != nil {
+		log.Fatalf("启动 gRPC 服务失败: %v", err)
+	}
 }

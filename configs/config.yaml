@@ -45,3 +45,4 @@ services:
   user_service:
     jwt_secret: "satiu" # 用于生成和验证JWT
     token_expire_hours: 24 # JWT过期时间，单位：小时
+    grpc_port: "50051" # gRPC 服务端口

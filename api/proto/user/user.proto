@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+package user;
+
+// 声明生成的go代码的包名，路径需要根据实际情况修改
+option go_package = "qahub/api/proto/user";
+
+import "google/protobuf/empty.proto";
+
+// 用户服务定义
+service UserService {
+  // 注册新用户
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+
+  // 用户登录
+  rpc Login(LoginRequest) returns (LoginResponse);
+
+  // 获取用户个人资料
+  rpc GetUserProfile(GetUserProfileRequest) returns (GetUserProfileResponse);
+
+  // 更新用户个人资料
+  rpc UpdateUserProfile(UpdateUserProfileRequest) returns (google.protobuf.Empty);
+
+  // 删除用户
+  rpc DeleteUser(DeleteUserRequest) returns (google.protobuf.Empty);
+}
+
+// 用户信息
+message User {
+  int64 id = 1;
+  string username = 2;
+  string email = 3;
+  string bio = 4;
+}
+
+// Register 方法的请求消息
+message RegisterRequest {
+  string username = 1;
+  string email = 2;
+  string password = 3;
+  string bio = 4;
+}
+
+// Register 方法的响应消息
+message RegisterResponse {
+  User user = 1;
+}
+
+// Login 方法的请求消息
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+}
+
+// Login 方法的响应消息
+message LoginResponse {
+  string token = 1;
+}
+
+// GetUserProfile 方法的请求消息
+message GetUserProfileRequest {
+  int64 user_id = 1;
+}
+
+// GetUserProfile 方法的响应消息
+message GetUserProfileResponse {
+  User user = 1;
+}
+
+// UpdateUserProfile 方法的请求消息
+message UpdateUserProfileRequest {
+  int64 user_id = 1;
+  string username = 2;
+  string email = 3;
+  string bio = 4;
+}
+
+// DeleteUser 方法的请求消息
+message DeleteUserRequest {
+  int64 user_id = 1;
+}
