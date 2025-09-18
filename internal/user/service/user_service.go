@@ -7,13 +7,15 @@ import (
 	"qahub/internal/user/dto"
 	"qahub/internal/user/model"
 	"qahub/internal/user/store"
+	"qahub/pkg/config"
 
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
-// IMPORTANT: This secret key should be loaded from a secure configuration, not hardcoded.
-var jwtSecret = []byte("your-super-secret-key-change-it")
+var userServiceConfig = config.Conf.Services.UserService
+
+var jwtSecret = []byte(userServiceConfig.JWTSecret)
 
 type UserService interface {
 	Register(username, email, password string) (*dto.UserResponse, error)
@@ -77,8 +79,8 @@ func (s *userService) Login(username, password string) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id":  user.ID,
 		"username": user.Username,
-		"exp":      time.Now().Add(time.Hour * 72).Unix(), // token于72小时后过期
-		"iat":      time.Now().Unix(),                     // token的签发时间
+		"exp":      time.Now().Add(time.Hour * time.Duration(userServiceConfig.TokenExpireHours)).Unix(), // token于72小时后过期
+		"iat":      time.Now().Unix(),                                                                    // token的签发时间
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

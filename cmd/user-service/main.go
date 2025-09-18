@@ -1,15 +1,17 @@
 package main
 
 import (
+	"log"
 	"qahub/internal/user/handler"
 	"qahub/internal/user/service"
 	"qahub/internal/user/store"
+	"qahub/pkg/config"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 )
 
-func RegisterRoutes(handler *handler.UserHandler) {
+func RegisterRoutes(handler *handler.UserHandler, port string) {
 	router := gin.Default()
 	api := router.Group("/api")
 	userGroup := api.Group("/users")
@@ -19,17 +21,20 @@ func RegisterRoutes(handler *handler.UserHandler) {
 		userGroup.GET("/:id", handler.GetProfile)
 	}
 
-	router.Run(":8080")
+	router.Run(":" + port)
 }
 
 func main() {
-	dsn := "root:12345678@tcp(localhost:3306)/qahub?charset=utf8mb4&parseTime=True&loc=Local"
+	if err := config.Init("configs"); err != nil {
+		log.Fatal("配置加载失败:", err)
+	}
+	dsn := config.Conf.MySQL.DSN()
 	db := sqlx.MustConnect("mysql", dsn)
 	defer db.Close()
 
 	userStore := store.NewMySQLUserStore(db)
 	userService := service.NewUserService(userStore)
 	UserHandler := handler.NewUserHandler(userService)
-	RegisterRoutes(UserHandler)
+	RegisterRoutes(UserHandler, config.Conf.Server.Port)
 
 }

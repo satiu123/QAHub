@@ -1,0 +1,47 @@
+# 服务器通用配置
+server:
+  port: 8080
+  mode: "debug" # Gin 框架的模式: debug, release, test
+
+# 日志配置
+log:
+  level: "info" # 日志级别: debug, info, warn, error
+  format: "json" # 日志格式: json, text
+
+# MySQL 数据库配置 (供用户服务和问答服务使用)
+mysql:
+  host: "127.0.0.1"
+  port: 3306
+  user: "root"
+  password: "password" # 重要：建议通过环境变量 MYSQL_PASSWORD 来覆盖此值
+  dbname: "qahub"
+  charset: "utf8mb4"
+  parseTime: "True"
+  loc: "Local"
+
+# Redis 配置
+redis:
+  addr: "127.0.0.1:6379"
+  password: "" # 如果没有密码则留空
+  db: 0
+
+# Kafka 配置 (供搜索和通知服务使用)
+kafka:
+  brokers:
+    - "127.0.0.1:9092"
+
+# Elasticsearch 配置 (供搜索服务使用)
+elasticsearch:
+  urls:
+    - "http://127.0.0.1:9200"
+
+# MongoDB 配置 (供通知服务使用)
+mongodb:
+  uri: "mongodb://localhost:27017"
+  database: "notification_db"
+
+# 服务特有配置
+services:
+  user_service:
+    jwt_secret: "satiu" # 用于生成和验证JWT
+    token_expire_hours: 24
