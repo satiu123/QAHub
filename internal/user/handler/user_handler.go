@@ -25,6 +25,7 @@ type RegisterRequest struct {
 	Username string `json:"username" binding:"required,min=3,max=32"`
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=8,max=72"`
+	Bio      string `json:"bio,omitempty"`
 }
 
 type LoginRequest struct {
@@ -45,7 +46,7 @@ func (h *UserHandler) Register(c *gin.Context) {
 		return
 	}
 
-	userResponse, err := h.userService.Register(req.Username, req.Email, req.Password)
+	userResponse, err := h.userService.Register(req.Username, req.Email, req.Bio, req.Password)
 	if err != nil {
 		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 		return

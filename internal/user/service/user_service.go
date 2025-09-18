@@ -18,10 +18,10 @@ var userServiceConfig = config.Conf.Services.UserService
 var jwtSecret = []byte(userServiceConfig.JWTSecret)
 
 type UserService interface {
-	Register(username, email, password string) (*dto.UserResponse, error)
+	Register(username, email, bio, password string) (*dto.UserResponse, error)
 	Login(username, password string) (string, error)
 	GetUserProfile(userID int64) (*dto.UserResponse, error)
-	UpdateUserProfile(user *model.User) error // Note: Input might also become a DTO
+	UpdateUserProfile(user *model.User) error
 	DeleteUser(userID int64) error
 }
 
@@ -33,7 +33,7 @@ func NewUserService(store store.UserStore) UserService {
 	return &userService{userStore: store}
 }
 
-func (s *userService) Register(username, email, password string) (*dto.UserResponse, error) {
+func (s *userService) Register(username, email, bio, password string) (*dto.UserResponse, error) {
 	// 检查用户名是否已存在
 	if existingUser, _ := s.userStore.GetUserByEmail(email); existingUser != nil {
 		return nil, errors.New("username already exists")
@@ -48,6 +48,7 @@ func (s *userService) Register(username, email, password string) (*dto.UserRespo
 		Username: username,
 		Email:    email,
 		Password: string(hashedPassword),
+		Bio:      bio,
 	}
 
 	newID, err := s.userStore.CreateUser(newUser)
@@ -60,6 +61,7 @@ func (s *userService) Register(username, email, password string) (*dto.UserRespo
 		ID:       newID,
 		Username: username,
 		Email:    email,
+		Bio:      bio,
 	}
 
 	return response, nil
@@ -102,6 +104,7 @@ func (s *userService) GetUserProfile(userID int64) (*dto.UserResponse, error) {
 		ID:       user.ID,
 		Username: user.Username,
 		Email:    user.Email,
+		Bio:      user.Bio,
 	}
 
 	return response, nil

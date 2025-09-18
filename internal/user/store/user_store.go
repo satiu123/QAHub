@@ -26,8 +26,8 @@ func NewMySQLUserStore(db *sqlx.DB) UserStore {
 }
 
 func (s *mySQLUserStore) CreateUser(user *model.User) (int64, error) {
-	query := "INSERT INTO users (username, email, password) VALUES (?, ?, ?)"
-	result, err := s.db.Exec(query, user.Username, user.Email, user.Password)
+	query := "INSERT INTO users (username, email,bio, password) VALUES (?, ?,?, ?)"
+	result, err := s.db.Exec(query, user.Username, user.Email, user.Bio, user.Password)
 	if err != nil {
 		return 0, err
 	}
@@ -41,7 +41,7 @@ func (s *mySQLUserStore) CreateUser(user *model.User) (int64, error) {
 func (s *mySQLUserStore) GetUserByID(id int64) (*model.User, error) {
 	var user model.User
 
-	query := "SELECT id, username, email, password FROM users WHERE id = ?"
+	query := "SELECT id, username, email,bio, password FROM users WHERE id = ?"
 	err := s.db.Get(&user, query, id)
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func (s *mySQLUserStore) GetUserByID(id int64) (*model.User, error) {
 func (s *mySQLUserStore) GetUserByUsername(username string) (*model.User, error) {
 	var user model.User
 
-	query := "SELECT id, username, email, password FROM users WHERE username = ?"
+	query := "SELECT id, username, email,bio, password FROM users WHERE username = ?"
 	err := s.db.Get(&user, query, username)
 	if err != nil {
 		return nil, err
@@ -64,7 +64,7 @@ func (s *mySQLUserStore) GetUserByUsername(username string) (*model.User, error)
 func (s *mySQLUserStore) GetUserByEmail(email string) (*model.User, error) {
 	var user model.User
 
-	query := "SELECT id, username, email, password FROM users WHERE email = ?"
+	query := "SELECT id, username, email,bio, password FROM users WHERE email = ?"
 	err := s.db.Get(&user, query, email)
 	if err != nil {
 		return nil, err
@@ -74,8 +74,8 @@ func (s *mySQLUserStore) GetUserByEmail(email string) (*model.User, error) {
 }
 
 func (s *mySQLUserStore) UpdateUser(user *model.User) error {
-	query := "UPDATE users SET username = ?, email = ?, password = ? WHERE id = ?"
-	_, err := s.db.Exec(query, user.Username, user.Email, user.Password, user.ID)
+	query := "UPDATE users SET username = ?, email = ?,bio =? , password = ? WHERE id = ?"
+	_, err := s.db.Exec(query, user.Username, user.Email, user.Bio, user.Password, user.ID)
 	if err != nil {
 		return err
 	}

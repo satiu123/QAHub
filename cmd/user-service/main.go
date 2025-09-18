@@ -6,9 +6,9 @@ import (
 	"qahub/internal/user/service"
 	"qahub/internal/user/store"
 	"qahub/pkg/config"
+	"qahub/pkg/database"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jmoiron/sqlx"
 )
 
 func RegisterRoutes(handler *handler.UserHandler, port string) {
@@ -28,8 +28,10 @@ func main() {
 	if err := config.Init("configs"); err != nil {
 		log.Fatal("配置加载失败:", err)
 	}
-	dsn := config.Conf.MySQL.DSN()
-	db := sqlx.MustConnect("mysql", dsn)
+	db, err := database.NewMySQLConnection(config.Conf.MySQL)
+	if err != nil {
+		log.Fatal("数据库连接失败:", err)
+	}
 	defer db.Close()
 
 	userStore := store.NewMySQLUserStore(db)

@@ -1,8 +1,14 @@
 package model
 
+import "time"
+
+// User 对应于数据库中的 users 表
 type User struct {
-	ID       int64  `json:"id"`       // 唯一标识符
-	Username string `json:"username"` // 不唯一
-	Email    string `json:"email"`    // 唯一
-	Password string `json:"-"`        // 密码哈希值，不应直接暴露
+	ID        int64     `db:"id"`
+	Username  string    `db:"username"`
+	Email     string    `db:"email"`
+	Bio       string    `db:"bio"`
+	Password  string    `db:"password"` // 在实际应用中应存储哈希值
+	CreatedAt time.Time `db:"created_at"`
+	UpdatedAt time.Time `db:"updated_at"`
 }
