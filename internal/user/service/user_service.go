@@ -30,9 +30,9 @@ func NewUserService(store store.UserStore) UserService {
 }
 
 func (s *userService) Register(username, email, bio, password string) (*dto.UserResponse, error) {
-	// 检查用户名是否已存在
+	// 检查邮箱是否已存在
 	if existingUser, _ := s.userStore.GetUserByEmail(email); existingUser != nil {
-		return nil, errors.New("username already exists")
+		return nil, errors.New("该邮箱已被注册")
 	}
 	// 验证密码
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
