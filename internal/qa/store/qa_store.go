@@ -23,6 +23,8 @@ type QAStore interface {
 	ListAnswersByQuestionID(ctx context.Context, questionID int64, offset int, limit int) ([]*model.Answer, error)
 	CountAnswersByQuestionID(ctx context.Context, questionID int64) (int64, error)
 
+	CreateAnswerVote(ctx context.Context, answerID, userID int64, isUpvote bool) error
+	DeleteAnswerVote(ctx context.Context, answerID, userID int64) error
 	IncrementAnswerUpvoteCount(ctx context.Context, answerID int64) error
 	DecrementAnswerUpvoteCount(ctx context.Context, answerID int64) error
 	CountVotesByAnswerID(ctx context.Context, answerID int64) (int64, error)
@@ -227,6 +229,18 @@ func (s *sqlxQAStore) DeleteComment(ctx context.Context, commentID int64) error 
 }
 
 // --- 投票相关方法 ---
+
+func (s *sqlxQAStore) CreateAnswerVote(ctx context.Context, answerID, userID int64, isUpvote bool) error {
+	query := "INSERT INTO answer_votes (answer_id, user_id, is_upvote) VALUES (?, ?, ?)"
+	_, err := s.db.ExecContext(ctx, query, answerID, userID, isUpvote)
+	return err
+}
+
+func (s *sqlxQAStore) DeleteAnswerVote(ctx context.Context, answerID, userID int64) error {
+	query := "DELETE FROM answer_votes WHERE answer_id = ? AND user_id = ?"
+	_, err := s.db.ExecContext(ctx, query, answerID, userID)
+	return err
+}
 
 func (s *sqlxQAStore) IncrementAnswerUpvoteCount(ctx context.Context, answerID int64) error {
 	query := "UPDATE answers SET upvote_count = upvote_count + 1 WHERE id = ?"

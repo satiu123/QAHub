@@ -195,15 +195,35 @@ func (s *qaService) DeleteAnswer(ctx context.Context, answerID, userID int64) er
 }
 
 func (s *qaService) UpvoteAnswer(ctx context.Context, answerID, userID int64) error {
-	panic("not implemented")
+	return s.store.ExecTx(ctx, func(tx store.QAStore) error {
+		err := tx.CreateAnswerVote(ctx, answerID, userID, true)
+		if err != nil {
+			return err
+		}
+		err = tx.IncrementAnswerUpvoteCount(ctx, answerID)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
 func (s *qaService) DownvoteAnswer(ctx context.Context, answerID, userID int64) error {
-	panic("not implemented")
+	return s.store.ExecTx(ctx, func(tx store.QAStore) error {
+		err := tx.DeleteAnswerVote(ctx, answerID, userID)
+		if err != nil {
+			return err
+		}
+		err = tx.DecrementAnswerUpvoteCount(ctx, answerID)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
 func (s *qaService) CountVotes(ctx context.Context, answerID int64) (int64, error) {
-	panic("not implemented")
+	return s.store.CountVotesByAnswerID(ctx, answerID)
 }
 
 // --- 评论实现 ---
