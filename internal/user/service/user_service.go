@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -14,12 +15,12 @@ import (
 )
 
 type UserService interface {
-	Register(username, email, bio, password string) (*dto.UserResponse, error)
-	Login(username, password string) (string, error)
-	Logout(tokenString string, claims jwt.MapClaims) error
-	GetUserProfile(userID int64) (*dto.UserResponse, error)
-	UpdateUserProfile(user *model.User) error
-	DeleteUser(userID int64) error
+	Register(ctx context.Context, username, email, bio, password string) (*dto.UserResponse, error)
+	Login(ctx context.Context, username, password string) (string, error)
+	Logout(ctx context.Context, tokenString string, claims jwt.MapClaims) error
+	GetUserProfile(ctx context.Context, userID int64) (*dto.UserResponse, error)
+	UpdateUserProfile(ctx context.Context, user *model.User) error
+	DeleteUser(ctx context.Context, userID int64) error
 }
 
 type userService struct {
@@ -30,7 +31,7 @@ func NewUserService(store store.UserStore) UserService {
 	return &userService{userStore: store}
 }
 
-func (s *userService) Register(username, email, bio, password string) (*dto.UserResponse, error) {
+func (s *userService) Register(ctx context.Context, username, email, bio, password string) (*dto.UserResponse, error) {
 	// 检查邮箱是否已存在
 	if existingUser, _ := s.userStore.GetUserByEmail(email); existingUser != nil {
 		return nil, errors.New("该邮箱已被注册")
@@ -64,7 +65,7 @@ func (s *userService) Register(username, email, bio, password string) (*dto.User
 	return response, nil
 }
 
-func (s *userService) Login(username, password string) (string, error) {
+func (s *userService) Login(ctx context.Context, username, password string) (string, error) {
 	user, err := s.userStore.GetUserByUsername(username)
 	if err != nil {
 		return "", errors.New("invalid username or password")
@@ -93,7 +94,7 @@ func (s *userService) Login(username, password string) (string, error) {
 }
 
 // Logout 将 token 加入黑名单
-func (s *userService) Logout(tokenString string, claims jwt.MapClaims) error {
+func (s *userService) Logout(ctx context.Context, tokenString string, claims jwt.MapClaims) error {
 	blacklister, ok := s.userStore.(store.TokenBlacklister)
 	if !ok {
 		// 如果当前的 userStore 没有实现黑名单功能，则静默返回
@@ -115,7 +116,7 @@ func (s *userService) Logout(tokenString string, claims jwt.MapClaims) error {
 	return blacklister.AddToBlacklist(tokenString, remaining)
 }
 
-func (s *userService) GetUserProfile(userID int64) (*dto.UserResponse, error) {
+func (s *userService) GetUserProfile(ctx context.Context, userID int64) (*dto.UserResponse, error) {
 	user, err := s.userStore.GetUserByID(userID)
 	if err != nil {
 		return nil, err
@@ -131,10 +132,10 @@ func (s *userService) GetUserProfile(userID int64) (*dto.UserResponse, error) {
 	return response, nil
 }
 
-func (s *userService) UpdateUserProfile(user *model.User) error {
+func (s *userService) UpdateUserProfile(ctx context.Context, user *model.User) error {
 	return s.userStore.UpdateUser(user)
 }
 
-func (s *userService) DeleteUser(userID int64) error {
+func (s *userService) DeleteUser(ctx context.Context, userID int64) error {
 	return s.userStore.DeleteUser(userID)
 }

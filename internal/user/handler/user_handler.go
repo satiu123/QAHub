@@ -57,7 +57,7 @@ func (h *UserHandler) Register(c *gin.Context) {
 		return
 	}
 
-	userResponse, err := h.userService.Register(req.Username, req.Email, req.Bio, req.Password)
+	userResponse, err := h.userService.Register(c.Request.Context(), req.Username, req.Email, req.Bio, req.Password)
 	if err != nil {
 		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 		return
@@ -73,7 +73,7 @@ func (h *UserHandler) Login(c *gin.Context) {
 		return
 	}
 
-	token, err := h.userService.Login(req.Username, req.Password)
+	token, err := h.userService.Login(c.Request.Context(), req.Username, req.Password)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
@@ -108,7 +108,7 @@ func (h *UserHandler) Logout(c *gin.Context) {
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		err := h.userService.Logout(tokenString, claims)
+		err := h.userService.Logout(c.Request.Context(), tokenString, claims)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -131,7 +131,7 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 		return
 	}
 
-	userResponse, err := h.userService.GetUserProfile(userID)
+	userResponse, err := h.userService.GetUserProfile(c.Request.Context(), userID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
@@ -175,7 +175,7 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 		Bio:      req.Bio,
 	}
 
-	err = h.userService.UpdateUserProfile(updateModel)
+	err = h.userService.UpdateUserProfile(c.Request.Context(), updateModel)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -206,7 +206,7 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 		return
 	}
 
-	err = h.userService.DeleteUser(targetUserID)
+	err = h.userService.DeleteUser(c.Request.Context(), targetUserID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -8,24 +8,24 @@ import (
 
 type QAStore interface {
 	// --- 问题相关 (Question) ---
-	CreateQuestion(title string, content string, userID int64) (int64, error)
+	CreateQuestion(question *model.Question) (int64, error)
 	GetQuestionByID(questionID int64) (*model.Question, error)
 	ListQuestions(offset int, limit int) ([]*model.Question, error)
-	UpdateQuestion(questionID int64, title string, content string) error
+	UpdateQuestion(question *model.Question) error
 	DeleteQuestion(questionID int64) error
 
 	// --- 回答相关 (Answer) ---
-	CreateAnswer(questionID int64, content string, userID int64) (int64, error)
+	CreateAnswer(answer *model.Answer) (int64, error)
 	GetAnswerByID(answerID int64) (*model.Answer, error)
 	ListAnswersByQuestionID(questionID int64, offset int, limit int) ([]*model.Answer, error)
-	UpdateAnswer(answerID int64, content string) error
+	UpdateAnswer(answer *model.Answer) error
 	DeleteAnswer(answerID int64) error
 
 	// --- 评论相关 (Comment) ---
-	CreateComment(answerID int64, content string, userID int64) (int64, error)
+	CreateComment(comment *model.Comment) (int64, error)
 	GetCommentByID(commentID int64) (*model.Comment, error)
 	ListCommentsByAnswerID(answerID int64, offset int, limit int) ([]*model.Comment, error)
-	UpdateComment(commentID int64, content string) error
+	UpdateComment(comment *model.Comment) error
 	DeleteComment(commentID int64) error
 }
 
@@ -39,9 +39,9 @@ func NewQAStore(db *sqlx.DB) QAStore {
 
 // --- 问题相关 (Question) ---
 
-func (s *sqlxQAStore) CreateQuestion(title string, content string, userID int64) (int64, error) {
+func (s *sqlxQAStore) CreateQuestion(question *model.Question) (int64, error) {
 	query := "INSERT INTO questions (title, content, user_id) VALUES (?, ?, ?)"
-	result, err := s.db.Exec(query, title, content, userID)
+	result, err := s.db.Exec(query, question.Title, question.Content, question.UserID)
 	if err != nil {
 		return 0, err
 	}
@@ -72,9 +72,9 @@ func (s *sqlxQAStore) ListQuestions(offset int, limit int) ([]*model.Question, e
 	return questions, nil
 }
 
-func (s *sqlxQAStore) UpdateQuestion(questionID int64, title string, content string) error {
+func (s *sqlxQAStore) UpdateQuestion(question *model.Question) error {
 	query := "UPDATE questions SET title = ?, content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
-	_, err := s.db.Exec(query, title, content, questionID)
+	_, err := s.db.Exec(query, question.Title, question.Content, question.ID)
 	return err
 }
 
@@ -86,9 +86,9 @@ func (s *sqlxQAStore) DeleteQuestion(questionID int64) error {
 
 // --- 回答相关 (Answer) ---
 
-func (s *sqlxQAStore) CreateAnswer(questionID int64, content string, userID int64) (int64, error) {
+func (s *sqlxQAStore) CreateAnswer(answer *model.Answer) (int64, error) {
 	query := "INSERT INTO answers (question_id, content, user_id) VALUES (?, ?, ?)"
-	result, err := s.db.Exec(query, questionID, content, userID)
+	result, err := s.db.Exec(query, answer.QuestionID, answer.Content, answer.UserID)
 	if err != nil {
 		return 0, err
 	}
@@ -119,9 +119,9 @@ func (s *sqlxQAStore) ListAnswersByQuestionID(questionID int64, offset int, limi
 	return answers, nil
 }
 
-func (s *sqlxQAStore) UpdateAnswer(answerID int64, content string) error {
+func (s *sqlxQAStore) UpdateAnswer(answer *model.Answer) error {
 	query := "UPDATE answers SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
-	_, err := s.db.Exec(query, content, answerID)
+	_, err := s.db.Exec(query, answer.Content, answer.ID)
 	return err
 }
 
@@ -133,9 +133,9 @@ func (s *sqlxQAStore) DeleteAnswer(answerID int64) error {
 
 // --- 评论相关 (Comment) ---
 
-func (s *sqlxQAStore) CreateComment(answerID int64, content string, userID int64) (int64, error) {
+func (s *sqlxQAStore) CreateComment(comment *model.Comment) (int64, error) {
 	query := "INSERT INTO comments (answer_id, content, user_id) VALUES (?, ?, ?)"
-	result, err := s.db.Exec(query, answerID, content, userID)
+	result, err := s.db.Exec(query, comment.AnswerID, comment.Content, comment.UserID)
 	if err != nil {
 		return 0, err
 	}
@@ -166,9 +166,9 @@ func (s *sqlxQAStore) ListCommentsByAnswerID(answerID int64, offset int, limit i
 	return comments, nil
 }
 
-func (s *sqlxQAStore) UpdateComment(commentID int64, content string) error {
+func (s *sqlxQAStore) UpdateComment(comment *model.Comment) error {
 	query := "UPDATE comments SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
-	_, err := s.db.Exec(query, content, commentID)
+	_, err := s.db.Exec(query, comment.Content, comment.ID)
 	return err
 }
 

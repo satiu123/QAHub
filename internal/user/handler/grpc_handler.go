@@ -26,7 +26,7 @@ func NewUserGrpcServer(svc service.UserService) *UserGrpcServer {
 }
 
 func (s *UserGrpcServer) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
-	userResponse, err := s.userService.Register(req.Username, req.Email, req.Bio, req.Password)
+	userResponse, err := s.userService.Register(ctx, req.Username, req.Email, req.Bio, req.Password)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func (s *UserGrpcServer) Register(ctx context.Context, req *pb.RegisterRequest) 
 }
 
 func (s *UserGrpcServer) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
-	token, err := s.userService.Login(req.Username, req.Password)
+	token, err := s.userService.Login(ctx, req.Username, req.Password)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +50,7 @@ func (s *UserGrpcServer) Login(ctx context.Context, req *pb.LoginRequest) (*pb.L
 }
 
 func (s *UserGrpcServer) GetUserProfile(ctx context.Context, req *pb.GetUserProfileRequest) (*pb.GetUserProfileResponse, error) {
-	userResponse, err := s.userService.GetUserProfile(req.UserId)
+	userResponse, err := s.userService.GetUserProfile(ctx, req.UserId)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func (s *UserGrpcServer) UpdateUserProfile(ctx context.Context, req *pb.UpdateUs
 		Bio:      req.Bio,
 	}
 
-	err := s.userService.UpdateUserProfile(updateModel)
+	err := s.userService.UpdateUserProfile(ctx, updateModel)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +104,7 @@ func (s *UserGrpcServer) DeleteUser(ctx context.Context, req *pb.DeleteUserReque
 		return nil, status.Errorf(codes.PermissionDenied, "没有权限执行此操作")
 	}
 
-	err := s.userService.DeleteUser(req.UserId)
+	err := s.userService.DeleteUser(ctx, req.UserId)
 	if err != nil {
 		return nil, err
 	}
