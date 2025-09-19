@@ -13,7 +13,7 @@ type QAService interface {
 
 	CreateQuestion(ctx context.Context, title, content string, userID int64) (*model.Question, error)
 	GetQuestion(ctx context.Context, questionID int64) (*model.Question, error)
-	ListQuestions(ctx context.Context, page, pageSize int) ([]*model.Question, int64, error) // 返回问题列表和总数
+	ListQuestions(ctx context.Context, page, pageSize int) ([]*model.Question, int64, error)
 	UpdateQuestion(ctx context.Context, questionID int64, title, content string, userID int64) (*model.Question, error)
 	DeleteQuestion(ctx context.Context, questionID, userID int64) error
 
@@ -22,6 +22,11 @@ type QAService interface {
 	CreateAnswer(ctx context.Context, questionID int64, content string, userID int64) (*model.Answer, error)
 	GetAnswer(ctx context.Context, answerID int64) (*model.Answer, error)
 	ListAnswers(ctx context.Context, questionID int64, page, pageSize int) ([]*model.Answer, int64, error)
+
+	UpvoteAnswer(ctx context.Context, answerID, userID int64) error
+	DownvoteAnswer(ctx context.Context, answerID, userID int64) error
+	CountVotes(ctx context.Context, answerID int64) (int64, error)
+
 	UpdateAnswer(ctx context.Context, answerID int64, content string, userID int64) (*model.Answer, error)
 	DeleteAnswer(ctx context.Context, answerID, userID int64) error
 
@@ -189,23 +194,90 @@ func (s *qaService) DeleteAnswer(ctx context.Context, answerID, userID int64) er
 	return s.store.DeleteAnswer(ctx, answerID)
 }
 
+func (s *qaService) UpvoteAnswer(ctx context.Context, answerID, userID int64) error {
+	panic("not implemented")
+}
+
+func (s *qaService) DownvoteAnswer(ctx context.Context, answerID, userID int64) error {
+	panic("not implemented")
+}
+
+func (s *qaService) CountVotes(ctx context.Context, answerID int64) (int64, error) {
+	panic("not implemented")
+}
+
 // --- 评论实现 ---
+
+// CreateComment 创建一个新评论
 func (s *qaService) CreateComment(ctx context.Context, answerID int64, content string, userID int64) (*model.Comment, error) {
-	panic("not implemented")
+	if content == "" {
+		return nil, errors.New("内容不能为空")
+	}
+	comment := &model.Comment{
+		AnswerID: answerID,
+		Content:  content,
+		UserID:   userID,
+	}
+	comment_id, err := s.store.CreateComment(ctx, comment)
+	if err != nil {
+		return nil, err
+	}
+	comment.ID = comment_id
+	return comment, nil
 }
 
+// GetComment 根据 ID 获取评论详情
 func (s *qaService) GetComment(ctx context.Context, commentID int64) (*model.Comment, error) {
-	panic("not implemented")
+	return s.store.GetCommentByID(ctx, commentID)
 }
 
+// ListComments 返回分页的评论列表和总数
 func (s *qaService) ListComments(ctx context.Context, answerID int64, page, pageSize int) ([]*model.Comment, int64, error) {
-	panic("not implemented")
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 10
+	}
+	offset := (page - 1) * pageSize
+	comments, err := s.store.ListCommentsByAnswerID(ctx, answerID, offset, pageSize)
+	if err != nil {
+		return nil, 0, err
+	}
+	count, err := s.store.CountCommentsByAnswerID(ctx, answerID)
+	if err != nil {
+		return nil, 0, err
+	}
+	return comments, count, nil
 }
 
+// UpdateComment 修改评论，只有评论的创建者可以修改
 func (s *qaService) UpdateComment(ctx context.Context, commentID int64, content string, userID int64) (*model.Comment, error) {
-	panic("not implemented")
+	if content == "" {
+		return nil, errors.New("内容不能为空")
+	}
+	comment, err := s.store.GetCommentByID(ctx, commentID)
+	if err != nil {
+		return nil, err
+	}
+	if comment.UserID != userID {
+		return nil, errors.New("无权限修改该评论")
+	}
+	comment.Content = content
+	if err := s.store.UpdateComment(ctx, comment); err != nil {
+		return nil, err
+	}
+	return comment, nil
 }
 
+// DeleteComment 删除评论，只有评论的创建者可以删除
 func (s *qaService) DeleteComment(ctx context.Context, commentID, userID int64) error {
-	panic("not implemented")
+	comment, err := s.store.GetCommentByID(ctx, commentID)
+	if err != nil {
+		return err
+	}
+	if comment.UserID != userID {
+		return errors.New("无权限删除该评论")
+	}
+	return s.store.DeleteComment(ctx, commentID)
 }
