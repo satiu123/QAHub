@@ -14,6 +14,8 @@ import (
 	"qahub/pkg/middleware"
 	"qahub/pkg/redis"
 
+	"github.com/gin-gonic/gin"
+
 	"google.golang.org/grpc"
 )
 
@@ -39,24 +41,54 @@ func main() {
 	cacheStore := store.NewUserCacheStore(redisClient, userStore)
 	userService := service.NewUserService(cacheStore)
 
-	// 设置 gRPC 服务器
-	grpcPort := config.Conf.Services.UserService.GrpcPort
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", grpcPort))
-	if err != nil {
-		log.Fatalf("无法监听端口 %s: %v", grpcPort, err)
+	// --- 启动 gRPC 服务器 ---
+	go func() {
+		grpcPort := config.Conf.Services.UserService.GrpcPort
+		lis, err := net.Listen("tcp", fmt.Sprintf(":%s", grpcPort))
+		if err != nil {
+			log.Fatalf("无法监听 gRPC 端口 %s: %v", grpcPort, err)
+		}
+
+		grpcServer := grpc.NewServer(
+			grpc.UnaryInterceptor(middleware.GrpcAuthInterceptor()),
+		)
+
+		userGrpcServer := handler.NewUserGrpcServer(userService)
+		pb.RegisterUserServiceServer(grpcServer, userGrpcServer)
+
+		log.Printf("gRPC 用户服务正在监听端口: %s", grpcPort)
+
+		if err := grpcServer.Serve(lis); err != nil {
+			log.Fatalf("启动 gRPC 服务失败: %v", err)
+		}
+	}()
+
+	// --- 启动 Gin HTTP 服务器 ---
+	gin.SetMode(config.Conf.Server.Mode)
+	router := gin.Default()
+
+	// 添加 CORS 中间件
+	router.Use(middleware.CORSMiddleware())
+
+	userHandler := handler.NewUserHandler(userService)
+
+	// 定义路由
+	api := router.Group("/api/v1")
+	{
+		api.POST("/register", userHandler.Register)
+		api.POST("/login", userHandler.Login)
+	}
+	// 受保护的路由
+	protected := api.Group("/")
+	protected.Use(middleware.AuthMiddleware())
+	{
+		protected.GET("/profile", userHandler.GetProfile)
+		protected.PUT("/profile", userHandler.UpdateProfile)
 	}
 
-	// 创建 gRPC 服务器并注册拦截器
-	grpcServer := grpc.NewServer(
-		grpc.UnaryInterceptor(middleware.GrpcAuthInterceptor()),
-	)
-
-	userGrpcServer := handler.NewUserGrpcServer(userService)
-	pb.RegisterUserServiceServer(grpcServer, userGrpcServer)
-
-	log.Printf("gRPC 用户服务正在监听端口: %s", grpcPort)
-
-	if err := grpcServer.Serve(lis); err != nil {
-		log.Fatalf("启动 gRPC 服务失败: %v", err)
+	httpPort := config.Conf.Services.UserService.HttpPort
+	log.Printf("HTTP 用户服务正在监听端口: %s", httpPort)
+	if err := router.Run(fmt.Sprintf(":%s", httpPort)); err != nil {
+		log.Fatalf("启动 HTTP 服务失败: %v", err)
 	}
 }

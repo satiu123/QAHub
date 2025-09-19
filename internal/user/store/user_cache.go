@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"time"
 
 	"qahub/internal/user/model"
@@ -101,7 +100,7 @@ func (s *userCacheStore) GetUserByID(id int64) (*model.User, error) {
 		// 缓存命中
 		var user model.User
 		if json.Unmarshal([]byte(val), &user) == nil {
-			log.Printf("Cache hit for id: %d", id)
+			// log.Printf("Cache hit for id: %d", id)
 
 			// 反序列化成功，直接返回结果
 			return &user, nil
@@ -132,7 +131,7 @@ func (s *userCacheStore) GetUserByUsername(username string) (*model.User, error)
 		// 缓存命中
 		var user model.User
 		if json.Unmarshal([]byte(val), &user) == nil {
-			log.Printf("Cache hit for username: %s", username)
+			// log.Printf("Cache hit for username: %s", username)
 			return &user, nil
 		}
 	}

@@ -94,6 +94,7 @@ type UserService struct {
 	JWTSecret        string `mapstructure:"jwt_secret"`
 	TokenExpireHours int    `mapstructure:"token_expire_hours"`
 	GrpcPort         string `mapstructure:"grpc_port"`
+	HttpPort         string `mapstructure:"http_port"`
 }
 
 // Init 函数用于初始化配置加载
