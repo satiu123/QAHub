@@ -33,7 +33,7 @@ func NewUserService(store store.UserStore) UserService {
 
 func (s *userService) Register(ctx context.Context, username, email, bio, password string) (*dto.UserResponse, error) {
 	// 检查邮箱是否已存在
-	if existingUser, _ := s.userStore.GetUserByEmail(email); existingUser != nil {
+	if existingUser, _ := s.userStore.GetUserByEmail(ctx, email); existingUser != nil {
 		return nil, errors.New("该邮箱已被注册")
 	}
 	// 验证密码
@@ -49,7 +49,7 @@ func (s *userService) Register(ctx context.Context, username, email, bio, passwo
 		Bio:      bio,
 	}
 
-	newID, err := s.userStore.CreateUser(newUser)
+	newID, err := s.userStore.CreateUser(ctx, newUser)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func (s *userService) Register(ctx context.Context, username, email, bio, passwo
 }
 
 func (s *userService) Login(ctx context.Context, username, password string) (string, error) {
-	user, err := s.userStore.GetUserByUsername(username)
+	user, err := s.userStore.GetUserByUsername(ctx, username)
 	if err != nil {
 		return "", errors.New("invalid username or password")
 	}
@@ -117,7 +117,7 @@ func (s *userService) Logout(ctx context.Context, tokenString string, claims jwt
 }
 
 func (s *userService) GetUserProfile(ctx context.Context, userID int64) (*dto.UserResponse, error) {
-	user, err := s.userStore.GetUserByID(userID)
+	user, err := s.userStore.GetUserByID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -133,9 +133,9 @@ func (s *userService) GetUserProfile(ctx context.Context, userID int64) (*dto.Us
 }
 
 func (s *userService) UpdateUserProfile(ctx context.Context, user *model.User) error {
-	return s.userStore.UpdateUser(user)
+	return s.userStore.UpdateUser(ctx, user)
 }
 
 func (s *userService) DeleteUser(ctx context.Context, userID int64) error {
-	return s.userStore.DeleteUser(userID)
+	return s.userStore.DeleteUser(ctx, userID)
 }

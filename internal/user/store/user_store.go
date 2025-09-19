@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -17,12 +18,12 @@ type TokenBlacklister interface {
 }
 
 type UserStore interface {
-	CreateUser(user *model.User) (int64, error)
-	GetUserByID(id int64) (*model.User, error)
-	GetUserByUsername(username string) (*model.User, error)
-	GetUserByEmail(email string) (*model.User, error)
-	UpdateUser(user *model.User) error
-	DeleteUser(id int64) error
+	CreateUser(ctx context.Context, user *model.User) (int64, error)
+	GetUserByID(ctx context.Context, id int64) (*model.User, error)
+	GetUserByUsername(ctx context.Context, username string) (*model.User, error)
+	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
+	UpdateUser(ctx context.Context, user *model.User) error
+	DeleteUser(ctx context.Context, id int64) error
 }
 
 type mySQLUserStore struct {
@@ -33,9 +34,9 @@ func NewMySQLUserStore(db *sqlx.DB) UserStore {
 	return &mySQLUserStore{db: db}
 }
 
-func (s *mySQLUserStore) CreateUser(user *model.User) (int64, error) {
+func (s *mySQLUserStore) CreateUser(ctx context.Context, user *model.User) (int64, error) {
 	query := "INSERT INTO users (username, email,bio, password) VALUES (?, ?,?, ?)"
-	result, err := s.db.Exec(query, user.Username, user.Email, user.Bio, user.Password)
+	result, err := s.db.ExecContext(ctx, query, user.Username, user.Email, user.Bio, user.Password)
 	if err != nil {
 		return 0, err
 	}
@@ -46,22 +47,22 @@ func (s *mySQLUserStore) CreateUser(user *model.User) (int64, error) {
 	return id, nil
 }
 
-func (s *mySQLUserStore) GetUserByID(id int64) (*model.User, error) {
+func (s *mySQLUserStore) GetUserByID(ctx context.Context, id int64) (*model.User, error) {
 	var user model.User
 
 	query := "SELECT id, username, email,bio, password FROM users WHERE id = ?"
-	err := s.db.Get(&user, query, id)
+	err := s.db.GetContext(ctx, &user, query, id)
 	if err != nil {
 		return nil, err
 	}
 	return &user, nil
 }
 
-func (s *mySQLUserStore) GetUserByUsername(username string) (*model.User, error) {
+func (s *mySQLUserStore) GetUserByUsername(ctx context.Context, username string) (*model.User, error) {
 	var user model.User
 
 	query := "SELECT id, username, email,bio, password FROM users WHERE username = ?"
-	err := s.db.Get(&user, query, username)
+	err := s.db.GetContext(ctx, &user, query, username)
 	if err != nil {
 		return nil, err
 	}
@@ -69,11 +70,11 @@ func (s *mySQLUserStore) GetUserByUsername(username string) (*model.User, error)
 	return &user, nil
 }
 
-func (s *mySQLUserStore) GetUserByEmail(email string) (*model.User, error) {
+func (s *mySQLUserStore) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
 	var user model.User
 
 	query := "SELECT id, username, email,bio, password FROM users WHERE email = ?"
-	err := s.db.Get(&user, query, email)
+	err := s.db.GetContext(ctx, &user, query, email)
 	if err != nil {
 		return nil, err
 	}
@@ -81,18 +82,18 @@ func (s *mySQLUserStore) GetUserByEmail(email string) (*model.User, error) {
 	return &user, nil
 }
 
-func (s *mySQLUserStore) UpdateUser(user *model.User) error {
+func (s *mySQLUserStore) UpdateUser(ctx context.Context, user *model.User) error {
 	query := "UPDATE users SET username = ?, email = ?, bio = ? WHERE id = ?"
-	_, err := s.db.Exec(query, user.Username, user.Email, user.Bio, user.ID)
+	_, err := s.db.ExecContext(ctx, query, user.Username, user.Email, user.Bio, user.ID)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *mySQLUserStore) DeleteUser(id int64) error {
+func (s *mySQLUserStore) DeleteUser(ctx context.Context, id int64) error {
 	query := "DELETE FROM users WHERE id = ?"
-	_, err := s.db.Exec(query, id)
+	_, err := s.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return err
 	}

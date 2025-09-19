@@ -13,7 +13,7 @@ type QAService interface {
 
 	CreateQuestion(ctx context.Context, title, content string, userID int64) (*model.Question, error)
 	GetQuestion(ctx context.Context, questionID int64) (*model.Question, error)
-	ListQuestions(ctx context.Context, page, pageSize int) ([]*model.Question, uint64, error) // 返回问题列表和总数
+	ListQuestions(ctx context.Context, page, pageSize int) ([]*model.Question, int64, error) // 返回问题列表和总数
 	UpdateQuestion(ctx context.Context, questionID int64, title, content string, userID int64) (*model.Question, error)
 	DeleteQuestion(ctx context.Context, questionID, userID int64) error
 
@@ -45,52 +45,148 @@ func NewQAService(s store.QAStore) QAService {
 }
 
 // --- 问题实现 ---
+
+// CreateQuestion 创建一个新问题
 func (s *qaService) CreateQuestion(ctx context.Context, title, content string, userID int64) (*model.Question, error) {
 	if title == "" || content == "" {
 		return nil, errors.New("标题和内容不能为空")
 	}
-	questionID, err := s.store.CreateQuestion(title, content, userID)
+	question := &model.Question{
+		Title:   title,
+		Content: content,
+		UserID:  userID,
+	}
+	quetion_id, err := s.store.CreateQuestion(ctx, question)
 	if err != nil {
 		return nil, err
 	}
-	return s.store.GetQuestionByID(questionID)
+	question.ID = quetion_id
+	return question, nil
 }
 
+// GetQuestion 根据 ID 获取问题详情
 func (s *qaService) GetQuestion(ctx context.Context, questionID int64) (*model.Question, error) {
-	panic("not implemented")
+	return s.store.GetQuestionByID(ctx, questionID)
 }
 
+// ListQuestions 返回分页的问题列表和总数
 func (s *qaService) ListQuestions(ctx context.Context, page, pageSize int) ([]*model.Question, int64, error) {
-	panic("not implemented")
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 10
+	}
+	offset := (page - 1) * pageSize
+	questions, err := s.store.ListQuestions(ctx, offset, pageSize)
+	if err != nil {
+		return nil, 0, err
+	}
+	count, err := s.store.CountQuestions(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	return questions, count, nil
 }
 
 func (s *qaService) UpdateQuestion(ctx context.Context, questionID int64, title, content string, userID int64) (*model.Question, error) {
-	panic("not implemented")
+	if title == "" || content == "" {
+		return nil, errors.New("标题和内容不能为空")
+	}
+	question, err := s.store.GetQuestionByID(ctx, questionID)
+	if err != nil {
+		return nil, err
+	}
+	if question.UserID != userID {
+		return nil, errors.New("无权限修改该问题")
+	}
+	question.Title = title
+	question.Content = content
+	if err := s.store.UpdateQuestion(ctx, question); err != nil {
+		return nil, err
+	}
+	return question, nil
 }
 
 func (s *qaService) DeleteQuestion(ctx context.Context, questionID, userID int64) error {
-	panic("not implemented")
+	question, err := s.store.GetQuestionByID(ctx, questionID)
+	if err != nil {
+		return err
+	}
+	if question.UserID != userID {
+		return errors.New("无权限删除该问题")
+	}
+	return s.store.DeleteQuestion(ctx, questionID)
 }
 
 // --- 回答实现 ---
 func (s *qaService) CreateAnswer(ctx context.Context, questionID int64, content string, userID int64) (*model.Answer, error) {
-	panic("not implemented")
+	if content == "" {
+		return nil, errors.New("内容不能为空")
+	}
+	answer := &model.Answer{
+		QuestionID: questionID,
+		Content:    content,
+		UserID:     userID,
+	}
+	answer_id, err := s.store.CreateAnswer(ctx, answer)
+	if err != nil {
+		return nil, err
+	}
+	answer.ID = answer_id
+	return answer, nil
 }
 
 func (s *qaService) GetAnswer(ctx context.Context, answerID int64) (*model.Answer, error) {
-	panic("not implemented")
+	return s.store.GetAnswerByID(ctx, answerID)
 }
 
 func (s *qaService) ListAnswers(ctx context.Context, questionID int64, page, pageSize int) ([]*model.Answer, int64, error) {
-	panic("not implemented")
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 10
+	}
+	offset := (page - 1) * pageSize
+	answers, err := s.store.ListAnswersByQuestionID(ctx, questionID, offset, pageSize)
+	if err != nil {
+		return nil, 0, err
+	}
+	count, err := s.store.CountAnswersByQuestionID(ctx, questionID)
+	if err != nil {
+		return nil, 0, err
+	}
+	return answers, count, nil
 }
 
 func (s *qaService) UpdateAnswer(ctx context.Context, answerID int64, content string, userID int64) (*model.Answer, error) {
-	panic("not implemented")
+	if content == "" {
+		return nil, errors.New("内容不能为空")
+	}
+	answer, err := s.store.GetAnswerByID(ctx, answerID)
+	if err != nil {
+		return nil, err
+	}
+	if answer.UserID != userID {
+		return nil, errors.New("无权限修改该回答")
+	}
+	answer.Content = content
+	if err := s.store.UpdateAnswer(ctx, answer); err != nil {
+		return nil, err
+	}
+	return answer, nil
 }
 
 func (s *qaService) DeleteAnswer(ctx context.Context, answerID, userID int64) error {
-	panic("not implemented")
+	answer, err := s.store.GetAnswerByID(ctx, answerID)
+	if err != nil {
+		return err
+	}
+	if answer.UserID != userID {
+		return errors.New("无权限删除该回答")
+	}
+	return s.store.DeleteAnswer(ctx, answerID)
 }
 
 // --- 评论实现 ---
