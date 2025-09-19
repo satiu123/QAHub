@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"qahub/internal/qa/model"
 
 	"github.com/jmoiron/sqlx"
@@ -36,10 +37,18 @@ type QAStore interface {
 	CountCommentsByAnswerID(ctx context.Context, answerID int64) (int64, error)
 	UpdateComment(ctx context.Context, comment *model.Comment) error
 	DeleteComment(ctx context.Context, commentID int64) error
-}
 
+	ExecTx(ctx context.Context, fn func(QAStore) error) error
+}
+type querier interface {
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+	GetContext(ctx context.Context, dest any, query string, args ...any) error
+	SelectContext(ctx context.Context, dest any, query string, args ...any) error
+}
 type sqlxQAStore struct {
-	db *sqlx.DB
+	db querier
+	// 保存一个对 *sqlx.DB 的引用，用于开启新事务
+	dbConn *sqlx.DB
 }
 
 func NewQAStore(db *sqlx.DB) QAStore {
@@ -239,4 +248,27 @@ func (s *sqlxQAStore) CountVotesByAnswerID(ctx context.Context, answerID int64) 
 		return 0, err
 	}
 	return count, nil
+}
+
+// ExecTx 用于执行一个包含多个数据库操作的事务
+func (s *sqlxQAStore) ExecTx(ctx context.Context, fn func(QAStore) error) error {
+	tx, err := s.dbConn.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	// 创建一个新的 store 实例，它持有的是事务对象 tx
+	txStore := &sqlxQAStore{
+		db:     tx,
+		dbConn: s.dbConn,
+	}
+	// 执行回调函数
+	err = fn(txStore)
+	if err != nil {
+		// 如果回调函数返回错误，则回滚事务
+		if rbErr := tx.Rollback(); rbErr != nil {
+			return rbErr
+		}
+		return err
+	}
+	return tx.Commit()
 }
