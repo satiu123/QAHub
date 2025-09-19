@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const API_URL = 'http://localhost:8081/api/v1';
@@ -8,7 +7,6 @@ function Login({ onLogin }) {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -22,7 +20,6 @@ function Login({ onLogin }) {
             const token = response.data.token;
             localStorage.setItem('token', token);
             onLogin(token);
-            navigate('/profile');
         } catch (err) {
             setError(err.response?.data?.error || 'An error occurred during login.');
         }
