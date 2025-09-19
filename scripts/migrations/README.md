@@ -11,6 +11,7 @@
 1. `000001_create_users_table` - 创建用户表（基础表，无依赖）
 2. `000002_create_questions_table` - 创建问题表（依赖用户表）
 3. `000003_create_answers_table` - 创建答案表（依赖问题表和用户表）
+4. `000004_create_comments_table` - 创建评论表（依赖答案表和用户表）
 
 ## 使用方法
 
@@ -37,7 +38,7 @@ migrate -database "mysql://root:12345678@tcp(localhost:3307)/qahub?charset=utf8m
 
 1. **不要再使用** `scripts/migrations/user/` 和 `scripts/migrations/qa/` 目录中的旧迁移文件
 2. 所有新的迁移都应该添加到 `scripts/migrations/all/` 目录下
-3. 新迁移的编号应该从 `000004` 开始
+3. 新迁移的编号应该从 `000005` 开始
 4. 确保新迁移考虑到表之间的依赖关系
 
 ## 外键约束关系
@@ -45,3 +46,5 @@ migrate -database "mysql://root:12345678@tcp(localhost:3307)/qahub?charset=utf8m
 - `questions.user_id` → `users.id`
 - `answers.user_id` → `users.id`
 - `answers.question_id` → `questions.id`
+- `comments.user_id` → `users.id`
+- `comments.answer_id` → `answers.id`
