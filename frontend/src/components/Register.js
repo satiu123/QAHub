@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const API_URL = 'http://localhost:8081/api/v1';
@@ -9,6 +10,7 @@ function Register() {
     const [password, setPassword] = useState('');
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
+    const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -21,7 +23,10 @@ function Register() {
                 email,
                 password
             });
-            setMessage(`User registered successfully! User ID: ${response.data.id}`);
+            setMessage(`User registered successfully! User ID: ${response.data.id}. You will be redirected to login.`);
+            setTimeout(() => {
+                navigate('/login');
+            }, 2000); // 2秒后跳转
         } catch (err) {
             setError(err.response?.data?.error || 'An error occurred during registration.');
         }

@@ -155,3 +155,30 @@ func (s *userCacheStore) GetUserByUsername(username string) (*model.User, error)
 func (s *userCacheStore) GetUserByEmail(email string) (*model.User, error) {
 	return s.next.GetUserByEmail(email)
 }
+
+// --- JWT 黑名单方法 ---
+
+// jwtBlacklistKey 生成黑名单的键
+func jwtBlacklistKey(token string) string {
+	return fmt.Sprintf("blacklist:jwt:%s", token)
+}
+
+// AddToBlacklist 将 JWT 加入黑名单，并设置其过期时间
+func (s *userCacheStore) AddToBlacklist(token string, expiration time.Duration) error {
+	ctx := context.Background()
+	key := jwtBlacklistKey(token)
+	return s.redisClient.Set(ctx, key, "true", expiration).Err()
+}
+
+// IsBlacklisted 检查 JWT 是否存在于黑名单中
+func (s *userCacheStore) IsBlacklisted(token string) (bool, error) {
+	ctx := context.Background()
+	key := jwtBlacklistKey(token)
+	val, err := s.redisClient.Get(ctx, key).Result()
+	if err == redis.Nil {
+		return false, nil // 不在黑名单中
+	} else if err != nil {
+		return false, err // Redis查询出错
+	}
+	return val == "true", nil
+}

@@ -1,12 +1,20 @@
 package store
 
 import (
+	"time"
+
 	"github.com/jmoiron/sqlx"
 
 	_ "github.com/go-sql-driver/mysql" // MySQL driver
 
 	"qahub/internal/user/model"
 )
+
+// TokenBlacklister 定义了 JWT 黑名单所需的方法
+type TokenBlacklister interface {
+	AddToBlacklist(token string, expiration time.Duration) error
+	IsBlacklisted(token string) (bool, error)
+}
 
 type UserStore interface {
 	CreateUser(user *model.User) (int64, error)

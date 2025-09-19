@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"qahub/internal/user/store"
 	"qahub/pkg/config"
 
 	"github.com/gin-gonic/gin"
@@ -75,7 +76,7 @@ func GrpcAuthInterceptor() grpc.UnaryServerInterceptor {
 }
 
 // AuthMiddleware 创建一个Gin中间件，用于JWT身份验证
-func AuthMiddleware() gin.HandlerFunc {
+func AuthMiddleware(userStore store.UserStore) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
@@ -92,6 +93,21 @@ func AuthMiddleware() gin.HandlerFunc {
 		}
 
 		tokenString := parts[1]
+
+		// 检查 token 是否在黑名单中
+		if blacklister, ok := userStore.(store.TokenBlacklister); ok {
+			isBlacklisted, err := blacklister.IsBlacklisted(tokenString)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "服务器内部错误"})
+				c.Abort()
+				return
+			}
+			if isBlacklisted {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "无效的token"})
+				c.Abort()
+				return
+			}
+		}
 
 		var jwtSecret = []byte(config.Conf.Services.UserService.JWTSecret)
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {

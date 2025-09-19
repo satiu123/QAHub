@@ -80,8 +80,9 @@ func main() {
 	}
 	// 受保护的路由
 	protected := api.Group("/")
-	protected.Use(middleware.AuthMiddleware())
+	protected.Use(middleware.AuthMiddleware(cacheStore))
 	{
+		protected.POST("/logout", userHandler.Logout)
 		protected.GET("/profile", userHandler.GetProfile)
 		protected.PUT("/profile", userHandler.UpdateProfile)
 	}

@@ -16,6 +16,7 @@ import (
 type UserService interface {
 	Register(username, email, bio, password string) (*dto.UserResponse, error)
 	Login(username, password string) (string, error)
+	Logout(tokenString string, claims jwt.MapClaims) error
 	GetUserProfile(userID int64) (*dto.UserResponse, error)
 	UpdateUserProfile(user *model.User) error
 	DeleteUser(userID int64) error
@@ -89,6 +90,29 @@ func (s *userService) Login(username, password string) (string, error) {
 	}
 
 	return tokenString, nil
+}
+
+// Logout 将 token 加入黑名单
+func (s *userService) Logout(tokenString string, claims jwt.MapClaims) error {
+	blacklister, ok := s.userStore.(store.TokenBlacklister)
+	if !ok {
+		// 如果当前的 userStore 没有实现黑名单功能，则静默返回
+		// 这意味着登出操作在不支持黑名单的存储后端上无效，但不会报错
+		return nil
+	}
+
+	exp, ok := claims["exp"].(float64)
+	if !ok {
+		return errors.New("invalid token expiration")
+	}
+
+	// 计算剩余的过期时间
+	remaining := time.Until(time.Unix(int64(exp), 0))
+	if remaining <= 0 {
+		return nil // Token 已过期，无需操作
+	}
+
+	return blacklister.AddToBlacklist(tokenString, remaining)
 }
 
 func (s *userService) GetUserProfile(userID int64) (*dto.UserResponse, error) {

@@ -1,28 +1,28 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const API_URL = 'http://localhost:8081/api/v1';
 
-function Login() {
+function Login({ onLogin }) {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
-    const [message, setMessage] = useState('');
     const [error, setError] = useState('');
-    const [token, setToken] = useState('');
+    const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setMessage('');
         setError('');
-        setToken('');
 
         try {
             const response = await axios.post(`${API_URL}/login`, {
                 username,
                 password
             });
-            setToken(response.data.token);
-            setMessage('Login successful!');
+            const token = response.data.token;
+            localStorage.setItem('token', token);
+            onLogin(token);
+            navigate('/profile');
         } catch (err) {
             setError(err.response?.data?.error || 'An error occurred during login.');
         }
@@ -54,16 +54,10 @@ function Login() {
                 </div>
                 <button type="submit" className="btn btn-primary">Login</button>
             </form>
-            {message && <div className="alert alert-success mt-3">{message}</div>}
             {error && <div className="alert alert-danger mt-3">{error}</div>}
-            {token && (
-                <div className="alert alert-info mt-3">
-                    <strong>JWT Token:</strong>
-                    <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{token}</pre>
-                </div>
-            )}
         </div>
     );
 }
 
 export default Login;
+

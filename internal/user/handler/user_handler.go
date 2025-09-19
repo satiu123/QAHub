@@ -1,13 +1,17 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"qahub/internal/user/model"
 	"qahub/internal/user/service"
+	"qahub/pkg/config"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type UserHandler struct {
@@ -78,11 +82,52 @@ func (h *UserHandler) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, LoginResponse{Token: token})
 }
 
-func (h *UserHandler) GetProfile(c *gin.Context) {
-	idStr := c.Param("id")
-	userID, err := strconv.ParseInt(idStr, 10, 64)
+func (h *UserHandler) Logout(c *gin.Context) {
+	authHeader := c.GetHeader("Authorization")
+	// 从 "Bearer <token>" 中提取 token
+	parts := strings.Split(authHeader, " ")
+	if len(parts) != 2 || parts[0] != "Bearer" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的授权标头"})
+		return
+	}
+	tokenString := parts[1]
+
+	// 解析 token 以便获取 claims
+	var jwtSecret = []byte(config.Conf.Services.UserService.JWTSecret)
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("非预期的签名方法: %v", token.Header["alg"])
+		}
+		return jwtSecret, nil
+	})
+
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		// 即使 token 解析失败（例如已过期），从用户的角度看登出也算成功
+		c.JSON(http.StatusOK, gin.H{"message": "登出成功"})
+		return
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		err := h.userService.Logout(tokenString, claims)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "登出成功"})
+}
+
+func (h *UserHandler) GetProfile(c *gin.Context) {
+	authUserID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "无法获取认证用户信息"})
+		return
+	}
+
+	userID, ok := authUserID.(int64)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "无效的用户ID格式"})
 		return
 	}
 
