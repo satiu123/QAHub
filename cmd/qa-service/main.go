@@ -17,7 +17,7 @@ import (
 
 func main() {
 	// 1. 加载配置
-	if err := config.Init("/app/configs"); err != nil {
+	if err := config.Init("configs"); err != nil {
 		log.Fatalf("Failed to initialize config: %v", err)
 	}
 	cfg := config.Conf.Services.QAService
