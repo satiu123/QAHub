@@ -53,19 +53,16 @@ func NewQAService(s store.QAStore) QAService {
 
 // CreateQuestion 创建一个新问题
 func (s *qaService) CreateQuestion(ctx context.Context, title, content string, userID int64) (*model.Question, error) {
-	if title == "" || content == "" {
-		return nil, errors.New("标题和内容不能为空")
-	}
 	question := &model.Question{
 		Title:   title,
 		Content: content,
 		UserID:  userID,
 	}
-	quetion_id, err := s.store.CreateQuestion(ctx, question)
+	questionID, err := s.store.CreateQuestion(ctx, question)
 	if err != nil {
 		return nil, err
 	}
-	question.ID = quetion_id
+	question.ID = questionID
 	return question, nil
 }
 
@@ -76,12 +73,6 @@ func (s *qaService) GetQuestion(ctx context.Context, questionID int64) (*model.Q
 
 // ListQuestions 返回分页的问题列表和总数
 func (s *qaService) ListQuestions(ctx context.Context, page, pageSize int) ([]*model.Question, int64, error) {
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 {
-		pageSize = 10
-	}
 	offset := (page - 1) * pageSize
 	questions, err := s.store.ListQuestions(ctx, offset, pageSize)
 	if err != nil {
@@ -95,9 +86,6 @@ func (s *qaService) ListQuestions(ctx context.Context, page, pageSize int) ([]*m
 }
 
 func (s *qaService) UpdateQuestion(ctx context.Context, questionID int64, title, content string, userID int64) (*model.Question, error) {
-	if title == "" || content == "" {
-		return nil, errors.New("标题和内容不能为空")
-	}
 	question, err := s.store.GetQuestionByID(ctx, questionID)
 	if err != nil {
 		return nil, err
@@ -126,19 +114,16 @@ func (s *qaService) DeleteQuestion(ctx context.Context, questionID, userID int64
 
 // --- 回答实现 ---
 func (s *qaService) CreateAnswer(ctx context.Context, questionID int64, content string, userID int64) (*model.Answer, error) {
-	if content == "" {
-		return nil, errors.New("内容不能为空")
-	}
 	answer := &model.Answer{
 		QuestionID: questionID,
 		Content:    content,
 		UserID:     userID,
 	}
-	answer_id, err := s.store.CreateAnswer(ctx, answer)
+	answerID, err := s.store.CreateAnswer(ctx, answer)
 	if err != nil {
 		return nil, err
 	}
-	answer.ID = answer_id
+	answer.ID = answerID
 	return answer, nil
 }
 
@@ -147,12 +132,6 @@ func (s *qaService) GetAnswer(ctx context.Context, answerID int64) (*model.Answe
 }
 
 func (s *qaService) ListAnswers(ctx context.Context, questionID int64, page, pageSize int) ([]*model.Answer, int64, error) {
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 {
-		pageSize = 10
-	}
 	offset := (page - 1) * pageSize
 	answers, err := s.store.ListAnswersByQuestionID(ctx, questionID, offset, pageSize)
 	if err != nil {
@@ -166,9 +145,6 @@ func (s *qaService) ListAnswers(ctx context.Context, questionID int64, page, pag
 }
 
 func (s *qaService) UpdateAnswer(ctx context.Context, answerID int64, content string, userID int64) (*model.Answer, error) {
-	if content == "" {
-		return nil, errors.New("内容不能为空")
-	}
 	answer, err := s.store.GetAnswerByID(ctx, answerID)
 	if err != nil {
 		return nil, err
@@ -230,19 +206,16 @@ func (s *qaService) CountVotes(ctx context.Context, answerID int64) (int64, erro
 
 // CreateComment 创建一个新评论
 func (s *qaService) CreateComment(ctx context.Context, answerID int64, content string, userID int64) (*model.Comment, error) {
-	if content == "" {
-		return nil, errors.New("内容不能为空")
-	}
 	comment := &model.Comment{
 		AnswerID: answerID,
 		Content:  content,
 		UserID:   userID,
 	}
-	comment_id, err := s.store.CreateComment(ctx, comment)
+	commentID, err := s.store.CreateComment(ctx, comment)
 	if err != nil {
 		return nil, err
 	}
-	comment.ID = comment_id
+	comment.ID = commentID
 	return comment, nil
 }
 
@@ -253,12 +226,6 @@ func (s *qaService) GetComment(ctx context.Context, commentID int64) (*model.Com
 
 // ListComments 返回分页的评论列表和总数
 func (s *qaService) ListComments(ctx context.Context, answerID int64, page, pageSize int) ([]*model.Comment, int64, error) {
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 {
-		pageSize = 10
-	}
 	offset := (page - 1) * pageSize
 	comments, err := s.store.ListCommentsByAnswerID(ctx, answerID, offset, pageSize)
 	if err != nil {
@@ -273,9 +240,6 @@ func (s *qaService) ListComments(ctx context.Context, answerID int64, page, page
 
 // UpdateComment 修改评论，只有评论的创建者可以修改
 func (s *qaService) UpdateComment(ctx context.Context, commentID int64, content string, userID int64) (*model.Comment, error) {
-	if content == "" {
-		return nil, errors.New("内容不能为空")
-	}
 	comment, err := s.store.GetCommentByID(ctx, commentID)
 	if err != nil {
 		return nil, err
