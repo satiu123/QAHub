@@ -4,6 +4,9 @@ import axios from 'axios';
 import Login from './components/Login';
 import Register from './components/Register';
 import Profile from './components/Profile';
+import QuestionList from './components/QuestionList';
+import QuestionDetail from './components/QuestionDetail';
+import CreateQuestion from './components/CreateQuestion';
 
 const API_URL = 'http://localhost:8080/api/v1';
 
@@ -14,7 +17,7 @@ const Layout = () => {
   const handleLogin = (token) => {
     setToken(token);
     localStorage.setItem('token', token);
-    navigate('/profile');
+    navigate('/questions');
   };
 
   const handleLogout = async () => {
@@ -41,6 +44,7 @@ const Layout = () => {
           <div className="navbar-nav">
             {token ? (
               <>
+                <Link className="nav-link" to="/questions">Questions</Link>
                 <Link className="nav-link" to="/profile">Profile</Link>
                 <button onClick={handleLogout} className="btn btn-link nav-link">Logout</button>
               </>
@@ -61,7 +65,19 @@ const Layout = () => {
           path="/profile"
           element={token ? <Profile token={token} onLogout={handleLogout} /> : <Navigate to="/login" />}
         />
-        <Route path="*" element={<Navigate to={token ? "/profile" : "/login"} />} />
+        <Route
+          path="/questions"
+          element={token ? <QuestionList token={token} /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/questions/:questionId"
+          element={token ? <QuestionDetail token={token} /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/create-question"
+          element={token ? <CreateQuestion token={token} /> : <Navigate to="/login" />}
+        />
+        <Route path="*" element={<Navigate to={token ? "/questions" : "/login"} />} />
       </Routes>
     </div>
   );

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"qahub/internal/user/store"
@@ -72,6 +73,32 @@ func GrpcAuthInterceptor() grpc.UnaryServerInterceptor {
 		} else {
 			return nil, status.Errorf(codes.Unauthenticated, "无效的token claims")
 		}
+	}
+}
+
+// NginxAuthMiddleware 创建一个Gin中间件，用于从Nginx传递的头部读取用户ID
+// 这个中间件用于处理通过nginx auth_request验证后的请求
+func NginxAuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 从nginx传递的X-User-ID头部获取用户ID
+		userIDStr := c.GetHeader("X-User-ID")
+		if userIDStr == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "用户未认证"})
+			c.Abort()
+			return
+		}
+
+		// 将字符串转换为int64
+		userID, err := strconv.ParseInt(userIDStr, 10, 64)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "无效的用户ID格式"})
+			c.Abort()
+			return
+		}
+
+		// 将用户ID存储在上下文中，以便后续的处理函数使用
+		c.Set("userID", userID)
+		c.Next()
 	}
 }
 

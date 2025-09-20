@@ -39,30 +39,36 @@ func main() {
 	router.Use(gin.Logger(), gin.Recovery(), middleware.CORSMiddleware())
 
 	// 5. 注册路由
-	apiV1 := router.Group("/api/v1")
+	// 创建一个新的顶层分组来匹配 Nginx 添加的前缀
+	protectedQA := router.Group("/_protected_qa")
+	protectedQA.Use(middleware.NginxAuthMiddleware()) // 添加nginx认证中间件
 	{
-		// 问题
-		apiV1.POST("/questions", qaHandler.CreateQuestion)
-		apiV1.PUT("/questions/:question_id", qaHandler.UpdateQuestion)
-		apiV1.DELETE("/questions/:question_id", qaHandler.DeleteQuestion)
-		apiV1.GET("/questions", qaHandler.ListQuestions)
-		apiV1.GET("/questions/:question_id", qaHandler.GetQuestion)
+		apiV1 := protectedQA.Group("/api/v1")
+		{
+			// 问题
+			apiV1.POST("/questions", qaHandler.CreateQuestion)
+			apiV1.PUT("/questions/:question_id", qaHandler.UpdateQuestion)
+			apiV1.DELETE("/questions/:question_id", qaHandler.DeleteQuestion)
 
-		// 回答
-		apiV1.POST("/questions/:question_id/answers", qaHandler.CreateAnswer)
-		apiV1.PUT("/answers/:answer_id", qaHandler.UpdateAnswer)
-		apiV1.DELETE("/answers/:answer_id", qaHandler.DeleteAnswer)
-		apiV1.GET("/questions/:question_id/answers", qaHandler.ListAnswers)
+			// 回答
+			apiV1.POST("/questions/:question_id/answers", qaHandler.CreateAnswer)
+			apiV1.PUT("/answers/:answer_id", qaHandler.UpdateAnswer)
+			apiV1.DELETE("/answers/:answer_id", qaHandler.DeleteAnswer)
 
-		// 评论
-		apiV1.POST("/answers/:answer_id/comments", qaHandler.CreateComment)
-		apiV1.PUT("/comments/:comment_id", qaHandler.UpdateComment)
-		apiV1.DELETE("/comments/:comment_id", qaHandler.DeleteComment)
-		apiV1.GET("/answers/:answer_id/comments", qaHandler.ListComments)
+			// 评论
+			apiV1.POST("/answers/:answer_id/comments", qaHandler.CreateComment)
+			apiV1.PUT("/comments/:comment_id", qaHandler.UpdateComment)
+			apiV1.DELETE("/comments/:comment_id", qaHandler.DeleteComment)
 
-		// 点赞
-		apiV1.POST("/answers/:answer_id/upvote", qaHandler.UpvoteAnswer)
-		apiV1.DELETE("/answers/:answer_id/upvote", qaHandler.DownvoteAnswer)
+		}
+	}
+	// 公共 API，无需认证
+	publicApiV1 := router.Group("/api/v1")
+	{
+		publicApiV1.GET("/questions", qaHandler.ListQuestions)
+		publicApiV1.GET("/questions/:question_id", qaHandler.GetQuestion)
+		publicApiV1.GET("/questions/:question_id/answers", qaHandler.ListAnswers)
+		publicApiV1.GET("/answers/:answer_id/comments", qaHandler.ListComments)
 	}
 
 	// 6. 启动服务器

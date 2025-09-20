@@ -26,7 +26,7 @@ function Register() {
             setMessage(`User registered successfully! User ID: ${response.data.id}. You will be redirected to login.`);
             setTimeout(() => {
                 navigate('/login');
-            }, 2000); // 2秒后跳转
+            }, 500); // 2秒后跳转
         } catch (err) {
             setError(err.response?.data?.error || 'An error occurred during registration.');
         }
