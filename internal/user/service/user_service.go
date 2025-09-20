@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"qahub/internal/user/dto"
@@ -18,6 +19,7 @@ type UserService interface {
 	Register(ctx context.Context, username, email, bio, password string) (*dto.UserResponse, error)
 	Login(ctx context.Context, username, password string) (string, error)
 	Logout(ctx context.Context, tokenString string, claims jwt.MapClaims) error
+	ValidateToken(ctx context.Context, tokenString string) (int64, error)
 	GetUserProfile(ctx context.Context, userID int64) (*dto.UserResponse, error)
 	UpdateUserProfile(ctx context.Context, user *model.User) error
 	DeleteUser(ctx context.Context, userID int64) error
@@ -97,8 +99,6 @@ func (s *userService) Login(ctx context.Context, username, password string) (str
 func (s *userService) Logout(ctx context.Context, tokenString string, claims jwt.MapClaims) error {
 	blacklister, ok := s.userStore.(store.TokenBlacklister)
 	if !ok {
-		// 如果当前的 userStore 没有实现黑名单功能，则静默返回
-		// 这意味着登出操作在不支持黑名单的存储后端上无效，但不会报错
 		return nil
 	}
 
@@ -107,13 +107,47 @@ func (s *userService) Logout(ctx context.Context, tokenString string, claims jwt
 		return errors.New("invalid token expiration")
 	}
 
-	// 计算剩余的过期时间
 	remaining := time.Until(time.Unix(int64(exp), 0))
 	if remaining <= 0 {
-		return nil // Token 已过期，无需操作
+		return nil
 	}
 
 	return blacklister.AddToBlacklist(tokenString, remaining)
+}
+
+func (s *userService) ValidateToken(ctx context.Context, tokenString string) (int64, error) {
+	blacklister, hasBlacklist := s.userStore.(store.TokenBlacklister)
+	if hasBlacklist {
+		isBlacklisted, err := blacklister.IsBlacklisted(tokenString)
+		if err != nil {
+			return 0, fmt.Errorf("failed to check blacklist: %w", err)
+		}
+		if isBlacklisted {
+			return 0, errors.New("token is blacklisted")
+		}
+	}
+
+	var jwtSecret = []byte(config.Conf.Services.UserService.JWTSecret)
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return jwtSecret, nil
+	})
+
+	if err != nil {
+		return 0, fmt.Errorf("token parsing error: %w", err)
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		userIDFloat, ok := claims["user_id"].(float64)
+		if !ok {
+			return 0, errors.New("invalid user_id in token")
+		}
+		return int64(userIDFloat), nil
+	} else {
+		return 0, errors.New("invalid token")
+	}
 }
 
 func (s *userService) GetUserProfile(ctx context.Context, userID int64) (*dto.UserResponse, error) {

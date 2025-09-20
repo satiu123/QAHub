@@ -47,8 +47,8 @@ type UpdateCommentRequest struct {
 }
 
 type ListResponse struct {
-	Total int64       `json:"total"`
-	Data  interface{} `json:"data"`
+	Total int64 `json:"total"`
+	Data  any   `json:"data"`
 }
 
 // --- Helper Functions ---

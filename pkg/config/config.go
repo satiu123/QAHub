@@ -87,6 +87,7 @@ type MongoDB struct {
 // Services 对应于 [services] 配置部分
 type Services struct {
 	UserService UserService `mapstructure:"user_service"`
+	QAService   QAService   `mapstructure:"qa_service"`
 }
 
 // UserService 对应于 [services.user_service] 配置部分
@@ -95,6 +96,12 @@ type UserService struct {
 	TokenExpireHours int    `mapstructure:"token_expire_hours"`
 	GrpcPort         string `mapstructure:"grpc_port"`
 	HttpPort         string `mapstructure:"http_port"`
+}
+
+// QAService 对应于 [services.qa_service] 配置部分
+type QAService struct {
+	GrpcPort string `mapstructure:"grpc_port"`
+	HttpPort string `mapstructure:"http_port"`
 }
 
 // Init 函数用于初始化配置加载

@@ -5,7 +5,7 @@ import Login from './components/Login';
 import Register from './components/Register';
 import Profile from './components/Profile';
 
-const API_URL = 'http://localhost:8081/api/v1';
+const API_URL = 'http://localhost:8080/api/v1';
 
 const Layout = () => {
   const [token, setToken] = useState(localStorage.getItem('token'));
@@ -19,7 +19,7 @@ const Layout = () => {
 
   const handleLogout = async () => {
     try {
-      await axios.post(`${API_URL}/logout`, null, {
+      await axios.post(`${API_URL}/users/logout`, null, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -57,8 +57,8 @@ const Layout = () => {
       <Routes>
         <Route path="/login" element={<Login onLogin={handleLogin} />} />
         <Route path="/register" element={<Register />} />
-        <Route 
-          path="/profile" 
+        <Route
+          path="/profile"
           element={token ? <Profile token={token} onLogout={handleLogout} /> : <Navigate to="/login" />}
         />
         <Route path="*" element={<Navigate to={token ? "/profile" : "/login"} />} />

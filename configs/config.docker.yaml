@@ -1,43 +1,44 @@
+# Docker环境配置文件
 # 服务器通用配置
 server:
   port: 8080
-  mode: "debug" # Gin 框架的模式: debug, release, test
+  mode: "release" # Docker环境使用release模式
 
 # 日志配置
 log:
-  level: "info" # 日志级别: debug, info, warn, error
-  format: "json" # 日志格式: json, text
+  level: "info"
+  format: "json"
 
-# MySQL 数据库配置 (供用户服务和问答服务使用)
+# MySQL 数据库配置 (Docker容器内部地址)
 mysql:
-  host: "127.0.0.1"
-  port: 3307
-  user: "root"
-  password: "12345678" # 重要：建议通过环境变量 MYSQL_PASSWORD 来覆盖此值
+  host: "mariadb"  # 使用Docker Compose服务名
+  port: 3306       # 容器内部端口
+  user: "qahub_user"
+  password: "12345678"
   dbname: "qahub"
   charset: "utf8mb4"
   parseTime: "True"
   loc: "Local"
 
-# Redis 配置
+# Redis 配置 (Docker容器内部地址)
 redis:
-  addr: "127.0.0.1:6380"
+  addr: "redis:6379"  # 使用Docker Compose服务名和内部端口
   password: "" 
   db: 0
 
 # Kafka 配置 (供搜索和通知服务使用)
 kafka:
   brokers:
-    - "127.0.0.1:9092"
+    - "kafka:9092"
 
 # Elasticsearch 配置 (供搜索服务使用)
 elasticsearch:
   urls:
-    - "http://127.0.0.1:9200"
+    - "http://elasticsearch:9200"
 
 # MongoDB 配置 (供通知服务使用)
 mongodb:
-  uri: "mongodb://localhost:27017"
+  uri: "mongodb://mongodb:27017"
   database: "notification_db"
 
 # 服务特有配置
