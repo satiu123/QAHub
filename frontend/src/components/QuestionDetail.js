@@ -4,8 +4,10 @@ import axios from 'axios';
 
 const API_URL = 'http://localhost:8080/api/v1';
 
-const Comments = ({ answerId, token }) => {
+const Comments = ({ answerId, token, onCommentAdded }) => {
     const [comments, setComments] = useState([]);
+    const [newComment, setNewComment] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         const fetchComments = async () => {
@@ -23,11 +25,63 @@ const Comments = ({ answerId, token }) => {
         fetchComments();
     }, [answerId, token]);
 
+    const handleSubmitComment = async (e) => {
+        e.preventDefault();
+        if (!newComment.trim()) return;
+
+        setIsSubmitting(true);
+        try {
+            const response = await axios.post(
+                `${API_URL}/answers/${answerId}/comments`,
+                { content: newComment.trim() },
+                { headers: { 'Authorization': `Bearer ${token}` } }
+            );
+
+            // 添加新评论到列表
+            const addedComment = response.data;
+            setComments([...comments, addedComment]);
+            setNewComment('');
+
+            if (onCommentAdded) {
+                onCommentAdded();
+            }
+        } catch (err) {
+            console.error('Failed to submit comment', err);
+            alert('Failed to submit comment. Please try again.');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     if (comments.length === 0) {
         return (
             <div className="mt-3">
                 <hr className="my-3" />
-                <p className="text-muted small mb-0">No comments yet.</p>
+                <h6 className="text-muted mb-3">Comments (0):</h6>
+                <p className="text-muted small mb-3">No comments yet.</p>
+
+                {/* 添加评论表单 */}
+                <form onSubmit={handleSubmitComment} className="mt-3">
+                    <div className="mb-3">
+                        <textarea
+                            className="form-control"
+                            rows="2"
+                            placeholder="Write a comment..."
+                            value={newComment}
+                            onChange={(e) => setNewComment(e.target.value)}
+                            disabled={isSubmitting}
+                        />
+                    </div>
+                    <div className="d-flex justify-content-end">
+                        <button
+                            type="submit"
+                            className="btn btn-primary btn-sm"
+                            disabled={isSubmitting || !newComment.trim()}
+                        >
+                            {isSubmitting ? 'Submitting...' : 'Add Comment'}
+                        </button>
+                    </div>
+                </form>
             </div>
         );
     }
@@ -35,8 +89,8 @@ const Comments = ({ answerId, token }) => {
     return (
         <div className="mt-3">
             <hr className="my-3" />
-            <h6 className="text-muted mb-3">Comments:</h6>
-            <div className="comments-container">
+            <h6 className="text-muted mb-3">Comments ({comments.length}):</h6>
+            <div className="comments-container mb-3">
                 {comments.map(comment => (
                     <div key={comment.ID || comment.id} className="mb-3">
                         <div className="card border-0 bg-light">
@@ -57,6 +111,29 @@ const Comments = ({ answerId, token }) => {
                     </div>
                 ))}
             </div>
+
+            {/* 添加评论表单 */}
+            <form onSubmit={handleSubmitComment} className="mt-3">
+                <div className="mb-3">
+                    <textarea
+                        className="form-control"
+                        rows="2"
+                        placeholder="Write a comment..."
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        disabled={isSubmitting}
+                    />
+                </div>
+                <div className="d-flex justify-content-end">
+                    <button
+                        type="submit"
+                        className="btn btn-primary btn-sm"
+                        disabled={isSubmitting || !newComment.trim()}
+                    >
+                        {isSubmitting ? 'Submitting...' : 'Add Comment'}
+                    </button>
+                </div>
+            </form>
         </div>
     );
 };
@@ -67,6 +144,8 @@ function QuestionDetail({ token }) {
     const [question, setQuestion] = useState(null);
     const [answers, setAnswers] = useState([]);
     const [error, setError] = useState('');
+    const [newAnswer, setNewAnswer] = useState('');
+    const [isSubmittingAnswer, setIsSubmittingAnswer] = useState(false);
 
     useEffect(() => {
         const fetchDetails = async () => {
@@ -94,6 +173,30 @@ function QuestionDetail({ token }) {
             fetchDetails();
         }
     }, [token, questionId]);
+
+    const handleSubmitAnswer = async (e) => {
+        e.preventDefault();
+        if (!newAnswer.trim()) return;
+
+        setIsSubmittingAnswer(true);
+        try {
+            const response = await axios.post(
+                `${API_URL}/questions/${questionId}/answers`,
+                { content: newAnswer.trim() },
+                { headers: { 'Authorization': `Bearer ${token}` } }
+            );
+
+            // 添加新答案到列表
+            const addedAnswer = response.data;
+            setAnswers([...answers, addedAnswer]);
+            setNewAnswer('');
+        } catch (err) {
+            console.error('Failed to submit answer', err);
+            alert('Failed to submit answer. Please try again.');
+        } finally {
+            setIsSubmittingAnswer(false);
+        }
+    };
 
     if (error) {
         return <div className="alert alert-danger">{error}</div>;
@@ -150,6 +253,37 @@ function QuestionDetail({ token }) {
             ) : (
                 <p>No answers yet.</p>
             )}
+
+            {/* 添加答案表单 */}
+            <div className="card mt-4">
+                <div className="card-header">
+                    <h5 className="mb-0">Write Your Answer</h5>
+                </div>
+                <div className="card-body">
+                    <form onSubmit={handleSubmitAnswer}>
+                        <div className="mb-3">
+                            <textarea
+                                className="form-control"
+                                rows="4"
+                                placeholder="Write your answer here..."
+                                value={newAnswer}
+                                onChange={(e) => setNewAnswer(e.target.value)}
+                                disabled={isSubmittingAnswer}
+                                required
+                            />
+                        </div>
+                        <div className="d-flex justify-content-end">
+                            <button
+                                type="submit"
+                                className="btn btn-primary"
+                                disabled={isSubmittingAnswer || !newAnswer.trim()}
+                            >
+                                {isSubmittingAnswer ? 'Submitting...' : 'Submit Answer'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     );
 }

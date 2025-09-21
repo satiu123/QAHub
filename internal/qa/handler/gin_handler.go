@@ -22,20 +22,20 @@ func NewQAHandler(svc service.QAService) *QAHandler {
 
 type CreateQuestionRequest struct {
 	Title   string `json:"title" binding:"required,min=5,max=255"`
-	Content string `json:"content" binding:"required,min=10"`
+	Content string `json:"content" binding:"required,min=5"`
 }
 
 type UpdateQuestionRequest struct {
 	Title   string `json:"title" binding:"required,min=5,max=255"`
-	Content string `json:"content" binding:"required,min=10"`
+	Content string `json:"content" binding:"required,min=5"`
 }
 
 type CreateAnswerRequest struct {
-	Content string `json:"content" binding:"required,min=10"`
+	Content string `json:"content" binding:"required,min=3"`
 }
 
 type UpdateAnswerRequest struct {
-	Content string `json:"content" binding:"required,min=10"`
+	Content string `json:"content" binding:"required,min=3"`
 }
 
 type CreateCommentRequest struct {
