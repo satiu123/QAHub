@@ -71,6 +71,45 @@ services:
       timeout: 5s
       retries: 5
 
+  # Kafka 服务 
+  kafka:
+    image: bitnami/kafka:latest
+    container_name: qahub-kafka
+    restart: always
+    ports:
+      - "9092:9092"   # 内部通信端口
+      - "29092:29092" # 外部通信端口
+    environment:
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://localhost:29092
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - ALLOW_PLAINTEXT_LISTENER=yes
+
+  # Elasticsearch 服务
+  elasticsearch:
+    image: elasticsearch:8.11.1
+    container_name: qahub-elasticsearch
+    restart: always
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false # 开发环境禁用安全特性
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m" # 限制内存使用
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -vq '\"status\":\"red\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
 volumes:
   mariadb_data:
   redis_data:
+  es_data:
