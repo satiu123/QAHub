@@ -10,6 +10,7 @@ services:
     depends_on:
       - user-service
       - qa-service
+      - search-service
 
   # 用户服务
   user-service:
@@ -35,6 +36,21 @@ services:
       - GIN_MODE=release
     depends_on:
       - mariadb
+
+  # 搜索服务
+  search-service:
+    build:
+      context: .
+      dockerfile: cmd/search-service/Dockerfile
+    container_name: qahub-search-service
+    restart: always
+    environment:
+      - GIN_MODE=release
+    depends_on:
+      kafka:
+        condition: service_started
+      elasticsearch:
+        condition: service_healthy
 
   # MariaDB 服务
   mariadb:
@@ -80,15 +96,21 @@ services:
       - "9092:9092"   # 内部通信端口
       - "29092:29092" # 外部通信端口
     environment:
+      # Kafka KRaft 模式配置
       - KAFKA_CFG_NODE_ID=1
       - KAFKA_CFG_PROCESS_ROLES=broker,controller
       - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://localhost:29092
       - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
       - ALLOW_PLAINTEXT_LISTENER=yes
 
+      # --- 修正后的监听器配置 ---
+      # 定义两个监听器：INTERNAL 用于容器间通信，EXTERNAL 用于从主机访问
+      - KAFKA_CFG_LISTENERS=INTERNAL://:9092,EXTERNAL://:29092,CONTROLLER://:9093
+      # 向客户端宣告正确的地址
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka:9092,EXTERNAL://localhost:29092
+      # 定义监听器使用的安全协议
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+  
   # Elasticsearch 服务
   elasticsearch:
     image: elasticsearch:8.11.1

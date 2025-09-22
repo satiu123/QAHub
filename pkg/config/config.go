@@ -86,8 +86,9 @@ type MongoDB struct {
 
 // Services 对应于 [services] 配置部分
 type Services struct {
-	UserService UserService `mapstructure:"user_service"`
-	QAService   QAService   `mapstructure:"qa_service"`
+	UserService   UserService   `mapstructure:"user_service"`
+	QAService     QAService     `mapstructure:"qa_service"`
+	SearchService SearchService `mapstructure:"search_service"`
 }
 
 // UserService 对应于 [services.user_service] 配置部分
@@ -100,6 +101,12 @@ type UserService struct {
 
 // QAService 对应于 [services.qa_service] 配置部分
 type QAService struct {
+	GrpcPort string `mapstructure:"grpc_port"`
+	HttpPort string `mapstructure:"http_port"`
+}
+
+// SearchService 对应于 [services.search_service] 配置部分
+type SearchService struct {
 	GrpcPort string `mapstructure:"grpc_port"`
 	HttpPort string `mapstructure:"http_port"`
 }

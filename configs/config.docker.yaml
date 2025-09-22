@@ -51,3 +51,6 @@ services:
   qa_service:
     grpc_port: "50052"
     http_port: "8082"
+  search_service:
+    grpc_port: "50053"
+    http_port: "8083"
