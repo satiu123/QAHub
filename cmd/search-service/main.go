@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/gin-gonic/gin"
 	"qahub/internal/search/handler"
 	"qahub/internal/search/service"
 	"qahub/internal/search/store"
 	"qahub/pkg/config"
+	"qahub/pkg/middleware"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -36,6 +38,9 @@ func main() {
 
 	r := gin.Default()
 
+	// 添加CORS中间件
+	r.Use(middleware.CORSMiddleware())
+
 	// 从配置中读取服务地址和端口
 	port := config.Conf.Services.SearchService.HttpPort
 	if port == "" {
@@ -51,6 +56,7 @@ func main() {
 
 	// 注册搜索 API 路由
 	apiV1 := r.Group("/api/v1")
+	// apiV1.Use(middleware.NginxAuthMiddleware())
 	{
 		apiV1.GET("/search", searchHandler.Search)
 	}

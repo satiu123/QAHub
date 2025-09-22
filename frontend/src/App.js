@@ -7,6 +7,9 @@ import Profile from './components/Profile';
 import QuestionList from './components/QuestionList';
 import QuestionDetail from './components/QuestionDetail';
 import CreateQuestion from './components/CreateQuestion';
+import SearchBox from './components/SearchBox';
+import SearchResult from './components/SearchResult';
+
 
 const API_URL = 'http://localhost:8080/api/v1';
 
@@ -41,12 +44,11 @@ const Layout = () => {
       <nav className="navbar navbar-expand-lg navbar-light bg-light mb-4">
         <div className="container-fluid">
           <Link className="navbar-brand" to="/">QAHub</Link>
-          <div className="navbar-nav">
+          <div className="navbar-nav me-auto">
             {token ? (
               <>
                 <Link className="nav-link" to="/questions">Questions</Link>
                 <Link className="nav-link" to="/profile">Profile</Link>
-                <button onClick={handleLogout} className="btn btn-link nav-link">Logout</button>
               </>
             ) : (
               <>
@@ -55,6 +57,12 @@ const Layout = () => {
               </>
             )}
           </div>
+          {token && (
+            <div className="d-flex align-items-center">
+              <SearchBox />
+              <button onClick={handleLogout} className="btn btn-link nav-link ms-2">Logout</button>
+            </div>
+          )}
         </div>
       </nav>
 
@@ -76,6 +84,10 @@ const Layout = () => {
         <Route
           path="/create-question"
           element={token ? <CreateQuestion token={token} /> : <Navigate to="/login" />}
+        />
+        <Route 
+          path="/search"
+          element={token ? <SearchResult token={token} /> : <Navigate to="/login" />}
         />
         <Route path="*" element={<Navigate to={token ? "/questions" : "/login"} />} />
       </Routes>
