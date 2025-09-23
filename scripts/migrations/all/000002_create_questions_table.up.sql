@@ -1,5 +1,5 @@
 -- 000002_create_questions_table.up.sql
-CREATE TABLE IF NOT EXISTS `questions` (
+CREATE TABLE `questions` (
     `id` BIGINT NOT NULL AUTO_INCREMENT,
     `title` VARCHAR(255) NOT NULL,
     `content` TEXT NOT NULL,

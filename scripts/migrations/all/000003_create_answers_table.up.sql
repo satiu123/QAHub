@@ -1,5 +1,5 @@
 -- 000003_create_answers_table.up.sql
-CREATE TABLE IF NOT EXISTS `answers` (
+CREATE TABLE `answers` (
     `id` BIGINT NOT NULL AUTO_INCREMENT,
     `question_id` BIGINT NOT NULL,
     `content` TEXT NOT NULL,

@@ -1,5 +1,5 @@
 -- 000004_create_comments_table.up.sql
-CREATE TABLE IF NOT EXISTS `comments` (
+CREATE TABLE `comments` (
     `id` BIGINT NOT NULL AUTO_INCREMENT,
     `answer_id` BIGINT NOT NULL,
     `user_id` BIGINT NOT NULL,

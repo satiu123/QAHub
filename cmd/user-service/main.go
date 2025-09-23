@@ -45,19 +45,24 @@ func main() {
 	router.Use(gin.Logger(), gin.Recovery(), middleware.CORSMiddleware())
 
 	// 5. 注册路由
-	apiV1 := router.Group("/api/v1")
+	// 公开路由组
+	publicApiV1 := router.Group("/api/v1")
 	{
-		// 公开路由
-		apiV1.POST("/users/register", userHandler.Register)
-		apiV1.POST("/users/login", userHandler.Login)
+		publicApiV1.POST("/users/register", userHandler.Register)
+		publicApiV1.POST("/users/login", userHandler.Login)
+		// 这个路由是给 Nginx auth_request 调用的，本身也是一种“内部公开”路由
+		publicApiV1.GET("/auth/validate", userHandler.ValidateToken)
 
-		apiV1.GET("/auth/validate", userHandler.ValidateToken)
+	}
 
-		apiV1.POST("/users/logout", userHandler.Logout)
-		// 注意：GET /users/me 是一个潜在的扩展点，用于专门获取当前登录用户的配置文件
-		apiV1.GET("/users/:id", userHandler.GetProfile)
-		apiV1.PUT("/users/:id", userHandler.UpdateProfile)
-		apiV1.DELETE("/users/:id", userHandler.DeleteUser)
+	// 受保护的路由组
+	protectedApiV1 := router.Group("/api/v1")
+	protectedApiV1.Use(middleware.NginxAuthMiddleware()) // 添加 Nginx 认证中间件
+	{
+		protectedApiV1.POST("/users/logout", userHandler.Logout)
+		publicApiV1.GET("/users/:id", userHandler.GetProfile)
+		protectedApiV1.PUT("/users/:id", userHandler.UpdateProfile)
+		protectedApiV1.DELETE("/users/:id", userHandler.DeleteUser)
 	}
 
 	// 6. 启动服务器

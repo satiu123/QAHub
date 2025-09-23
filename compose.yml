@@ -12,6 +12,23 @@ services:
       - qa-service
       - search-service
 
+  # 数据库迁移服务 (新添加)
+  db-migrator:
+    image: migrate/migrate
+    container_name: qahub-db-migrator
+    # 将迁移脚本挂载到容器中
+    volumes:
+      - ./scripts/migrations/all:/migrations
+    # 启动命令：执行向上迁移
+    # 注意：数据库连接字符串使用了服务名 `mariadb`
+    # -verbose 参数可以打印详细日志
+    command: ["-path", "/migrations", "-database", "mysql://qahub_user:12345678@tcp(mariadb:3306)/qahub?charset=utf8mb4&parseTime=True&loc=Local", "up"]
+    # 依赖 mariadb 服务，等待其健康检查通过后再启动
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    restart: on-failure # 如果迁移失败，可以尝试重启
+
   # 用户服务
   user-service:
     build:
@@ -22,8 +39,10 @@ services:
     environment:
       - GIN_MODE=release
     depends_on:
-      - mariadb
-      - redis
+      db-migrator:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
 
   # 问答服务
   qa-service:
@@ -35,7 +54,9 @@ services:
     environment:
       - GIN_MODE=release
     depends_on:
-      - mariadb
+      # 修改：不再直接依赖 mariadb，而是依赖 db-migrator 的成功退出
+      db-migrator:
+        condition: service_completed_successfully
 
   # 搜索服务
   search-service:
@@ -67,10 +88,11 @@ services:
     volumes:
       - mariadb_data:/var/lib/mysql # 将数据库文件持久化到名为 mariadb_data 的数据卷中
     healthcheck:
-      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
-      interval: 20s
-      timeout: 10s
-      retries: 10
+      test: ["CMD-SHELL", "mariadb-admin ping -h localhost -u root -p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s     # 减少检查间隔从20s到10s
+      timeout: 5s       # 减少超时时间从10s到5s  
+      retries: 5        # 减少重试次数从10到5
+      start_period: 30s # 给容器30秒的启动时间，在此期间健康检查失败不计入重试次数
 
   # Redis 服务
   redis:
@@ -115,7 +137,6 @@ services:
       # KRaft 控制器监听器
       - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
       
-      # ----------- 日志和性能优化（可选但推荐） -----------
       # 指定日志目录在容器内的位置，与下方 volumes 挂载点对应
       - KAFKA_LOG_DIRS=/var/kafka-logs 
       # 限制JVM堆内存，防止占用过多宿主机内存
@@ -142,7 +163,8 @@ services:
       test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -vq '\"status\":\"red\"'"]
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 5        # 减少重试次数从10到5
+      start_period: 60s # Elasticsearch启动较慢，给它60秒启动时间
 
 volumes:
   mariadb_data:

@@ -55,6 +55,10 @@ func main() {
 			apiV1.PUT("/answers/:answer_id", qaHandler.UpdateAnswer)
 			apiV1.DELETE("/answers/:answer_id", qaHandler.DeleteAnswer)
 
+			// 点赞
+			apiV1.POST("/answers/:answer_id/upvote", qaHandler.UpvoteAnswer)
+			apiV1.POST("/answers/:answer_id/downvote", qaHandler.DownvoteAnswer)
+
 			// 评论
 			apiV1.POST("/answers/:answer_id/comments", qaHandler.CreateComment)
 			apiV1.PUT("/comments/:comment_id", qaHandler.UpdateComment)

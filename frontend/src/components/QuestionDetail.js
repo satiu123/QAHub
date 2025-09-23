@@ -147,21 +147,29 @@ function QuestionDetail({ token }) {
     const [newAnswer, setNewAnswer] = useState('');
     const [isSubmittingAnswer, setIsSubmittingAnswer] = useState(false);
 
+    // 在组件加载时获取问题和答案的详细信息
     useEffect(() => {
         const fetchDetails = async () => {
             try {
-                // Fetch Question
+                // 获取问题
                 const qResponse = await axios.get(`${API_URL}/questions/${questionId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 setQuestion(qResponse.data);
 
-                // Fetch Answers
+                // 获取答案
                 const aResponse = await axios.get(`${API_URL}/questions/${questionId}/answers`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-                // 根据您提供的数据结构，答案在 data 字段中
-                setAnswers(aResponse.data?.data || aResponse.data?.answers || []);
+                
+                // 为每个答案添加本地的点赞状态，以便UI可以响应
+                // 注意：这个状态只在当前页面有效
+                const answersWithVoteState = (aResponse.data?.data || aResponse.data?.answers || []).map(ans => ({
+                    ...ans,
+                    isUpvoted: false, // 初始状态为未点赞
+                    isVoting: false,  // 用于防止重复点击
+                }));
+                setAnswers(answersWithVoteState);
 
             } catch (err) {
                 setError('Failed to fetch question details.');
@@ -174,6 +182,50 @@ function QuestionDetail({ token }) {
         }
     }, [token, questionId]);
 
+    // 处理点赞/取消点赞的函数
+    const handleVote = async (answerId, isUpvoted) => {
+        // 找到当前正在操作的答案
+        const targetAnswer = answers.find(a => (a.ID || a.id) === answerId);
+        if (targetAnswer.isVoting) return; // 如果正在处理中，则不执行任何操作
+
+        const originalAnswers = [...answers]; // 保存原始状态以便在出错时回滚
+
+        // 1. 乐观更新UI
+        setAnswers(answers.map(ans => {
+            if ((ans.ID || ans.id) === answerId) {
+                return {
+                    ...ans,
+                    UpvoteCount: isUpvoted ? ans.UpvoteCount - 1 : ans.UpvoteCount + 1,
+                    isUpvoted: !isUpvoted,
+                    isVoting: true, // 设置为处理中
+                };
+            }
+            return ans;
+        }));
+
+        // 2. 调用API
+        const endpoint = isUpvoted ? 'downvote' : 'upvote';
+        try {
+            await axios.post(`${API_URL}/answers/${answerId}/${endpoint}`, null, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+        } catch (err) {
+            console.error(`Failed to ${endpoint} answer`, err);
+            alert(`Failed to ${endpoint}. Please try again.`);
+            // 3. 如果API调用失败，回滚UI状态
+            setAnswers(originalAnswers);
+        } finally {
+            // 4. 无论成功或失败，都结束处理状态
+            setAnswers(prevAnswers => prevAnswers.map(ans => {
+                if ((ans.ID || ans.id) === answerId) {
+                    return { ...ans, isVoting: false };
+                }
+                return ans;
+            }));
+        }
+    };
+
+    // 处理提交新答案的函数
     const handleSubmitAnswer = async (e) => {
         e.preventDefault();
         if (!newAnswer.trim()) return;
@@ -186,8 +238,8 @@ function QuestionDetail({ token }) {
                 { headers: { 'Authorization': `Bearer ${token}` } }
             );
 
-            // 添加新答案到列表
-            const addedAnswer = response.data;
+            // 添加新答案到列表，并附加上本地状态
+            const addedAnswer = { ...response.data, isUpvoted: false, isVoting: false };
             setAnswers([...answers, addedAnswer]);
             setNewAnswer('');
         } catch (err) {
@@ -241,9 +293,13 @@ function QuestionDetail({ token }) {
                                     </div>
                                 </div>
                                 <div className="col-sm-4 col-12 text-sm-end text-start">
-                                    <span className="badge bg-success fs-6 px-3 py-2">
+                                    <button 
+                                        className={`btn ${answer.isUpvoted ? 'btn-success' : 'btn-outline-success'} fs-6 px-3 py-2`}
+                                        onClick={() => handleVote(answer.ID || answer.id, answer.isUpvoted)}
+                                        disabled={answer.isVoting}
+                                    >
                                         👍 {answer.UpvoteCount || answer.upvote_count || 0}
-                                    </span>
+                                    </button>
                                 </div>
                             </div>
                             <Comments answerId={answer.ID || answer.id} token={token} />

@@ -1,5 +1,5 @@
 -- 000005_create_answers_votes_table.up.sql
-CREATE TABLE IF NOT EXISTS `answers_votes` (
+CREATE TABLE `answers_votes` (
     `id` BIGINT NOT NULL AUTO_INCREMENT,
     `answer_id` BIGINT NOT NULL,
     `user_id` BIGINT NOT NULL,

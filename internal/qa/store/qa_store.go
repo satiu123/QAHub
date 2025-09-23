@@ -54,7 +54,10 @@ type sqlxQAStore struct {
 }
 
 func NewQAStore(db *sqlx.DB) QAStore {
-	return &sqlxQAStore{db: db}
+	return &sqlxQAStore{
+		db:     db,
+		dbConn: db, // 确保 dbConn 被正确初始化
+	}
 }
 
 // --- 问题相关 (Question) ---
@@ -231,13 +234,13 @@ func (s *sqlxQAStore) DeleteComment(ctx context.Context, commentID int64) error 
 // --- 投票相关方法 ---
 
 func (s *sqlxQAStore) CreateAnswerVote(ctx context.Context, answerID, userID int64, isUpvote bool) error {
-	query := "INSERT INTO answer_votes (answer_id, user_id, is_upvote) VALUES (?, ?, ?)"
+	query := "INSERT INTO answers_votes (answer_id, user_id, is_upvote) VALUES (?, ?, ?)"
 	_, err := s.db.ExecContext(ctx, query, answerID, userID, isUpvote)
 	return err
 }
 
 func (s *sqlxQAStore) DeleteAnswerVote(ctx context.Context, answerID, userID int64) error {
-	query := "DELETE FROM answer_votes WHERE answer_id = ? AND user_id = ?"
+	query := "DELETE FROM answers_votes WHERE answer_id = ? AND user_id = ?"
 	_, err := s.db.ExecContext(ctx, query, answerID, userID)
 	return err
 }
