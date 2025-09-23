@@ -102,7 +102,7 @@ func NginxAuthMiddleware() gin.HandlerFunc {
 	}
 }
 
-// AuthMiddleware 创建一个Gin中间件，用于JWT身份验证
+// AuthMiddleware 创建一个Gin中间件，用于JWT身份验证（强制）
 func AuthMiddleware(userStore store.UserStore) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
@@ -167,5 +167,43 @@ func AuthMiddleware(userStore store.UserStore) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+	}
+}
+
+// OptionalAuthMiddleware 创建一个Gin中间件，用于可选的JWT身份验证
+func OptionalAuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.Next() // 没有token，直接继续
+			return
+		}
+
+		parts := strings.Split(authHeader, " ")
+		if len(parts) != 2 || parts[0] != "Bearer" {
+			c.Next() // token格式不正确，直接继续
+			return
+		}
+
+		tokenString := parts[1]
+		var jwtSecret = []byte(config.Conf.Services.UserService.JWTSecret)
+
+		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			}
+			return jwtSecret, nil
+		})
+
+		if err == nil {
+			if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+				if userID, ok := claims["user_id"].(float64); ok {
+					// token有效，设置userID
+					c.Set("userID", int64(userID))
+				}
+			}
+		}
+		// 无论token是否有效，都继续处理请求
+		c.Next()
 	}
 }

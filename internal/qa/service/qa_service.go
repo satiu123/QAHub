@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"qahub/internal/qa/dto"
 	"qahub/internal/qa/model"
 	"qahub/internal/qa/store"
 )
@@ -21,7 +22,7 @@ type QAService interface {
 
 	CreateAnswer(ctx context.Context, questionID int64, content string, userID int64) (*model.Answer, error)
 	GetAnswer(ctx context.Context, answerID int64) (*model.Answer, error)
-	ListAnswers(ctx context.Context, questionID int64, page, pageSize int) ([]*model.Answer, int64, error)
+	ListAnswers(ctx context.Context, questionID int64, page, pageSize int, userID int64) ([]*dto.AnswerResponse, int64, error)
 
 	UpvoteAnswer(ctx context.Context, answerID, userID int64) error
 	DownvoteAnswer(ctx context.Context, answerID, userID int64) error
@@ -131,17 +132,45 @@ func (s *qaService) GetAnswer(ctx context.Context, answerID int64) (*model.Answe
 	return s.store.GetAnswerByID(ctx, answerID)
 }
 
-func (s *qaService) ListAnswers(ctx context.Context, questionID int64, page, pageSize int) ([]*model.Answer, int64, error) {
+func (s *qaService) ListAnswers(ctx context.Context, questionID int64, page, pageSize int, userID int64) ([]*dto.AnswerResponse, int64, error) {
 	offset := (page - 1) * pageSize
 	answers, err := s.store.ListAnswersByQuestionID(ctx, questionID, offset, pageSize)
 	if err != nil {
 		return nil, 0, err
 	}
+
 	count, err := s.store.CountAnswersByQuestionID(ctx, questionID)
 	if err != nil {
 		return nil, 0, err
 	}
-	return answers, count, nil
+
+	// 如果没有回答，直接返回
+	if len(answers) == 0 {
+		return []*dto.AnswerResponse{}, count, nil
+	}
+
+	// 提取所有回答的 ID
+	answerIDs := make([]int64, len(answers))
+	for i, answer := range answers {
+		answerIDs[i] = answer.ID
+	}
+
+	// 获取当前用户对这些回答的点赞状态
+	votes, err := s.store.GetUserVotesForAnswers(ctx, userID, answerIDs)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// 构建响应
+	answerResponses := make([]*dto.AnswerResponse, len(answers))
+	for i, answer := range answers {
+		answerResponses[i] = &dto.AnswerResponse{
+			Answer:          *answer,
+			IsUpvotedByUser: votes[answer.ID],
+		}
+	}
+
+	return answerResponses, count, nil
 }
 
 func (s *qaService) UpdateAnswer(ctx context.Context, answerID int64, content string, userID int64) (*model.Answer, error) {

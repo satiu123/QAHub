@@ -68,6 +68,7 @@ func main() {
 	}
 	// 公共 API，无需认证
 	publicApiV1 := router.Group("/api/v1")
+	publicApiV1.Use(middleware.OptionalAuthMiddleware()) // 可选认证中间件
 	{
 		publicApiV1.GET("/questions", qaHandler.ListQuestions)
 		publicApiV1.GET("/questions/:question_id", qaHandler.GetQuestion)

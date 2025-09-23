@@ -162,11 +162,10 @@ function QuestionDetail({ token }) {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 
-                // 为每个答案添加本地的点赞状态，以便UI可以响应
-                // 注意：这个状态只在当前页面有效
+                // 使用后端返回的数据来初始化点赞状态
                 const answersWithVoteState = (aResponse.data?.data || aResponse.data?.answers || []).map(ans => ({
                     ...ans,
-                    isUpvoted: false, // 初始状态为未点赞
+                    isUpvotedByUser: ans.is_upvoted_by_user, // 使用后端返回的字段
                     isVoting: false,  // 用于防止重复点击
                 }));
                 setAnswers(answersWithVoteState);
@@ -183,7 +182,7 @@ function QuestionDetail({ token }) {
     }, [token, questionId]);
 
     // 处理点赞/取消点赞的函数
-    const handleVote = async (answerId, isUpvoted) => {
+    const handleVote = async (answerId, isUpvotedByUser) => {
         // 找到当前正在操作的答案
         const targetAnswer = answers.find(a => (a.ID || a.id) === answerId);
         if (targetAnswer.isVoting) return; // 如果正在处理中，则不执行任何操作
@@ -195,8 +194,8 @@ function QuestionDetail({ token }) {
             if ((ans.ID || ans.id) === answerId) {
                 return {
                     ...ans,
-                    UpvoteCount: isUpvoted ? ans.UpvoteCount - 1 : ans.UpvoteCount + 1,
-                    isUpvoted: !isUpvoted,
+                    UpvoteCount: isUpvotedByUser ? ans.UpvoteCount - 1 : ans.UpvoteCount + 1,
+                    isUpvotedByUser: !isUpvotedByUser,
                     isVoting: true, // 设置为处理中
                 };
             }
@@ -204,7 +203,7 @@ function QuestionDetail({ token }) {
         }));
 
         // 2. 调用API
-        const endpoint = isUpvoted ? 'downvote' : 'upvote';
+        const endpoint = isUpvotedByUser ? 'downvote' : 'upvote';
         try {
             await axios.post(`${API_URL}/answers/${answerId}/${endpoint}`, null, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -239,7 +238,7 @@ function QuestionDetail({ token }) {
             );
 
             // 添加新答案到列表，并附加上本地状态
-            const addedAnswer = { ...response.data, isUpvoted: false, isVoting: false };
+            const addedAnswer = { ...response.data, isUpvotedByUser: false, isVoting: false };
             setAnswers([...answers, addedAnswer]);
             setNewAnswer('');
         } catch (err) {
@@ -294,8 +293,8 @@ function QuestionDetail({ token }) {
                                 </div>
                                 <div className="col-sm-4 col-12 text-sm-end text-start">
                                     <button 
-                                        className={`btn ${answer.isUpvoted ? 'btn-success' : 'btn-outline-success'} fs-6 px-3 py-2`}
-                                        onClick={() => handleVote(answer.ID || answer.id, answer.isUpvoted)}
+                                        className={`btn ${answer.isUpvotedByUser ? 'btn-success' : 'btn-outline-success'} fs-6 px-3 py-2`}
+                                        onClick={() => handleVote(answer.ID || answer.id, answer.isUpvotedByUser)}
                                         disabled={answer.isVoting}
                                     >
                                         👍 {answer.UpvoteCount || answer.upvote_count || 0}

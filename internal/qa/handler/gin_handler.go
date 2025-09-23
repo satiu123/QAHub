@@ -67,6 +67,21 @@ func getAuthUserID(c *gin.Context) (int64, bool) {
 	return userID, true
 }
 
+// getAuthUserIDOrGuest 尝试从 context 获取 userID，如果不存在（访客），则返回 0 和 true
+func getAuthUserIDOrGuest(c *gin.Context) (int64, bool) {
+	authUserID, exists := c.Get("userID")
+	if !exists {
+		// 访客用户，返回0
+		return 0, true
+	}
+	userID, ok := authUserID.(int64)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "无效的用户ID格式"})
+		return 0, false
+	}
+	return userID, true
+}
+
 func getIDFromParam(c *gin.Context, paramName string) (int64, bool) {
 	idStr := c.Param(paramName)
 	id, err := strconv.ParseInt(idStr, 10, 64)
@@ -216,7 +231,12 @@ func (h *QAHandler) ListAnswers(c *gin.Context) {
 	}
 	page, pageSize := getPagination(c)
 
-	answers, total, err := h.qaService.ListAnswers(c.Request.Context(), questionID, page, pageSize)
+	userID, ok := getAuthUserIDOrGuest(c)
+	if !ok {
+		return
+	}
+
+	answers, total, err := h.qaService.ListAnswers(c.Request.Context(), questionID, page, pageSize, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

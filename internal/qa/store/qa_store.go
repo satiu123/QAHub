@@ -22,6 +22,7 @@ type QAStore interface {
 	GetAnswerByID(ctx context.Context, answerID int64) (*model.Answer, error)
 	ListAnswersByQuestionID(ctx context.Context, questionID int64, offset int, limit int) ([]*model.Answer, error)
 	CountAnswersByQuestionID(ctx context.Context, questionID int64) (int64, error)
+	GetUserVotesForAnswers(ctx context.Context, userID int64, answerIDs []int64) (map[int64]bool, error)
 
 	CreateAnswerVote(ctx context.Context, answerID, userID int64, isUpvote bool) error
 	DeleteAnswerVote(ctx context.Context, answerID, userID int64) error
@@ -160,6 +161,33 @@ func (s *sqlxQAStore) CountAnswersByQuestionID(ctx context.Context, questionID i
 		return 0, err
 	}
 	return count, nil
+}
+
+// GetUserVotesForAnswers 获取用户对一组答案的投票状态
+func (s *sqlxQAStore) GetUserVotesForAnswers(ctx context.Context, userID int64, answerIDs []int64) (map[int64]bool, error) {
+	votes := make(map[int64]bool)
+	if len(answerIDs) == 0 || userID == 0 {
+		return votes, nil
+	}
+
+	query, args, err := sqlx.In("SELECT answer_id FROM answers_votes WHERE answer_id IN (?) AND user_id = ?", answerIDs, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	query = s.dbConn.Rebind(query)
+
+	var votedAnswerIDs []int64
+	err = s.db.SelectContext(ctx, &votedAnswerIDs, query, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, id := range votedAnswerIDs {
+		votes[id] = true
+	}
+
+	return votes, nil
 }
 
 func (s *sqlxQAStore) UpdateAnswer(ctx context.Context, answer *model.Answer) error {
