@@ -2,6 +2,8 @@ package main
 
 import (
 	"log"
+	"net"
+	"time"
 
 	"qahub/internal/qa/handler"
 	"qahub/internal/qa/service"
@@ -11,6 +13,7 @@ import (
 	"qahub/pkg/middleware"
 
 	"github.com/gin-gonic/gin"
+	"github.com/segmentio/kafka-go"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -29,16 +32,30 @@ func main() {
 	}
 	defer db.Close()
 
-	// 3. 依赖注入：初始化 store, service, handler
+	// 3. 初始化 Kafka Writer
+	kafkaWriter := &kafka.Writer{
+		Addr:     kafka.TCP(config.Conf.Kafka.Brokers...),
+		Topic:    config.Conf.Kafka.Topics.QAEvents,
+		Balancer: &kafka.LeastBytes{},
+		// 在 Docker 环境中，可能需要自定义 dialer 来确保连接成功
+		Transport: &kafka.Transport{
+			Dial: (&net.Dialer{
+				Timeout: 10 * time.Second,
+			}).DialContext,
+		},
+	}
+	defer kafkaWriter.Close()
+
+	// 4. 依赖注入：初始化 store, service, handler
 	qaStore := store.NewQAStore(db)
-	qaService := service.NewQAService(qaStore)
+	qaService := service.NewQAService(qaStore, kafkaWriter)
 	qaHandler := handler.NewQAHandler(qaService)
 
-	// 4. 初始化 Gin 引擎
+	// 5. 初始化 Gin 引擎
 	router := gin.New()
 	router.Use(gin.Logger(), gin.Recovery(), middleware.CORSMiddleware())
 
-	// 5. 注册路由
+	// 6. 注册路由
 	// 创建一个新的顶层分组来匹配 Nginx 添加的前缀
 	protectedQA := router.Group("/_protected_qa")
 	protectedQA.Use(middleware.NginxAuthMiddleware()) // 添加nginx认证中间件
@@ -76,7 +93,7 @@ func main() {
 		publicApiV1.GET("/answers/:answer_id/comments", qaHandler.ListComments)
 	}
 
-	// 6. 启动服务器
+	// 7. 启动服务器
 	serverAddr := ":" + cfg.HttpPort
 	log.Printf("QA service starting on %s", serverAddr)
 	if err := router.Run(serverAddr); err != nil {

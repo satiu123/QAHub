@@ -10,8 +10,22 @@ const (
 	EventQuestionCreated EventType = "question.created"
 	// EventQuestionUpdated 表示一个问题被更新的事件
 	EventQuestionUpdated EventType = "question.updated"
+	// EventQuestionDeleted 表示一个问题被删除的事件
+	EventQuestionDeleted EventType = "question.deleted"
 	// EventAnswerCreated 表示一个回答被创建的事件
 	EventAnswerCreated EventType = "answer.created"
+	// EventAnswerUpdated 表示一个回答被更新的事件
+	EventAnswerUpdated EventType = "answer.updated"
+	// EventAnswerDeleted 表示一个回答被删除的事件
+	EventAnswerDeleted EventType = "answer.deleted"
+	// EventAnswerDownvoted 表示一个回答被点踩的事件
+	EventAnswerDownvoted EventType = "answer.downvoted"
+	// EventCommentCreated 表示一个评论被创建的事件
+	EventCommentCreated EventType = "comment.created"
+	// EventCommentUpdated 表示一个评论被更新的事件
+	EventCommentUpdated EventType = "comment.updated"
+	// EventCommentDeleted 表示一个评论被删除的事件
+	EventCommentDeleted EventType = "comment.deleted"
 )
 
 // EventHeader 包含了所有事件共有的元数据

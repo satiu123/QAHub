@@ -71,6 +71,12 @@ type Redis struct {
 // Kafka 对应于 [kafka] 配置部分
 type Kafka struct {
 	Brokers []string `mapstructure:"brokers"`
+	Topics  Topics   `mapstructure:"topics"`
+}
+
+// Topics 对应于 [kafka.topics] 配置部分
+type Topics struct {
+	QAEvents string `mapstructure:"qa_events"`
 }
 
 // Elasticsearch 对应于 [elasticsearch] 配置部分

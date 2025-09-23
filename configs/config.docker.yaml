@@ -30,6 +30,8 @@ redis:
 kafka:
   brokers:
     - "kafka:9092"
+  topics:
+    qa_events: "qa_events" # 用于问答服务和搜索服务之间的事件通信
 
 # Elasticsearch 配置 (供搜索服务使用)
 elasticsearch:

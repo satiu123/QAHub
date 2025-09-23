@@ -57,6 +57,8 @@ services:
       # 修改：不再直接依赖 mariadb，而是依赖 db-migrator 的成功退出
       db-migrator:
         condition: service_completed_successfully
+      kafka:
+        condition: service_started
 
   # 搜索服务
   search-service:

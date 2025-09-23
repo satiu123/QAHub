@@ -2,10 +2,17 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"log"
 	"qahub/internal/qa/dto"
 	"qahub/internal/qa/model"
 	"qahub/internal/qa/store"
+	"qahub/pkg/messaging"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
 )
 
 // QAService 定义了问答服务的业务逻辑接口
@@ -42,12 +49,13 @@ type QAService interface {
 
 // qaService 是 QAService 接口的实现
 type qaService struct {
-	store store.QAStore
+	store       store.QAStore
+	kafkaWriter *kafka.Writer
 }
 
 // NewQAService 创建一个新的 QAService
-func NewQAService(s store.QAStore) QAService {
-	return &qaService{store: s}
+func NewQAService(s store.QAStore, w *kafka.Writer) QAService {
+	return &qaService{store: s, kafkaWriter: w}
 }
 
 // --- 问题实现 ---
@@ -64,6 +72,10 @@ func (s *qaService) CreateQuestion(ctx context.Context, title, content string, u
 		return nil, err
 	}
 	question.ID = questionID
+
+	// 发布问题创建事件到 Kafka
+	go s.publishQuestionEvent(context.Background(), messaging.EventQuestionCreated, question)
+
 	return question, nil
 }
 
@@ -99,6 +111,10 @@ func (s *qaService) UpdateQuestion(ctx context.Context, questionID int64, title,
 	if err := s.store.UpdateQuestion(ctx, question); err != nil {
 		return nil, err
 	}
+
+	// 发布问题更新事件到 Kafka
+	go s.publishQuestionEvent(context.Background(), messaging.EventQuestionUpdated, question)
+
 	return question, nil
 }
 
@@ -110,7 +126,41 @@ func (s *qaService) DeleteQuestion(ctx context.Context, questionID, userID int64
 	if question.UserID != userID {
 		return errors.New("无权限删除该问题")
 	}
+	// TODO: 在删除问题时，也应该发布一个事件
 	return s.store.DeleteQuestion(ctx, questionID)
+}
+
+// publishQuestionEvent 是一个辅助函数，用于发布与问题相关的事件
+func (s *qaService) publishQuestionEvent(ctx context.Context, eventType messaging.EventType, question *model.Question) {
+	event := messaging.QuestionCreatedEvent{
+		Header: messaging.EventHeader{
+			ID:        uuid.New().String(),
+			Type:      eventType,
+			Source:    "qa-service",
+			Timestamp: time.Now(),
+		},
+		Payload: messaging.QuestionPayload{
+			ID:       uint64(question.ID),
+			Title:    question.Title,
+			Content:  question.Content,
+			AuthorID: uint64(question.UserID),
+			// Tags: question.Tags, // 如果有Tags字段的话
+		},
+	}
+
+	eventBytes, err := json.Marshal(event)
+	if err != nil {
+		log.Printf("ERROR: failed to marshal question event: %v", err)
+		return
+	}
+
+	err = s.kafkaWriter.WriteMessages(ctx, kafka.Message{
+		Value: eventBytes,
+	})
+
+	if err != nil {
+		log.Printf("ERROR: failed to write message to kafka: %v", err)
+	}
 }
 
 // --- 回答实现 ---
@@ -125,6 +175,7 @@ func (s *qaService) CreateAnswer(ctx context.Context, questionID int64, content 
 		return nil, err
 	}
 	answer.ID = answerID
+	// TODO: 发布回答创建事件
 	return answer, nil
 }
 
@@ -185,6 +236,7 @@ func (s *qaService) UpdateAnswer(ctx context.Context, answerID int64, content st
 	if err := s.store.UpdateAnswer(ctx, answer); err != nil {
 		return nil, err
 	}
+	// TODO: 发布回答更新事件
 	return answer, nil
 }
 
@@ -196,6 +248,7 @@ func (s *qaService) DeleteAnswer(ctx context.Context, answerID, userID int64) er
 	if answer.UserID != userID {
 		return errors.New("无权限删除该回答")
 	}
+	// TODO: 发布回答删除事件
 	return s.store.DeleteAnswer(ctx, answerID)
 }
 

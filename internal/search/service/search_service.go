@@ -73,7 +73,18 @@ func (s *Service) StartConsumer(ctx context.Context) {
 			} else {
 				log.Printf("成功索引问题文档 (ID: %d)", event.Payload.ID)
 			}
-		// TODO: 添加对 EventQuestionUpdated 和 EventAnswerCreated 的处理
+		case messaging.EventQuestionUpdated:
+			var event messaging.QuestionCreatedEvent
+			if err := json.Unmarshal(msg.Value, &event); err != nil {
+				log.Printf("解析 QuestionUpdatedEvent 失败: %v", err)
+				continue
+			}
+			if err := s.store.IndexQuestion(ctx, event.Payload); err != nil {
+				log.Printf("更新问题索引失败 (ID: %d): %v", event.Payload.ID, err)
+			} else {
+				log.Printf("成功更新问题索引 (ID: %d)", event.Payload.ID)
+			}
+		// TODO: 添加对 EventAnswerCreated 的处理
 		default:
 			log.Printf("收到未知的事件类型: %s", header.Type)
 		}
