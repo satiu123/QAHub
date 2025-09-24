@@ -21,6 +21,7 @@ const (
 type Service struct {
 	store       *store.Store
 	kafkaReader *kafka.Reader
+	handlers    map[messaging.EventType]EventHandler
 }
 
 // New 函数创建一个新的 Service 实例
@@ -34,10 +35,12 @@ func New(s *store.Store, cfg config.Kafka) *Service {
 		MaxBytes: 10e6, // 10MB
 	})
 
-	return &Service{
+	service := &Service{
 		store:       s,
 		kafkaReader: reader,
 	}
+	service.handlers = service.registerHandlers()
+	return service
 }
 
 // StartConsumer 启动 Kafka 消费者，在一个无限循环中读取消息
@@ -62,33 +65,13 @@ func (s *Service) StartConsumer(ctx context.Context) {
 			continue
 		}
 
-		// 根据事件类型进行不同的处理
-		switch eventData.Header.Type {
-		case messaging.EventQuestionCreated:
-			var event messaging.QuestionCreatedEvent
-			if err := json.Unmarshal(msg.Value, &event); err != nil {
-				log.Printf("解析 QuestionCreatedEvent 失败: %v", err)
-				continue
+		// 根据事件类型调用相应的处理函数
+		if handler, exists := s.handlers[eventData.Header.Type]; exists {
+			if err := handler(ctx, string(eventData.Header.Type), msg.Value); err != nil {
+				log.Printf("处理事件失败 (Type: %s): %v", eventData.Header.Type, err)
 			}
-			if err := s.store.IndexQuestion(ctx, event.Payload); err != nil {
-				log.Printf("索引问题文档失败 (ID: %d): %v", event.Payload.ID, err)
-			} else {
-				log.Printf("成功索引问题文档 (ID: %d)", event.Payload.ID)
-			}
-		case messaging.EventQuestionUpdated:
-			var event messaging.QuestionCreatedEvent
-			if err := json.Unmarshal(msg.Value, &event); err != nil {
-				log.Printf("解析 QuestionUpdatedEvent 失败: %v", err)
-				continue
-			}
-			if err := s.store.IndexQuestion(ctx, event.Payload); err != nil {
-				log.Printf("更新问题索引失败 (ID: %d): %v", event.Payload.ID, err)
-			} else {
-				log.Printf("成功更新问题索引 (ID: %d)", event.Payload.ID)
-			}
-		// TODO: 添加对 EventAnswerCreated 的处理
-		default:
-			log.Printf("收到未知的事件类型: %s", eventData.Header.Type)
+		} else {
+			log.Printf("未注册的事件类型: %s", eventData.Header.Type)
 		}
 	}
 }

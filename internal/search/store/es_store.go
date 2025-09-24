@@ -150,3 +150,51 @@ func (s *Store) SearchQuestions(ctx context.Context, query string) ([]messaging.
 
 	return questions, nil
 }
+
+// DeleteQuestion 从 Elasticsearch 中删除一个问题文档
+func (s *Store) DeleteQuestion(ctx context.Context, questionID uint64) error {
+	// 使用 client.Delete 方法发送删除请求
+	res, err := s.client.Delete(
+		IndexQuestions,                      // 索引名称
+		strconv.FormatUint(questionID, 10),  // 文档ID
+		s.client.Delete.WithContext(ctx),    // 传递上下文
+		s.client.Delete.WithRefresh("true"), // 删除后立即刷新
+	)
+	if err != nil {
+		return fmt.Errorf("删除文档失败: %w", err)
+	}
+	defer res.Body.Close()
+
+	// 检查响应中是否有错误
+	if res.IsError() {
+		return fmt.Errorf("删除响应错误: %s", res.String())
+	}
+
+	return nil
+}
+
+func (s *Store) ClearIndex(ctx context.Context) error {
+	// 删除索引
+	res, err := s.client.Indices.Delete([]string{IndexQuestions}, s.client.Indices.Delete.WithContext(ctx))
+	if err != nil {
+		return fmt.Errorf("删除索引失败: %w", err)
+	}
+	defer res.Body.Close()
+
+	if res.IsError() {
+		return fmt.Errorf("删除索引响应错误: %s", res.String())
+	}
+
+	// 重新创建索引
+	res, err = s.client.Indices.Create(IndexQuestions, s.client.Indices.Create.WithContext(ctx))
+	if err != nil {
+		return fmt.Errorf("创建索引失败: %w", err)
+	}
+	defer res.Body.Close()
+
+	if res.IsError() {
+		return fmt.Errorf("创建索引响应错误: %s", res.String())
+	}
+
+	return nil
+}

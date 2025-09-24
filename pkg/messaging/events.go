@@ -50,3 +50,17 @@ type QuestionCreatedEvent struct {
 	Header  EventHeader     `json:"header"`
 	Payload QuestionPayload `json:"payload"`
 }
+
+// QustionUpdatedEvent 是问题更新事件的完整结构
+type QuestionUpdatedEvent struct {
+	Header  EventHeader     `json:"header"`
+	Payload QuestionPayload `json:"payload"`
+}
+
+// QuestionDeletedEvent 是问题删除事件的完整结构
+type QuestionDeletedEvent struct {
+	Header  EventHeader `json:"header"`
+	Payload struct {
+		ID uint64 `json:"id"`
+	} `json:"payload"`
+}

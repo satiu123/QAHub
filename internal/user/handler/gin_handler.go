@@ -43,9 +43,9 @@ type LoginResponse struct {
 }
 
 type UpdateProfileRequest struct {
-	Username string `json:"username" binding:"required,min=3,max=32"`
-	Email    string `json:"email" binding:"required,email"`
-	Bio      string `json:"bio,omitempty"`
+	Username *string `json:"username,omitempty" binding:"omitempty,min=3,max=32"`
+	Email    *string `json:"email,omitempty" binding:"omitempty,email"`
+	Bio      *string `json:"bio,omitempty"`
 }
 
 // --- Handler Methods ---
@@ -177,14 +177,31 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
-	updateModel := &model.User{
-		ID:       targetUserID,
-		Username: req.Username,
-		Email:    req.Email,
-		Bio:      req.Bio,
+	// 获取当前用户信息以进行部分更新
+	currentUser, err := h.userService.GetUserProfile(c.Request.Context(), targetUserID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "无法获取当前用户信息"})
+		return
 	}
 
+	// 使用指针字段进行部分更新
+	updateModel := &model.User{
+		ID:       targetUserID,
+		Username: currentUser.Username,
+		Email:    currentUser.Email,
+		Bio:      currentUser.Bio,
+	}
+	if req.Username != nil {
+		updateModel.Username = *req.Username
+	}
+	if req.Email != nil {
+		updateModel.Email = *req.Email
+	}
+	if req.Bio != nil {
+		updateModel.Bio = *req.Bio
+	}
+
+	// 调用服务层更新用户信息
 	err = h.userService.UpdateUserProfile(c.Request.Context(), updateModel)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

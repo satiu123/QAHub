@@ -137,7 +137,8 @@ func (s *qaService) DeleteQuestion(ctx context.Context, questionID, userID int64
 	if question.UserID != userID {
 		return errors.New("无权限删除该问题")
 	}
-	// TODO: 在删除问题时，也应该发布一个事件
+	// 发布问题删除事件到 Kafka
+	go s.publishQuestionEvent(context.Background(), messaging.EventQuestionDeleted, question)
 	return s.store.DeleteQuestion(ctx, questionID)
 }
 

@@ -17,6 +17,16 @@ function Profile({ token, onLogout }) {
     const [editContent, setEditContent] = useState('');
     const [isUpdating, setIsUpdating] = useState(false);
 
+    // 用户信息编辑相关状态
+    const [isEditingProfile, setIsEditingProfile] = useState(false);
+    const [editingProfile, setEditingProfile] = useState({
+        username: '',
+        email: '',
+        bio: ''
+    });
+    const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
     useEffect(() => {
         const fetchUser = async () => {
             try {
@@ -133,6 +143,110 @@ function Profile({ token, onLogout }) {
         setEditContent('');
     };
 
+    // 开始编辑用户资料
+    const startEditProfile = () => {
+        setEditingProfile({
+            username: user.username,
+            email: user.email,
+            bio: user.bio
+        });
+        setIsEditingProfile(true);
+    };
+
+    // 取消编辑用户资料
+    const cancelEditProfile = () => {
+        setIsEditingProfile(false);
+        setEditingProfile({
+            username: '',
+            email: '',
+            bio: ''
+        });
+    };
+
+    // 更新用户资料
+    const handleUpdateProfile = async (e) => {
+        e.preventDefault();
+        if (!editingProfile.username.trim() || !editingProfile.email.trim()) {
+            alert('用户名和邮箱不能为空');
+            return;
+        }
+
+        setIsUpdatingProfile(true);
+        try {
+            const decodedToken = jwtDecode(token);
+            const userId = decodedToken.user_id;
+
+            // 构建只包含修改字段的更新数据
+            const updateData = {};
+            if (editingProfile.username !== user.username) {
+                updateData.username = editingProfile.username;
+            }
+            if (editingProfile.email !== user.email) {
+                updateData.email = editingProfile.email;
+            }
+            if (editingProfile.bio !== user.bio) {
+                updateData.bio = editingProfile.bio;
+            }
+
+            // 如果没有任何变化，直接取消编辑
+            if (Object.keys(updateData).length === 0) {
+                cancelEditProfile();
+                return;
+            }
+
+            await axios.put(
+                `${API_URL}/users/${userId}`,
+                updateData,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            // 更新本地用户数据
+            setUser({ ...user, ...editingProfile });
+            setIsEditingProfile(false);
+            alert('用户资料更新成功！');
+        } catch (err) {
+            console.error('Failed to update profile:', err);
+            if (err.response?.data?.error) {
+                alert(`更新失败: ${err.response.data.error}`);
+            } else {
+                alert('更新用户资料失败，请重试。');
+            }
+        } finally {
+            setIsUpdatingProfile(false);
+        }
+    };
+
+    // 注销账号
+    const handleDeleteAccount = async () => {
+        try {
+            const decodedToken = jwtDecode(token);
+            const userId = decodedToken.user_id;
+
+            await axios.delete(`${API_URL}/users/${userId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            alert('账号已成功注销');
+            onLogout(); // 登出用户
+        } catch (err) {
+            console.error('Failed to delete account:', err);
+            if (err.response?.data?.error) {
+                alert(`注销失败: ${err.response.data.error}`);
+            } else {
+                alert('注销账号失败，请重试。');
+            }
+        } finally {
+            setShowDeleteConfirm(false);
+        }
+    };
+
     // Tab change handler
     const handleTabChange = (tab) => {
         setActiveTab(tab);
@@ -171,20 +285,109 @@ function Profile({ token, onLogout }) {
                         我的问题
                     </button>
                 </li>
+                <li className="nav-item">
+                    <button
+                        className={`nav-link ${activeTab === 'settings' ? 'active' : ''}`}
+                        onClick={() => handleTabChange('settings')}
+                    >
+                        账号设置
+                    </button>
+                </li>
             </ul>
 
             {/* Tab Content */}
             {activeTab === 'profile' && (
                 <div>
-                    <div className="card">
-                        <div className="card-body">
-                            <h5 className="card-title">{user.username}</h5>
-                            <p className="card-text">Email: {user.email}</p>
-                            <p className="card-text">Bio: {user.bio}</p>
-                            <p className="card-text"><small className="text-muted">User ID: {user.id}</small></p>
+                    {!isEditingProfile ? (
+                        <div className="card">
+                            <div className="card-body">
+                                <div className="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h5 className="card-title">{user.username}</h5>
+                                        <p className="card-text">Email: {user.email}</p>
+                                        <p className="card-text">Bio: {user.bio || '暂无个人简介'}</p>
+                                        <p className="card-text"><small className="text-muted">User ID: {user.id}</small></p>
+                                    </div>
+                                    <button
+                                        className="btn btn-outline-primary"
+                                        onClick={startEditProfile}
+                                    >
+                                        编辑资料
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <button onClick={onLogout} className="btn btn-danger mt-3">Logout</button>
+                    ) : (
+                        <div className="card">
+                            <div className="card-body">
+                                <h5 className="card-title mb-3">编辑个人资料</h5>
+                                <form onSubmit={handleUpdateProfile}>
+                                    <div className="mb-3">
+                                        <label htmlFor="username" className="form-label">用户名</label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            id="username"
+                                            value={editingProfile.username}
+                                            onChange={(e) => setEditingProfile({
+                                                ...editingProfile,
+                                                username: e.target.value
+                                            })}
+                                            required
+                                            disabled={isUpdatingProfile}
+                                        />
+                                    </div>
+                                    <div className="mb-3">
+                                        <label htmlFor="email" className="form-label">邮箱</label>
+                                        <input
+                                            type="email"
+                                            className="form-control"
+                                            id="email"
+                                            value={editingProfile.email}
+                                            onChange={(e) => setEditingProfile({
+                                                ...editingProfile,
+                                                email: e.target.value
+                                            })}
+                                            required
+                                            disabled={isUpdatingProfile}
+                                        />
+                                    </div>
+                                    <div className="mb-3">
+                                        <label htmlFor="bio" className="form-label">个人简介</label>
+                                        <textarea
+                                            className="form-control"
+                                            id="bio"
+                                            rows="3"
+                                            value={editingProfile.bio}
+                                            onChange={(e) => setEditingProfile({
+                                                ...editingProfile,
+                                                bio: e.target.value
+                                            })}
+                                            disabled={isUpdatingProfile}
+                                            placeholder="介绍一下自己..."
+                                        ></textarea>
+                                    </div>
+                                    <div className="d-flex gap-2">
+                                        <button
+                                            type="submit"
+                                            className="btn btn-primary"
+                                            disabled={isUpdatingProfile}
+                                        >
+                                            {isUpdatingProfile ? '保存中...' : '保存更改'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="btn btn-secondary"
+                                            onClick={cancelEditProfile}
+                                            disabled={isUpdatingProfile}
+                                        >
+                                            取消
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -248,6 +451,86 @@ function Profile({ token, onLogout }) {
                             )}
                         </div>
                     )}
+                </div>
+            )}
+
+            {activeTab === 'settings' && (
+                <div>
+                    <div className="card">
+                        <div className="card-body">
+                            <h5 className="card-title">账号设置</h5>
+
+                            <div className="mb-4">
+                                <h6>安全操作</h6>
+                                <div className="d-flex gap-2">
+                                    <button
+                                        onClick={onLogout}
+                                        className="btn btn-outline-secondary"
+                                    >
+                                        退出登录
+                                    </button>
+                                    <button
+                                        onClick={() => setShowDeleteConfirm(true)}
+                                        className="btn btn-danger"
+                                    >
+                                        注销账号
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="alert alert-warning">
+                                <strong>注意：</strong>注销账号将永久删除您的所有数据，包括问题、回答和个人信息。此操作不可撤销。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 注销账号确认对话框 */}
+            {showDeleteConfirm && (
+                <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                    <div className="modal-dialog">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title text-danger">确认注销账号</h5>
+                                <button
+                                    type="button"
+                                    className="btn-close"
+                                    onClick={() => setShowDeleteConfirm(false)}
+                                ></button>
+                            </div>
+                            <div className="modal-body">
+                                <div className="alert alert-danger">
+                                    <i className="fas fa-exclamation-triangle me-2"></i>
+                                    <strong>警告：此操作不可撤销！</strong>
+                                </div>
+                                <p>您确定要注销账号吗？这将：</p>
+                                <ul>
+                                    <li>永久删除您的个人资料</li>
+                                    <li>删除您发布的所有问题</li>
+                                    <li>删除您的所有回答和评论</li>
+                                    <li>清除所有相关数据</li>
+                                </ul>
+                                <p className="text-muted">如果您只是想暂时停用账号，建议选择"退出登录"。</p>
+                            </div>
+                            <div className="modal-footer">
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    onClick={() => setShowDeleteConfirm(false)}
+                                >
+                                    取消
+                                </button>
+                                <button
+                                    type="button"
+                                    className="btn btn-danger"
+                                    onClick={handleDeleteAccount}
+                                >
+                                    确认注销账号
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
 
