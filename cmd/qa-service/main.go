@@ -1,8 +1,8 @@
 package main
 
 import (
-	"log"
 	"net"
+	"os"
 	"time"
 
 	"qahub/internal/qa/handler"
@@ -21,14 +21,14 @@ import (
 func main() {
 	// 1. 加载配置
 	if err := config.Init("configs"); err != nil {
-		log.Fatalf("Failed to initialize config: %v", err)
+		os.Exit(1)
 	}
 	cfg := config.Conf.Services.QAService
 
 	// 2. 初始化数据库连接
 	db, err := database.NewMySQLConnection(config.Conf.MySQL)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		os.Exit(1)
 	}
 	defer db.Close()
 
@@ -87,6 +87,8 @@ func main() {
 	publicApiV1 := router.Group("/api/v1")
 	publicApiV1.Use(middleware.OptionalAuthMiddleware()) // 可选认证中间件
 	{
+		// 获取问题列表的统一接口，通过查询参数区分不同场景
+		// 例如: /questions?user_id=123, /questions?author=me
 		publicApiV1.GET("/questions", qaHandler.ListQuestions)
 		publicApiV1.GET("/questions/:question_id", qaHandler.GetQuestion)
 		publicApiV1.GET("/questions/:question_id/answers", qaHandler.ListAnswers)
@@ -95,8 +97,7 @@ func main() {
 
 	// 7. 启动服务器
 	serverAddr := ":" + cfg.HttpPort
-	log.Printf("QA service starting on %s", serverAddr)
 	if err := router.Run(serverAddr); err != nil {
-		log.Fatalf("Failed to run server: %v", err)
+		os.Exit(1)
 	}
 }

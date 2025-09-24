@@ -22,6 +22,7 @@ type QAService interface {
 	CreateQuestion(ctx context.Context, title, content string, userID int64) (*model.Question, error)
 	GetQuestion(ctx context.Context, questionID int64) (*model.Question, error)
 	ListQuestions(ctx context.Context, page, pageSize int) ([]*model.Question, int64, error)
+	ListQuestionsByUserID(ctx context.Context, userID int64, page, pageSize int) ([]*model.Question, int64, error)
 	UpdateQuestion(ctx context.Context, questionID int64, title, content string, userID int64) (*model.Question, error)
 	DeleteQuestion(ctx context.Context, questionID, userID int64) error
 
@@ -95,6 +96,16 @@ func (s *qaService) ListQuestions(ctx context.Context, page, pageSize int) ([]*m
 	if err != nil {
 		return nil, 0, err
 	}
+	return questions, count, nil
+}
+
+func (s *qaService) ListQuestionsByUserID(ctx context.Context, userID int64, page, pageSize int) ([]*model.Question, int64, error) {
+	offset := (page - 1) * pageSize
+	questions, err := s.store.ListQuestionsByUserID(ctx, userID, offset, pageSize)
+	if err != nil {
+		return nil, 0, err
+	}
+	count := int64(len(questions))
 	return questions, count, nil
 }
 

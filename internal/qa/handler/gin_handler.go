@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"qahub/internal/qa/model"
 	"qahub/internal/qa/service"
 	"strconv"
 
@@ -143,8 +144,68 @@ func (h *QAHandler) GetQuestion(c *gin.Context) {
 }
 
 func (h *QAHandler) ListQuestions(c *gin.Context) {
+	userID, _ := getAuthUserIDOrGuest(c) // 访客用户 userID 为 0
+	authorQuery := c.Query("author")
 	page, pageSize := getPagination(c)
-	questions, total, err := h.qaService.ListQuestions(c.Request.Context(), page, pageSize)
+
+	var questions []*model.Question
+	var total int64
+	var err error
+
+	var authorID int64
+	if authorQuery == "me" {
+		// 如果 author=me，使用当前用户ID
+		if userID == 0 {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "未登录用户无法查看'我的'问题"})
+			return
+		}
+		authorID = userID
+	} else if authorQuery != "" {
+		// 如果指定了具体的作者ID
+		parsedID, err := strconv.ParseInt(authorQuery, 10, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "无效的作者ID格式"})
+			return
+		}
+		authorID = parsedID
+	}
+
+	if authorID != 0 {
+		questions, total, err = h.qaService.ListQuestionsByUserID(c.Request.Context(), authorID, page, pageSize)
+	} else {
+		questions, total, err = h.qaService.ListQuestions(c.Request.Context(), page, pageSize)
+	}
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, ListResponse{Total: total, Data: questions})
+}
+
+func (h *QAHandler) ListMyQuestions(c *gin.Context) {
+	userID, ok := getAuthUserID(c)
+	if !ok {
+		return
+	}
+	page, pageSize := getPagination(c)
+	questions, total, err := h.qaService.ListQuestionsByUserID(c.Request.Context(), userID, page, pageSize)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, ListResponse{Total: total, Data: questions})
+}
+
+func (h *QAHandler) ListQuestionsByUserID(c *gin.Context) {
+	userID, ok := getIDFromParam(c, "user_id")
+	if !ok {
+		return
+	}
+	page, pageSize := getPagination(c)
+	questions, total, err := h.qaService.ListQuestionsByUserID(c.Request.Context(), userID, page, pageSize)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -13,6 +13,7 @@ type QAStore interface {
 	CreateQuestion(ctx context.Context, question *model.Question) (int64, error)
 	GetQuestionByID(ctx context.Context, questionID int64) (*model.Question, error)
 	ListQuestions(ctx context.Context, offset int, limit int) ([]*model.Question, error)
+	ListQuestionsByUserID(ctx context.Context, userID int64, offset int, limit int) ([]*model.Question, error)
 	CountQuestions(ctx context.Context) (int64, error)
 	UpdateQuestion(ctx context.Context, question *model.Question) error
 	DeleteQuestion(ctx context.Context, questionID int64) error
@@ -21,6 +22,7 @@ type QAStore interface {
 	CreateAnswer(ctx context.Context, answer *model.Answer) (int64, error)
 	GetAnswerByID(ctx context.Context, answerID int64) (*model.Answer, error)
 	ListAnswersByQuestionID(ctx context.Context, questionID int64, offset int, limit int) ([]*model.Answer, error)
+	// ListAnswersByUserID(ctx context.Context, userID int64, offset int, limit int) ([]*model.Answer, error)
 	CountAnswersByQuestionID(ctx context.Context, questionID int64) (int64, error)
 	GetUserVotesForAnswers(ctx context.Context, userID int64, answerIDs []int64) (map[int64]bool, error)
 
@@ -90,6 +92,16 @@ func (s *sqlxQAStore) ListQuestions(ctx context.Context, offset int, limit int) 
 	query := "SELECT id, title, content, user_id, created_at, updated_at FROM questions ORDER BY created_at DESC LIMIT ? OFFSET ?"
 	var questions []*model.Question
 	err := s.db.SelectContext(ctx, &questions, query, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	return questions, nil
+}
+
+func (s *sqlxQAStore) ListQuestionsByUserID(ctx context.Context, userID int64, offset int, limit int) ([]*model.Question, error) {
+	query := "SELECT id, title, content, user_id, created_at, updated_at FROM questions WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?"
+	var questions []*model.Question
+	err := s.db.SelectContext(ctx, &questions, query, userID, limit, offset)
 	if err != nil {
 		return nil, err
 	}
