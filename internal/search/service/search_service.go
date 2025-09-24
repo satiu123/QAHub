@@ -54,14 +54,16 @@ func (s *Service) StartConsumer(ctx context.Context) {
 		log.Printf("收到消息, Topic: %s, Offset: %d, Value: %s\n", msg.Topic, msg.Offset, string(msg.Value))
 
 		// 解析事件头以获取事件类型
-		var header messaging.EventHeader
-		if err := json.Unmarshal(msg.Value, &header); err != nil {
+		var eventData struct {
+			Header messaging.EventHeader `json:"header"`
+		}
+		if err := json.Unmarshal(msg.Value, &eventData); err != nil {
 			log.Printf("解析事件头失败: %v", err)
 			continue
 		}
 
 		// 根据事件类型进行不同的处理
-		switch header.Type {
+		switch eventData.Header.Type {
 		case messaging.EventQuestionCreated:
 			var event messaging.QuestionCreatedEvent
 			if err := json.Unmarshal(msg.Value, &event); err != nil {
@@ -86,7 +88,7 @@ func (s *Service) StartConsumer(ctx context.Context) {
 			}
 		// TODO: 添加对 EventAnswerCreated 的处理
 		default:
-			log.Printf("收到未知的事件类型: %s", header.Type)
+			log.Printf("收到未知的事件类型: %s", eventData.Header.Type)
 		}
 	}
 }
