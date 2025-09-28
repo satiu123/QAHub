@@ -21,7 +21,7 @@ func NewMySQLConnection(cfg config.MySQL) (*sqlx.DB, error) {
 	maxRetries := 10
 	retryInterval := time.Second * 5
 
-	for i := 0; i < maxRetries; i++ {
+	for i := range maxRetries {
 		db, err = sqlx.Connect("mysql", dsn)
 		if err == nil {
 			log.Println("Successfully connected to the database.")

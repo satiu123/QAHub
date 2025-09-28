@@ -64,3 +64,22 @@ type QuestionDeletedEvent struct {
 		ID uint64 `json:"id"`
 	} `json:"payload"`
 }
+
+// EventNotificationTriggered 表示一个通知被触发的事件
+const EventNotificationTriggered EventType = "notification.triggered"
+
+// NotificationPayload 是与通知相关的事件所携带的数据
+type NotificationPayload struct {
+	RecipientID      int64  `json:"recipient_id"` // 接收通知的用户ID
+	SenderID         int64  `json:"sender_id"`
+	SenderName       string `json:"sender_name"`
+	NotificationType string `json:"notification_type"` // e.g., "new_answer", "new_comment"
+	Content          string `json:"content"`           // 通知内容
+	TargetURL        string `json:"target_url"`        // 点击通知后跳转的URL
+}
+
+// NotificationTriggeredEvent 是通知触发事件的完整结构
+type NotificationTriggeredEvent struct {
+	Header  EventHeader         `json:"header"`
+	Payload NotificationPayload `json:"payload"`
+}

@@ -168,8 +168,28 @@ services:
       retries: 5        # 减少重试次数从10到5
       start_period: 60s # Elasticsearch启动较慢，给它60秒启动时间
 
+  # MongoDB 服务 (为通知服务准备)
+  mongodb:
+    image: mongo:7.0
+    container_name: qahub-mongodb
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: qahub_admin
+      MONGO_INITDB_ROOT_PASSWORD: 12345678 # 请务必修改为强密码
+    ports:
+      - "27018:27017" # 映射到主机的 27018 端口
+    volumes:
+      - mongo_data:/data/db # 持久化数据
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.runCommand({ ping: 1 })"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
 volumes:
   mariadb_data:
   redis_data:
   es_data:
   kafka_data:
+  mongo_data:

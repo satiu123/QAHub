@@ -8,10 +8,8 @@ import (
 	"qahub/pkg/messaging"
 )
 
-type EventHandler func(ctx context.Context, eventType string, payload []byte) error
-
-func (s *Service) registerHandlers() map[messaging.EventType]EventHandler {
-	return map[messaging.EventType]EventHandler{
+func (s *Service) registerHandlers() map[messaging.EventType]messaging.EventHandler {
+	return map[messaging.EventType]messaging.EventHandler{
 		messaging.EventQuestionCreated: s.handleQuestionCreated,
 		messaging.EventQuestionUpdated: s.handleQuestionUpdated,
 		messaging.EventQuestionDeleted: s.handleQuestionDeleted,

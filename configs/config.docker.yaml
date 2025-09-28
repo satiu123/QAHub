@@ -40,7 +40,7 @@ elasticsearch:
 
 # MongoDB 配置 (供通知服务使用)
 mongodb:
-  uri: "mongodb://mongodb:27017"
+  uri: "mongodb://mongodb:27018"
   database: "notification_db"
 
 # 服务特有配置
@@ -56,3 +56,6 @@ services:
   search_service:
     grpc_port: "50053"
     http_port: "8083"
+  notification_service:
+    grpc_port: "50054"
+    http_port: "8084"
