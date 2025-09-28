@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"log"
 
-	"qahub/internal/search/handler"
-	"qahub/internal/search/service"
-	"qahub/internal/search/store"
+	"qahub/search-service/internal/handler"
+	"qahub/search-service/internal/service"
+
 	"qahub/pkg/config"
 	"qahub/pkg/middleware"
+	"qahub/search-service/internal/store"
 
 	"github.com/gin-gonic/gin"
 )

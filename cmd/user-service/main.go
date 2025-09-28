@@ -3,13 +3,13 @@ package main
 import (
 	"log"
 
-	"qahub/internal/user/handler"
-	"qahub/internal/user/service"
-	"qahub/internal/user/store"
 	"qahub/pkg/config"
 	"qahub/pkg/database"
 	"qahub/pkg/middleware"
 	"qahub/pkg/redis"
+	"qahub/user-service/internal/handler"
+	"qahub/user-service/internal/service"
+	"qahub/user-service/internal/store"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"

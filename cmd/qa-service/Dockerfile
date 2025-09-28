@@ -1,34 +1,44 @@
 # ---- Build Stage ----
-# 使用官方的 Go 镜像作为编译环境
 FROM golang:1.25-alpine AS builder
 
-# 设置工作目录
-WORKDIR /app
+WORKDIR /workspace
 
-# 复制 go.mod 和 go.sum 文件并下载依赖
-COPY go.mod go.sum ./
-RUN go mod download
+# 预热 go.work 及各模块的 go.mod/go.sum，最大化缓存命中
+COPY go.work go.work
+COPY go.work.sum go.work.sum
+COPY cmd/user-service/go.mod cmd/user-service/go.sum ./cmd/user-service/
+COPY cmd/qa-service/go.mod cmd/qa-service/go.sum ./cmd/qa-service/
+COPY cmd/search-service/go.mod cmd/search-service/go.sum ./cmd/search-service/
+COPY cmd/notification-service/go.mod cmd/notification-service/go.sum ./cmd/notification-service/
+COPY pkg/go.mod pkg/go.sum ./pkg/
+COPY api/go.mod api/go.sum ./api/
 
-# 复制所有源代码
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go work sync
+
+# 下载问答服务依赖
+WORKDIR /workspace/cmd/qa-service
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download
+
+# 复制剩余源码
+WORKDIR /workspace
 COPY . .
 
-# 编译 qa-service 应用
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /app/qa-service /app/cmd/qa-service/main.go
+# 编译问答服务
+WORKDIR /workspace/cmd/qa-service
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /workspace/bin/qa-service .
 
-# ---- Release Stage ----
-# 使用一个非常小的基础镜像作为运行环境
+# ---- Runtime Stage ----
 FROM alpine:latest
 
-# 设置工作目录
 WORKDIR /app
 
-# 从 builder 阶段复制编译好的二进制文件和配置文件
-COPY --from=builder /app/qa-service .
-COPY configs/config.docker.yaml /app/configs/config.yaml
+COPY --from=builder /workspace/bin/qa-service /app/qa-service
+COPY --from=builder /workspace/configs/config.docker.yaml /app/configs/config.yaml
 
-# 暴露服务端口 (在容器内部)
-# 这个端口应该与 nginx.conf 中为 qa-service 配置的端口一致 (8082)
 EXPOSE 8082
 
-# 容器启动时运行的命令
 ENTRYPOINT ["/app/qa-service"]

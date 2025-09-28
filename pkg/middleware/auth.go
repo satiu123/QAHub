@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	"qahub/internal/user/store"
 	"qahub/pkg/auth"
 	"qahub/pkg/config"
 
@@ -79,52 +78,6 @@ func NginxAuthMiddleware() gin.HandlerFunc {
 		}
 
 		identity := auth.Identity{UserID: userID, Username: c.GetHeader("X-User-Name")}
-		auth.InjectIntoGin(c, identity)
-		c.Next()
-	}
-}
-
-// AuthMiddleware 创建一个Gin中间件，用于JWT身份验证（强制）
-func AuthMiddleware(userStore store.UserStore) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "请求未包含授权标头"})
-			c.Abort()
-			return
-		}
-
-		parts := strings.Split(authHeader, " ")
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "授权标头格式不正确"})
-			c.Abort()
-			return
-		}
-
-		tokenString := parts[1]
-
-		// 检查 token 是否在黑名单中
-		if blacklister, ok := userStore.(store.TokenBlacklister); ok {
-			isBlacklisted, err := blacklister.IsBlacklisted(tokenString)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "服务器内部错误"})
-				c.Abort()
-				return
-			}
-			if isBlacklisted {
-				c.JSON(http.StatusUnauthorized, gin.H{"error": "无效的token"})
-				c.Abort()
-				return
-			}
-		}
-
-		identity, err := auth.ParseToken(tokenString, []byte(config.Conf.Services.UserService.JWTSecret))
-		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "无效的token"})
-			c.Abort()
-			return
-		}
-
 		auth.InjectIntoGin(c, identity)
 		c.Next()
 	}
