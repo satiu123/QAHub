@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"qahub/internal/qa/dto"
 	"qahub/internal/qa/model"
 )
 
@@ -27,7 +28,7 @@ func (s *qaService) GetComment(ctx context.Context, commentID int64) (*model.Com
 }
 
 // ListComments 返回分页的评论列表和总数
-func (s *qaService) ListComments(ctx context.Context, answerID int64, page, pageSize int) ([]*model.Comment, int64, error) {
+func (s *qaService) ListComments(ctx context.Context, answerID int64, page, pageSize int) ([]*dto.CommentResponse, int64, error) {
 	offset := (page - 1) * pageSize
 	comments, err := s.store.ListCommentsByAnswerID(ctx, answerID, offset, pageSize)
 	if err != nil {
@@ -37,7 +38,34 @@ func (s *qaService) ListComments(ctx context.Context, answerID int64, page, page
 	if err != nil {
 		return nil, 0, err
 	}
-	return comments, count, nil
+	if len(comments) == 0 {
+		return []*dto.CommentResponse{}, count, nil
+	}
+
+	userIDSet := make(map[int64]struct{})
+	for _, comment := range comments {
+		userIDSet[comment.UserID] = struct{}{}
+	}
+
+	userIDs := make([]int64, 0, len(userIDSet))
+	for id := range userIDSet {
+		userIDs = append(userIDs, id)
+	}
+
+	usernames, err := s.store.GetUsernamesByIDs(ctx, userIDs)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	responses := make([]*dto.CommentResponse, len(comments))
+	for i, comment := range comments {
+		responses[i] = &dto.CommentResponse{
+			Comment:  *comment,
+			Username: usernames[comment.UserID],
+		}
+	}
+
+	return responses, count, nil
 }
 
 // UpdateComment 修改评论，只有评论的创建者可以修改

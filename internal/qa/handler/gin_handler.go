@@ -2,7 +2,7 @@ package handler
 
 import (
 	"net/http"
-	"qahub/internal/qa/model"
+	"qahub/internal/qa/dto"
 	"qahub/internal/qa/service"
 	"qahub/pkg/auth"
 	"strconv"
@@ -176,7 +176,7 @@ func (h *QAHandler) ListQuestions(c *gin.Context) {
 	authorQuery := c.Query("author")
 	page, pageSize := getPagination(c)
 
-	var questions []*model.Question
+	var questions []*dto.QuestionResponse
 	var total int64
 	var err error
 

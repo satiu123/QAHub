@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"qahub/internal/qa/dto"
 	"qahub/internal/qa/model"
 	"qahub/pkg/auth"
 	"qahub/pkg/messaging"
@@ -33,12 +34,77 @@ func (s *qaService) CreateQuestion(ctx context.Context, title, content string, u
 }
 
 // GetQuestion 根据 ID 获取问题详情
-func (s *qaService) GetQuestion(ctx context.Context, questionID int64) (*model.Question, error) {
-	return s.store.GetQuestionByID(ctx, questionID)
+func (s *qaService) GetQuestion(ctx context.Context, questionID int64) (*dto.QuestionResponse, error) {
+	question, err := s.store.GetQuestionByID(ctx, questionID)
+	if err != nil {
+		return nil, err
+	}
+	if question == nil {
+		return nil, errors.New("问题未找到")
+	}
+
+	usernames, err := s.store.GetUsernamesByIDs(ctx, []int64{question.UserID})
+	if err != nil {
+		return nil, err
+	}
+	authorName := usernames[question.UserID]
+
+	answerCounts, err := s.store.GetAnswerCountByQuestionIDs(ctx, []int64{question.ID})
+	if err != nil {
+		return nil, err
+	}
+	answerCount := answerCounts[question.ID]
+
+	response := &dto.QuestionResponse{
+		Question:    *question,
+		AuthorName:  authorName,
+		AnswerCount: answerCount,
+	}
+	return response, nil
 }
 
 // ListQuestions 返回分页的问题列表和总数
-func (s *qaService) ListQuestions(ctx context.Context, page, pageSize int) ([]*model.Question, int64, error) {
+
+func (s *qaService) buildQuestionResponses(ctx context.Context, questions []*model.Question) ([]*dto.QuestionResponse, error) {
+	responses := make([]*dto.QuestionResponse, 0, len(questions))
+	if len(questions) == 0 {
+		return responses, nil
+	}
+
+	questionIDs := make([]int64, 0, len(questions))
+	userIDSet := make(map[int64]struct{})
+	for _, q := range questions {
+		questionIDs = append(questionIDs, q.ID)
+		userIDSet[q.UserID] = struct{}{}
+	}
+
+	userIDs := make([]int64, 0, len(userIDSet))
+	for id := range userIDSet {
+		userIDs = append(userIDs, id)
+	}
+
+	usernames, err := s.store.GetUsernamesByIDs(ctx, userIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	answerCounts, err := s.store.GetAnswerCountByQuestionIDs(ctx, questionIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, q := range questions {
+		responses = append(responses, &dto.QuestionResponse{
+			Question:    *q,
+			AuthorName:  usernames[q.UserID],
+			AnswerCount: answerCounts[q.ID],
+		})
+	}
+
+	return responses, nil
+}
+
+func (s *qaService) ListQuestions(ctx context.Context, page, pageSize int) ([]*dto.QuestionResponse, int64, error) {
 	offset := (page - 1) * pageSize
 	questions, err := s.store.ListQuestions(ctx, offset, pageSize)
 	if err != nil {
@@ -48,17 +114,25 @@ func (s *qaService) ListQuestions(ctx context.Context, page, pageSize int) ([]*m
 	if err != nil {
 		return nil, 0, err
 	}
-	return questions, count, nil
+	responses, err := s.buildQuestionResponses(ctx, questions)
+	if err != nil {
+		return nil, 0, err
+	}
+	return responses, count, nil
 }
 
-func (s *qaService) ListQuestionsByUserID(ctx context.Context, userID int64, page, pageSize int) ([]*model.Question, int64, error) {
+func (s *qaService) ListQuestionsByUserID(ctx context.Context, userID int64, page, pageSize int) ([]*dto.QuestionResponse, int64, error) {
 	offset := (page - 1) * pageSize
 	questions, err := s.store.ListQuestionsByUserID(ctx, userID, offset, pageSize)
 	if err != nil {
 		return nil, 0, err
 	}
+	responses, err := s.buildQuestionResponses(ctx, questions)
+	if err != nil {
+		return nil, 0, err
+	}
 	count := int64(len(questions))
-	return questions, count, nil
+	return responses, count, nil
 }
 
 func (s *qaService) UpdateQuestion(ctx context.Context, questionID int64, title, content string, userID int64) (*model.Question, error) {

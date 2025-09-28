@@ -44,6 +44,20 @@ func (s *qaService) ListAnswers(ctx context.Context, questionID int64, page, pag
 		return []*dto.AnswerResponse{}, count, nil
 	}
 
+	userIDSet := make(map[int64]struct{})
+	for _, answer := range answers {
+		userIDSet[answer.UserID] = struct{}{}
+	}
+	userIDs := make([]int64, 0, len(userIDSet))
+	for id := range userIDSet {
+		userIDs = append(userIDs, id)
+	}
+
+	usernames, err := s.store.GetUsernamesByIDs(ctx, userIDs)
+	if err != nil {
+		return nil, 0, err
+	}
+
 	// 提取所有回答的 ID
 	answerIDs := make([]int64, len(answers))
 	for i, answer := range answers {
@@ -61,6 +75,7 @@ func (s *qaService) ListAnswers(ctx context.Context, questionID int64, page, pag
 	for i, answer := range answers {
 		answerResponses[i] = &dto.AnswerResponse{
 			Answer:          *answer,
+			Username:        usernames[answer.UserID],
 			IsUpvotedByUser: votes[answer.ID],
 		}
 	}

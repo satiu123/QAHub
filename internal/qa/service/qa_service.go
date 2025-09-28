@@ -14,9 +14,9 @@ type QAService interface {
 	// --- 问题相关 ---
 
 	CreateQuestion(ctx context.Context, title, content string, userID int64) (*model.Question, error)
-	GetQuestion(ctx context.Context, questionID int64) (*model.Question, error)
-	ListQuestions(ctx context.Context, page, pageSize int) ([]*model.Question, int64, error)
-	ListQuestionsByUserID(ctx context.Context, userID int64, page, pageSize int) ([]*model.Question, int64, error)
+	GetQuestion(ctx context.Context, questionID int64) (*dto.QuestionResponse, error)
+	ListQuestions(ctx context.Context, page, pageSize int) ([]*dto.QuestionResponse, int64, error)
+	ListQuestionsByUserID(ctx context.Context, userID int64, page, pageSize int) ([]*dto.QuestionResponse, int64, error)
 	UpdateQuestion(ctx context.Context, questionID int64, title, content string, userID int64) (*model.Question, error)
 	DeleteQuestion(ctx context.Context, questionID, userID int64) error
 
@@ -37,7 +37,7 @@ type QAService interface {
 
 	CreateComment(ctx context.Context, answerID int64, content string, userID int64) (*model.Comment, error)
 	GetComment(ctx context.Context, commentID int64) (*model.Comment, error)
-	ListComments(ctx context.Context, answerID int64, page, pageSize int) ([]*model.Comment, int64, error)
+	ListComments(ctx context.Context, answerID int64, page, pageSize int) ([]*dto.CommentResponse, int64, error)
 	UpdateComment(ctx context.Context, commentID int64, content string, userID int64) (*model.Comment, error)
 	DeleteComment(ctx context.Context, commentID, userID int64) error
 }

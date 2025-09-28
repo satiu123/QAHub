@@ -39,14 +39,34 @@ function QuestionList({ token }) {
             </div>
             <ul className="list-group">
                 {questions.length > 0 ? (
-                    questions.map(q => (
-                        <li key={q.ID} className="list-group-item">
-                            <Link to={`/questions/${q.ID}`}>{q.Title}</Link>
-                            <p className="text-muted small mb-0">
-                                By User {q.UserID} on {new Date(q.CreatedAt).toLocaleDateString()}
-                            </p>
-                        </li>
-                    ))
+                    questions.map(q => {
+                        const fallbackUser = q.UserID || q.user_id;
+                        const displayName = q.AuthorName || q.author_name || (fallbackUser ? `User ${fallbackUser}` : 'Anonymous');
+                        const createdAt = q.CreatedAt || q.created_at;
+                        const formattedDate = createdAt ? new Date(createdAt).toLocaleDateString() : '';
+                        const answerCount = q.AnswerCount ?? q.answer_count;
+
+                        return (
+                            <li key={q.ID || q.id} className="list-group-item">
+                                <div className="d-flex justify-content-between align-items-start">
+                                    <div className="me-3">
+                                        <Link to={`/questions/${q.ID || q.id}`} className="fw-semibold text-decoration-none">
+                                            {q.Title || q.title}
+                                        </Link>
+                                        <p className="text-muted small mb-0">
+                                            Asked by {displayName}
+                                            {formattedDate && ` · ${formattedDate}`}
+                                        </p>
+                                    </div>
+                                    {typeof answerCount === 'number' && (
+                                        <span className="badge bg-secondary align-self-center">
+                                            {answerCount} answers
+                                        </span>
+                                    )}
+                                </div>
+                            </li>
+                        );
+                    })
                 ) : (
                     <p>No questions found.</p>
                 )}

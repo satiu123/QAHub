@@ -17,6 +17,8 @@ type QAStore interface {
 	CountQuestions(ctx context.Context) (int64, error)
 	UpdateQuestion(ctx context.Context, question *model.Question) error
 	DeleteQuestion(ctx context.Context, questionID int64) error
+	GetAnswerCountByQuestionIDs(ctx context.Context, questionIDs []int64) (map[int64]int64, error)
+	GetUsernamesByIDs(ctx context.Context, userIDs []int64) (map[int64]string, error)
 
 	// --- 回答相关 (Answer) ---
 	CreateAnswer(ctx context.Context, answer *model.Answer) (int64, error)
@@ -175,6 +177,35 @@ func (s *sqlxQAStore) CountAnswersByQuestionID(ctx context.Context, questionID i
 	return count, nil
 }
 
+// GetAnswerCountByQuestionIDs 批量获取多个问题的回答数量
+func (s *sqlxQAStore) GetAnswerCountByQuestionIDs(ctx context.Context, questionIDs []int64) (map[int64]int64, error) {
+	counts := make(map[int64]int64)
+	if len(questionIDs) == 0 {
+		return counts, nil
+	}
+
+	query, args, err := sqlx.In("SELECT question_id, COUNT(*) AS cnt FROM answers WHERE question_id IN (?) GROUP BY question_id", questionIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	query = s.dbConn.Rebind(query)
+	var rows []struct {
+		QuestionID int64 `db:"question_id"`
+		Count      int64 `db:"cnt"`
+	}
+
+	if err := s.db.SelectContext(ctx, &rows, query, args...); err != nil {
+		return nil, err
+	}
+
+	for _, row := range rows {
+		counts[row.QuestionID] = row.Count
+	}
+
+	return counts, nil
+}
+
 // GetUserVotesForAnswers 获取用户对一组答案的投票状态
 func (s *sqlxQAStore) GetUserVotesForAnswers(ctx context.Context, userID int64, answerIDs []int64) (map[int64]bool, error) {
 	votes := make(map[int64]bool)
@@ -200,6 +231,35 @@ func (s *sqlxQAStore) GetUserVotesForAnswers(ctx context.Context, userID int64, 
 	}
 
 	return votes, nil
+}
+
+// GetUsernamesByIDs 批量获取用户ID对应的用户名
+func (s *sqlxQAStore) GetUsernamesByIDs(ctx context.Context, userIDs []int64) (map[int64]string, error) {
+	result := make(map[int64]string)
+	if len(userIDs) == 0 {
+		return result, nil
+	}
+
+	query, args, err := sqlx.In("SELECT id, username FROM users WHERE id IN (?)", userIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	query = s.dbConn.Rebind(query)
+	var rows []struct {
+		ID       int64  `db:"id"`
+		Username string `db:"username"`
+	}
+
+	if err := s.db.SelectContext(ctx, &rows, query, args...); err != nil {
+		return nil, err
+	}
+
+	for _, row := range rows {
+		result[row.ID] = row.Username
+	}
+
+	return result, nil
 }
 
 func (s *sqlxQAStore) UpdateAnswer(ctx context.Context, answer *model.Answer) error {
