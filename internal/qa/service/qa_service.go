@@ -2,17 +2,16 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"log"
 	"qahub/internal/qa/dto"
 	"qahub/internal/qa/model"
 	"qahub/internal/qa/store"
+	"qahub/pkg/config"
 	"qahub/pkg/messaging"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
 )
 
 // QAService 定义了问答服务的业务逻辑接口
@@ -50,13 +49,19 @@ type QAService interface {
 
 // qaService 是 QAService 接口的实现
 type qaService struct {
-	store       store.QAStore
-	kafkaWriter *kafka.Writer
+	store         store.QAStore
+	kafkaProducer *messaging.KafkaProducer
+	cfg           config.Kafka
 }
 
 // NewQAService 创建一个新的 QAService
-func NewQAService(s store.QAStore, w *kafka.Writer) QAService {
-	return &qaService{store: s, kafkaWriter: w}
+func NewQAService(s store.QAStore, cfg config.Kafka) QAService {
+	producer := messaging.NewKafkaProducer(cfg)
+	return &qaService{
+		store:         s,
+		kafkaProducer: producer,
+		cfg:           cfg,
+	}
 }
 
 // --- 问题实现 ---
@@ -160,18 +165,11 @@ func (s *qaService) publishQuestionEvent(ctx context.Context, eventType messagin
 		},
 	}
 
-	eventBytes, err := json.Marshal(event)
+	err := s.kafkaProducer.SendMessage(ctx, s.cfg.Topics.QAEvents, event)
 	if err != nil {
-		log.Printf("ERROR: failed to marshal question event: %v", err)
-		return
-	}
-
-	err = s.kafkaWriter.WriteMessages(ctx, kafka.Message{
-		Value: eventBytes,
-	})
-
-	if err != nil {
-		log.Printf("ERROR: failed to write message to kafka: %v", err)
+		log.Printf("Failed to publish event %s for question ID %d: %v", eventType, question.ID, err)
+	} else {
+		log.Printf("Published event %s for question ID %d", eventType, question.ID)
 	}
 }
 
