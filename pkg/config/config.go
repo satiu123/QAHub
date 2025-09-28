@@ -76,7 +76,8 @@ type Kafka struct {
 
 // Topics 对应于 [kafka.topics] 配置部分
 type Topics struct {
-	QAEvents string `mapstructure:"qa_events"`
+	QAEvents           string `mapstructure:"qa_events"`
+	NotificationEvents string `mapstructure:"notification_events"`
 }
 
 // Elasticsearch 对应于 [elasticsearch] 配置部分

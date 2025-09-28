@@ -2,16 +2,15 @@ package middleware
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"qahub/internal/user/store"
+	"qahub/pkg/auth"
 	"qahub/pkg/config"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -49,30 +48,13 @@ func GrpcAuthInterceptor() grpc.UnaryServerInterceptor {
 		}
 
 		tokenString := parts[1]
-		var jwtSecret = []byte(config.Conf.Services.UserService.JWTSecret)
-
-		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("非预期的签名方法: %v", token.Header["alg"])
-			}
-			return jwtSecret, nil
-		})
-
+		identity, err := auth.ParseToken(tokenString, []byte(config.Conf.Services.UserService.JWTSecret))
 		if err != nil {
 			return nil, status.Errorf(codes.Unauthenticated, "无效的token: %v", err)
 		}
 
-		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			if userID, ok := claims["user_id"].(float64); ok {
-				// 将用户ID注入到新的context中
-				newCtx := context.WithValue(ctx, "userID", int64(userID))
-				return handler(newCtx, req)
-			} else {
-				return nil, status.Errorf(codes.Unauthenticated, "token中缺少用户信息")
-			}
-		} else {
-			return nil, status.Errorf(codes.Unauthenticated, "无效的token claims")
-		}
+		newCtx := auth.WithIdentity(ctx, identity)
+		return handler(newCtx, req)
 	}
 }
 
@@ -96,8 +78,8 @@ func NginxAuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		// 将用户ID存储在上下文中，以便后续的处理函数使用
-		c.Set("userID", userID)
+		identity := auth.Identity{UserID: userID, Username: c.GetHeader("X-User-Name")}
+		auth.InjectIntoGin(c, identity)
 		c.Next()
 	}
 }
@@ -136,37 +118,15 @@ func AuthMiddleware(userStore store.UserStore) gin.HandlerFunc {
 			}
 		}
 
-		var jwtSecret = []byte(config.Conf.Services.UserService.JWTSecret)
-		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
-			// 确保token的签名方法是我们期望的
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("非预期的签名方法: %v", token.Header["alg"])
-			}
-			return jwtSecret, nil
-		})
-
+		identity, err := auth.ParseToken(tokenString, []byte(config.Conf.Services.UserService.JWTSecret))
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "无效的token"})
 			c.Abort()
 			return
 		}
 
-		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			// 从claims中获取用户ID
-			if userID, ok := claims["user_id"].(float64); ok {
-				// 将用户ID存储在上下文中，以便后续的处理函数使用
-				c.Set("userID", int64(userID))
-				c.Next()
-			} else {
-				c.JSON(http.StatusUnauthorized, gin.H{"error": "token中缺少用户信息"})
-				c.Abort()
-				return
-			}
-		} else {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "无效的token claims"})
-			c.Abort()
-			return
-		}
+		auth.InjectIntoGin(c, identity)
+		c.Next()
 	}
 }
 
@@ -188,20 +148,9 @@ func OptionalAuthMiddleware() gin.HandlerFunc {
 		tokenString := parts[1]
 		var jwtSecret = []byte(config.Conf.Services.UserService.JWTSecret)
 
-		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-			}
-			return jwtSecret, nil
-		})
-
+		identity, err := auth.ParseToken(tokenString, jwtSecret)
 		if err == nil {
-			if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-				if userID, ok := claims["user_id"].(float64); ok {
-					// token有效，设置userID
-					c.Set("userID", int64(userID))
-				}
-			}
+			auth.InjectIntoGin(c, identity)
 		}
 		// 无论token是否有效，都继续处理请求
 		c.Next()

@@ -125,14 +125,18 @@ func (h *UserHandler) ValidateToken(c *gin.Context) {
 	}
 	tokenString := parts[1]
 
-	userID, err := h.userService.ValidateToken(c.Request.Context(), tokenString)
+	identity, err := h.userService.ValidateToken(c.Request.Context(), tokenString)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 
 	// 验证成功，将 User-ID 放入响应头，供 Nginx 读取
-	c.Header("X-User-ID", strconv.FormatInt(userID, 10))
+	c.Header("X-User-ID", strconv.FormatInt(identity.UserID, 10))
+	// 可选：如果有用户名，也放入响应头
+	if identity.Username != "" {
+		c.Header("X-Username", identity.Username)
+	}
 	c.JSON(http.StatusOK, gin.H{"message": "valid"})
 }
 

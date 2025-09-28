@@ -9,6 +9,7 @@ import (
 	"qahub/internal/user/dto"
 	"qahub/internal/user/model"
 	"qahub/internal/user/store"
+	"qahub/pkg/auth"
 	"qahub/pkg/config"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -19,7 +20,7 @@ type UserService interface {
 	Register(ctx context.Context, username, email, bio, password string) (*dto.UserResponse, error)
 	Login(ctx context.Context, username, password string) (string, error)
 	Logout(ctx context.Context, tokenString string, claims jwt.MapClaims) error
-	ValidateToken(ctx context.Context, tokenString string) (int64, error)
+	ValidateToken(ctx context.Context, tokenString string) (auth.Identity, error)
 	GetUserProfile(ctx context.Context, userID int64) (*dto.UserResponse, error)
 	UpdateUserProfile(ctx context.Context, user *model.User) error
 	DeleteUser(ctx context.Context, userID int64) error
@@ -115,39 +116,24 @@ func (s *userService) Logout(ctx context.Context, tokenString string, claims jwt
 	return blacklister.AddToBlacklist(tokenString, remaining)
 }
 
-func (s *userService) ValidateToken(ctx context.Context, tokenString string) (int64, error) {
+func (s *userService) ValidateToken(ctx context.Context, tokenString string) (auth.Identity, error) {
 	blacklister, hasBlacklist := s.userStore.(store.TokenBlacklister)
 	if hasBlacklist {
 		isBlacklisted, err := blacklister.IsBlacklisted(tokenString)
 		if err != nil {
-			return 0, fmt.Errorf("failed to check blacklist: %w", err)
+			return auth.Identity{}, fmt.Errorf("failed to check blacklist: %w", err)
 		}
 		if isBlacklisted {
-			return 0, errors.New("token is blacklisted")
+			return auth.Identity{}, errors.New("token is blacklisted")
 		}
 	}
 
-	var jwtSecret = []byte(config.Conf.Services.UserService.JWTSecret)
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return jwtSecret, nil
-	})
-
+	identity, err := auth.ParseToken(tokenString, []byte(config.Conf.Services.UserService.JWTSecret))
 	if err != nil {
-		return 0, fmt.Errorf("token parsing error: %w", err)
+		return auth.Identity{}, fmt.Errorf("token parsing error: %w", err)
 	}
 
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		userIDFloat, ok := claims["user_id"].(float64)
-		if !ok {
-			return 0, errors.New("invalid user_id in token")
-		}
-		return int64(userIDFloat), nil
-	} else {
-		return 0, errors.New("invalid token")
-	}
+	return identity, nil
 }
 
 func (s *userService) GetUserProfile(ctx context.Context, userID int64) (*dto.UserResponse, error) {

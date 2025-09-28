@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"qahub/internal/qa/model"
 	"qahub/internal/qa/service"
+	"qahub/pkg/auth"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -54,22 +55,49 @@ type ListResponse struct {
 
 // --- Helper Functions ---
 
-func getAuthUserID(c *gin.Context) (int64, bool) {
-	authUserID, exists := c.Get("userID")
+func getAuthIdentity(c *gin.Context) (auth.Identity, bool) {
+	if identity, ok := auth.FromGinContext(c); ok {
+		if identity.UserID == 0 {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "用户未认证"})
+			return auth.Identity{}, false
+		}
+		return identity, true
+	}
+
+	rawUserID, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "用户未认证"})
-		return 0, false
+		return auth.Identity{}, false
 	}
-	userID, ok := authUserID.(int64)
+	userID, ok := rawUserID.(int64)
 	if !ok {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "无效的用户ID格式"})
+		return auth.Identity{}, false
+	}
+
+	identity := auth.Identity{UserID: userID}
+	if rawUsername, exists := c.Get("username"); exists {
+		if username, ok := rawUsername.(string); ok {
+			identity.Username = username
+		}
+	}
+	return identity, true
+}
+
+func getAuthUserID(c *gin.Context) (int64, bool) {
+	identity, ok := getAuthIdentity(c)
+	if !ok {
 		return 0, false
 	}
-	return userID, true
+	return identity.UserID, true
 }
 
 // getAuthUserIDOrGuest 尝试从 context 获取 userID，如果不存在（访客），则返回 0 和 true
 func getAuthUserIDOrGuest(c *gin.Context) (int64, bool) {
+	if identity, ok := auth.FromGinContext(c); ok {
+		return identity.UserID, true
+	}
+
 	authUserID, exists := c.Get("userID")
 	if !exists {
 		// 访客用户，返回0

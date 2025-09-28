@@ -6,6 +6,7 @@ import (
 	pb "qahub/api/proto/user"
 	"qahub/internal/user/model"
 	"qahub/internal/user/service"
+	"qahub/pkg/auth"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -67,13 +68,13 @@ func (s *UserGrpcServer) GetUserProfile(ctx context.Context, req *pb.GetUserProf
 
 func (s *UserGrpcServer) UpdateUserProfile(ctx context.Context, req *pb.UpdateUserProfileRequest) (*emptypb.Empty, error) {
 	// 从 context 中获取认证用户ID
-	authUserID, ok := ctx.Value("userID").(int64)
-	if !ok {
+	identity, ok := auth.FromContext(ctx)
+	if !ok || identity.UserID == 0 {
 		return nil, status.Errorf(codes.Internal, "无法从context获取用户信息")
 	}
 
 	// 权限校验：确保用户只能更新自己的信息
-	if authUserID != req.UserId {
+	if identity.UserID != req.UserId {
 		return nil, status.Errorf(codes.PermissionDenied, "没有权限执行此操作")
 	}
 
@@ -94,13 +95,13 @@ func (s *UserGrpcServer) UpdateUserProfile(ctx context.Context, req *pb.UpdateUs
 
 func (s *UserGrpcServer) DeleteUser(ctx context.Context, req *pb.DeleteUserRequest) (*emptypb.Empty, error) {
 	// 从 context 中获取认证用户ID
-	authUserID, ok := ctx.Value("userID").(int64)
-	if !ok {
+	identity, ok := auth.FromContext(ctx)
+	if !ok || identity.UserID == 0 {
 		return nil, status.Errorf(codes.Internal, "无法从context获取用户信息")
 	}
 
 	// 权限校验：确保用户只能删除自己的账户
-	if authUserID != req.UserId {
+	if identity.UserID != req.UserId {
 		return nil, status.Errorf(codes.PermissionDenied, "没有权限执行此操作")
 	}
 
