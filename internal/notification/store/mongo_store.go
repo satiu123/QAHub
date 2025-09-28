@@ -19,6 +19,8 @@ type NotificationStore interface {
 	Create(ctx context.Context, notification *model.Notification) error
 	GetByRecipientID(ctx context.Context, userID int64, limit, offset int) ([]*model.Notification, error)
 	MarkAsRead(ctx context.Context, notificationID string, userID int64) error
+	MarkManyAsRead(ctx context.Context, notificationIDs []string, userID int64) (int64, error)
+	Delete(ctx context.Context, notificationID string, userID int64) error
 }
 
 type MongoNotificationStore struct {
@@ -81,6 +83,57 @@ func (m *MongoNotificationStore) MarkAsRead(ctx context.Context, notificationID 
 	}
 
 	if result.MatchedCount == 0 {
+		return errors.New("notification not found or permission denied")
+	}
+
+	return nil
+}
+
+// MarkManyAsRead 批量将通知标记为已读
+func (m *MongoNotificationStore) MarkManyAsRead(ctx context.Context, notificationIDs []string, userID int64) (int64, error) {
+	objIDs := make([]primitive.ObjectID, len(notificationIDs))
+	for i, idStr := range notificationIDs {
+		objID, err := primitive.ObjectIDFromHex(idStr)
+		if err != nil {
+			return 0, errors.New("invalid notification id format: " + idStr)
+		}
+		objIDs[i] = objID
+	}
+
+	filter := bson.M{
+		"_id":          bson.M{"$in": objIDs},
+		"recipient_id": userID,
+	}
+	update := bson.M{
+		"$set": bson.M{"is_read": true},
+	}
+
+	result, err := m.db.Collection(notificationCollection).UpdateMany(ctx, filter, update)
+	if err != nil {
+		return 0, err
+	}
+
+	return result.ModifiedCount, nil
+}
+
+// Delete 删除一条通知
+func (m *MongoNotificationStore) Delete(ctx context.Context, notificationID string, userID int64) error {
+	objID, err := primitive.ObjectIDFromHex(notificationID)
+	if err != nil {
+		return errors.New("invalid notification id format")
+	}
+
+	filter := bson.M{
+		"_id":          objID,
+		"recipient_id": userID,
+	}
+
+	result, err := m.db.Collection(notificationCollection).DeleteOne(ctx, filter)
+	if err != nil {
+		return err
+	}
+
+	if result.DeletedCount == 0 {
 		return errors.New("notification not found or permission denied")
 	}
 

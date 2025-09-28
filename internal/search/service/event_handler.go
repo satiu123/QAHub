@@ -8,7 +8,7 @@ import (
 	"qahub/pkg/messaging"
 )
 
-func (s *Service) registerHandlers() map[messaging.EventType]messaging.EventHandler {
+func (s *searchService) registerHandlers() map[messaging.EventType]messaging.EventHandler {
 	return map[messaging.EventType]messaging.EventHandler{
 		messaging.EventQuestionCreated: s.handleQuestionCreated,
 		messaging.EventQuestionUpdated: s.handleQuestionUpdated,
@@ -16,7 +16,7 @@ func (s *Service) registerHandlers() map[messaging.EventType]messaging.EventHand
 	}
 }
 
-func (s *Service) handleQuestionCreated(ctx context.Context, eventType string, payload []byte) error {
+func (s *searchService) handleQuestionCreated(ctx context.Context, eventType string, payload []byte) error {
 	var event messaging.QuestionCreatedEvent
 	if err := json.Unmarshal(payload, &event); err != nil {
 		return fmt.Errorf("解析 QuestionCreatedEvent 失败: %w", err)
@@ -27,7 +27,7 @@ func (s *Service) handleQuestionCreated(ctx context.Context, eventType string, p
 	log.Printf("成功索引问题文档 (ID: %d)", event.Payload.ID)
 	return nil
 }
-func (s *Service) handleQuestionUpdated(ctx context.Context, eventType string, payload []byte) error {
+func (s *searchService) handleQuestionUpdated(ctx context.Context, eventType string, payload []byte) error {
 	var event messaging.QuestionUpdatedEvent
 	if err := json.Unmarshal(payload, &event); err != nil {
 		return fmt.Errorf("解析 QuestionUpdatedEvent 失败: %w", err)
@@ -39,7 +39,7 @@ func (s *Service) handleQuestionUpdated(ctx context.Context, eventType string, p
 	return nil
 }
 
-func (s *Service) handleQuestionDeleted(ctx context.Context, eventType string, payload []byte) error {
+func (s *searchService) handleQuestionDeleted(ctx context.Context, eventType string, payload []byte) error {
 	var event messaging.QuestionDeletedEvent
 	if err := json.Unmarshal(payload, &event); err != nil {
 		return fmt.Errorf("解析 QuestionDeletedEvent 失败: %w", err)

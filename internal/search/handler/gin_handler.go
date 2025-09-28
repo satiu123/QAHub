@@ -10,11 +10,11 @@ import (
 
 // Handler 结构体持有 service 的引用
 type Handler struct {
-	service *service.Service
+	service service.SearchService
 }
 
 // New 函数创建一个新的 Handler 实例
-func New(s *service.Service) *Handler {
+func New(s service.SearchService) *Handler {
 	return &Handler{service: s}
 }
 
