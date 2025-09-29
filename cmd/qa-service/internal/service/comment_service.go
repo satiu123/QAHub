@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"qahub/pkg/auth"
 	"qahub/pkg/messaging"
 	"qahub/qa-service/internal/dto"
 	"qahub/qa-service/internal/model"
+	"time"
 )
 
 // CreateComment 创建一个新评论
@@ -17,35 +19,50 @@ func (s *qaService) CreateComment(ctx context.Context, answerID int64, content s
 		Content:  content,
 		UserID:   userID,
 	}
+
+	// 从上下文中提前获取用户信息
+	identity, ok := auth.FromContext(ctx)
+	if !ok {
+		// 如果无法获取用户信息，可以根据业务逻辑决定是返回错误还是继续
+		return nil, errors.New("user identity not found in context")
+	}
+
 	commentID, err := s.store.CreateComment(ctx, comment)
 	if err != nil {
 		return nil, err
 	}
 	comment.ID = commentID
 
-	// 发布回答创建事件
-	go func() {
-		//获取问题的作者ID
-		answer, err := s.store.GetAnswerByID(ctx, answerID)
+	// 启动后台协程发布通知事件
+	go func(senderUsername string, newComment model.Comment) {
+		//  使用 context.Background() 为后台任务创建独立的上下文
+		notifyCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		// 获取答案的作者ID
+		answer, err := s.store.GetAnswerByID(notifyCtx, newComment.AnswerID)
 		if err != nil {
+			// 在后台任务中，错误应该被记录下来，而不是被忽略
+			log.Printf("error getting answer by id: %v", err)
 			return
 		}
-		if comment.UserID == userID {
-			// 如果回答者是问题的作者自己，则不发送通知
+
+		// 判断评论者是否是答案的作者本人
+		if newComment.UserID == answer.UserID {
+			// 如果评论者是答案的作者自己，则不发送通知
 			return
 		}
-		identity, _ := auth.FromContext(ctx)
-		// 发布通知事件，通知问题的作者有了新的回答
+
+		// 构建并发布通知事件
 		notificationPayload := messaging.NotificationPayload{
 			RecipientID:      answer.UserID,
-			SenderID:         comment.UserID,
-			SenderName:       identity.Username,
+			SenderID:         newComment.UserID,
+			SenderName:       senderUsername,
 			NotificationType: messaging.NotificationTypeNewComment,
-			Content:          fmt.Sprintf("'%s' 评论了你的答案: '%s'", identity.Username, comment.Content),
-			TargetURL:        fmt.Sprintf("/questions/%d#comment-%d", answer.QuestionID, comment.ID),
+			Content:          fmt.Sprintf("'%s' 评论了你的答案: '%s'", senderUsername, newComment.Content),
+			TargetURL:        fmt.Sprintf("/questions/%d#comment-%d", answer.QuestionID, newComment.ID),
 		}
-		s.publishNotificationEvent(ctx, notificationPayload)
-	}()
+		s.publishNotificationEvent(notifyCtx, notificationPayload)
+	}(identity.Username, *comment)
 
 	return comment, nil
 }

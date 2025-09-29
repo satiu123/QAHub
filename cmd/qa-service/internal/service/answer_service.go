@@ -9,6 +9,7 @@ import (
 	"qahub/qa-service/internal/dto"
 	"qahub/qa-service/internal/model"
 	"qahub/qa-service/internal/store"
+	"time"
 )
 
 func (s *qaService) CreateAnswer(ctx context.Context, questionID int64, content string, userID int64) (*model.Answer, error) {
@@ -17,6 +18,12 @@ func (s *qaService) CreateAnswer(ctx context.Context, questionID int64, content 
 		Content:    content,
 		UserID:     userID,
 	}
+	// 从上下文中提前获取用户信息
+	identity, ok := auth.FromContext(ctx)
+	if !ok {
+		// 如果无法获取用户信息，可以根据业务逻辑决定是返回错误还是继续
+		return nil, errors.New("user identity not found in context")
+	}
 	answerID, err := s.store.CreateAnswer(ctx, answer)
 	if err != nil {
 		return nil, err
@@ -24,9 +31,12 @@ func (s *qaService) CreateAnswer(ctx context.Context, questionID int64, content 
 	answer.ID = answerID
 
 	// 发布回答创建事件
-	go func() {
+	go func(senderUsername string, newAnswer model.Answer) {
+
+		notifyCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
 		//获取问题的作者ID
-		question, err := s.store.GetQuestionByID(ctx, questionID)
+		question, err := s.store.GetQuestionByID(notifyCtx, questionID)
 		if err != nil {
 			return
 		}
@@ -34,18 +44,17 @@ func (s *qaService) CreateAnswer(ctx context.Context, questionID int64, content 
 			// 如果回答者是问题的作者自己，则不发送通知
 			return
 		}
-		identity, _ := auth.FromContext(ctx)
 		// 发布通知事件，通知问题的作者有了新的回答
 		notificationPayload := messaging.NotificationPayload{
 			RecipientID:      question.UserID,
-			SenderID:         answer.UserID,
-			SenderName:       identity.Username,
+			SenderID:         newAnswer.UserID,
+			SenderName:       senderUsername,
 			NotificationType: messaging.NotificationTypeNewAnswer,
-			Content:          fmt.Sprintf("'%s' 回答了你的问题: '%s',内容是'%s'", identity.Username, question.Title, answer.Content),
-			TargetURL:        fmt.Sprintf("/questions/%d#answer-%d", question.ID, answer.ID),
+			Content:          fmt.Sprintf("'%s' 回答了你的问题: '%s',内容是'%s'", senderUsername, question.Title, newAnswer.Content),
+			TargetURL:        fmt.Sprintf("/questions/%d#answer-%d", question.ID, newAnswer.ID),
 		}
-		s.publishNotificationEvent(ctx, notificationPayload)
-	}()
+		s.publishNotificationEvent(notifyCtx, notificationPayload)
+	}(identity.Username, *answer)
 
 	return answer, nil
 }
