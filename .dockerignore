@@ -1,0 +1,9 @@
+# 忽略前端目录
+frontend/
+
+# 忽略其他不需要的文件和目录
+.git/
+.vscode/
+*.md
+docs/
+scripts/

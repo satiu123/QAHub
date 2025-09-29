@@ -74,7 +74,20 @@ services:
         condition: service_started
       elasticsearch:
         condition: service_healthy
-
+  # 通知服务
+  notification-service:
+    build:
+      context: .
+      dockerfile: cmd/notification-service/Dockerfile
+    container_name: qahub-notification-service
+    restart: always
+    environment:
+      - GIN_MODE=release
+    depends_on:
+      kafka:
+        condition: service_started
+      mongodb:
+        condition: service_healthy
   # MariaDB 服务
   mariadb:
     image: mariadb:12.0.2

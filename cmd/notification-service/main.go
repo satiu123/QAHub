@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"log"
-	"qahub/internal/notification/handler"
-	"qahub/internal/notification/service"
-	"qahub/internal/notification/store"
+	"qahub/notification-service/internal/handler"
+	"qahub/notification-service/internal/service"
+	"qahub/notification-service/internal/store"
 	"qahub/pkg/config"
 	"qahub/pkg/database"
 	"qahub/pkg/middleware"

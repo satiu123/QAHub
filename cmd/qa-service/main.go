@@ -3,12 +3,12 @@ package main
 import (
 	"os"
 
-	"qahub/internal/qa/handler"
-	"qahub/internal/qa/service"
-	"qahub/internal/qa/store"
 	"qahub/pkg/config"
 	"qahub/pkg/database"
 	"qahub/pkg/middleware"
+	"qahub/qa-service/internal/handler"
+	"qahub/qa-service/internal/service"
+	"qahub/qa-service/internal/store"
 
 	"github.com/gin-gonic/gin"
 

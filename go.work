@@ -1,0 +1,10 @@
+go 1.25.1
+
+use (
+	./api
+	./cmd/notification-service
+	./cmd/qa-service
+	./cmd/search-service
+	./cmd/user-service
+	./pkg
+)

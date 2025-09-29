@@ -1,35 +1,44 @@
 # ---- Build Stage ----
-# 使用官方的 Go 镜像作为编译环境
 FROM golang:1.25-alpine AS builder
 
-# 设置工作目录
-WORKDIR /app
+WORKDIR /workspace
 
-# 复制 go.mod 和 go.sum 文件并下载依赖
-# 这样可以利用 Docker 的层缓存机制，只有在依赖变化时才重新下载
-COPY go.mod go.sum ./
-RUN go mod download
+# 预热 go.work 及各模块的 go.mod/go.sum，最大化缓存命中
+COPY go.work go.work
+COPY go.work.sum go.work.sum
+COPY cmd/user-service/go.mod cmd/user-service/go.sum ./cmd/user-service/
+COPY cmd/qa-service/go.mod cmd/qa-service/go.sum ./cmd/qa-service/
+COPY cmd/search-service/go.mod cmd/search-service/go.sum ./cmd/search-service/
+COPY cmd/notification-service/go.mod cmd/notification-service/go.sum ./cmd/notification-service/
+COPY pkg/go.mod pkg/go.sum ./pkg/
+COPY api/go.mod api/go.sum ./api/
 
-# 复制所有源代码
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go work sync
+
+# 下载用户服务依赖
+WORKDIR /workspace/cmd/user-service
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download
+
+# 复制剩余源码
+WORKDIR /workspace
 COPY . .
 
-# 编译 user-service 应用
-# -o 指定输出文件名，CGO_ENABLED=0 禁用 CGO 以便静态链接
-# -ldflags "-s -w" 去除调试信息，减小文件体积
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /app/user-service /app/cmd/user-service/main.go
+# 编译用户服务
+WORKDIR /workspace/cmd/user-service
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /workspace/bin/user-service .
 
+# ---- Runtime Stage ----
 FROM alpine:latest
 
-# 设置工作目录
 WORKDIR /app
 
-# 从 builder 阶段复制编译好的二进制文件和配置文件
-COPY --from=builder /app/user-service .
-COPY configs/config.docker.yaml /app/configs/config.yaml
+COPY --from=builder /workspace/bin/user-service /app/user-service
+COPY --from=builder /workspace/configs/config.docker.yaml /app/configs/config.yaml
 
-# 暴露服务端口 (在容器内部)
-# 这个端口应该与 config.yaml 中为 user-service 配置的端口一致
 EXPOSE 8081
 
-# 容器启动时运行的命令
 ENTRYPOINT ["/app/user-service"]
