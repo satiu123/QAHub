@@ -3,6 +3,9 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
+	"qahub/pkg/auth"
+	"qahub/pkg/messaging"
 	"qahub/qa-service/internal/dto"
 	"qahub/qa-service/internal/model"
 	"qahub/qa-service/internal/store"
@@ -19,7 +22,31 @@ func (s *qaService) CreateAnswer(ctx context.Context, questionID int64, content 
 		return nil, err
 	}
 	answer.ID = answerID
-	// TODO: 发布回答创建事件
+
+	// 发布回答创建事件
+	go func() {
+		//获取问题的作者ID
+		question, err := s.store.GetQuestionByID(ctx, questionID)
+		if err != nil {
+			return
+		}
+		if question.UserID == userID {
+			// 如果回答者是问题的作者自己，则不发送通知
+			return
+		}
+		identity, _ := auth.FromContext(ctx)
+		// 发布通知事件，通知问题的作者有了新的回答
+		notificationPayload := messaging.NotificationPayload{
+			RecipientID:      question.UserID,
+			SenderID:         answer.UserID,
+			SenderName:       identity.Username,
+			NotificationType: messaging.NotificationTypeNewAnswer,
+			Content:          fmt.Sprintf("'%s' 回答了你的问题: '%s',内容是'%s'", identity.Username, question.Title, answer.Content),
+			TargetURL:        fmt.Sprintf("/questions/%d#answer-%d", question.ID, answer.ID),
+		}
+		s.publishNotificationEvent(ctx, notificationPayload)
+	}()
+
 	return answer, nil
 }
 

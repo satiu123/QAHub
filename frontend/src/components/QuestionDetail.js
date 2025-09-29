@@ -74,7 +74,8 @@ const Comments = ({ answerId, token, onCommentAdded }) => {
                         const createdAt = comment.CreatedAt || comment.created_at;
 
                         return (
-                            <div key={comment.ID || comment.id} className="mb-3">
+                            // MODIFIED: Added id for scrolling
+                            <div key={comment.ID || comment.id} id={`comment-${comment.ID || comment.id}`} className="mb-3">
                                 <div className="card border-0 bg-light">
                                     <div className="card-body py-2 px-3">
                                         <p className="card-text mb-2 small" style={{ lineHeight: '1.4' }}>
@@ -173,6 +174,33 @@ function QuestionDetail({ token }) {
         fetchAnswers();
     }, [token, questionId, fetchQuestion, fetchAnswers]);
 
+    // NEW: useEffect for scrolling to a specific answer or comment
+    useEffect(() => {
+        // Run this after answers have been loaded
+        if (answers && answers.length > 0) {
+            const hash = window.location.hash; // e.g., #answer-45 or #comment-67
+            if (hash) {
+                try {
+                    const element = document.querySelector(hash);
+                    if (element) {
+                        // Scroll the element into view
+                        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                        // Add a temporary highlight effect for better UX
+                        element.style.transition = 'background-color 0.5s ease';
+                        element.style.backgroundColor = '#e7f3ff'; // A light blue highlight
+                        setTimeout(() => {
+                            element.style.backgroundColor = ''; // Remove highlight after 2.5 seconds
+                        }, 2500);
+                    }
+                } catch (e) {
+                    // In case of an invalid selector in the hash
+                    console.error("Could not scroll to element with hash:", hash, e);
+                }
+            }
+        }
+    }, [answers]); // Dependency on `answers` ensures this runs after data is fetched
+
     // 处理点赞/取消点赞的函数
     const handleVote = async (answerId, isUpvotedByUser) => {
         // 找到当前正在操作的答案
@@ -269,7 +297,8 @@ function QuestionDetail({ token }) {
             <h4 className="mb-3">Answers ({answers.length})</h4>
             {answers.length > 0 ? (
                 answers.map(answer => (
-                    <div key={answer.ID || answer.id} className="card mb-4 shadow-sm">
+                    // MODIFIED: Added id for scrolling
+                    <div key={answer.ID || answer.id} id={`answer-${answer.ID || answer.id}`} className="card mb-4 shadow-sm">
                         <div className="card-body">
                             <p className="card-text mb-3" style={{ lineHeight: '1.6' }}>{answer.Content || answer.content}</p>
                             <div className="row align-items-center mb-3">
