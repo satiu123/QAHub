@@ -3,6 +3,9 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
+	"qahub/pkg/auth"
+	"qahub/pkg/messaging"
 	"qahub/qa-service/internal/dto"
 	"qahub/qa-service/internal/model"
 )
@@ -19,6 +22,31 @@ func (s *qaService) CreateComment(ctx context.Context, answerID int64, content s
 		return nil, err
 	}
 	comment.ID = commentID
+
+	// 发布回答创建事件
+	go func() {
+		//获取问题的作者ID
+		answer, err := s.store.GetAnswerByID(ctx, answerID)
+		if err != nil {
+			return
+		}
+		if comment.UserID == userID {
+			// 如果回答者是问题的作者自己，则不发送通知
+			return
+		}
+		identity, _ := auth.FromContext(ctx)
+		// 发布通知事件，通知问题的作者有了新的回答
+		notificationPayload := messaging.NotificationPayload{
+			RecipientID:      answer.UserID,
+			SenderID:         comment.UserID,
+			SenderName:       identity.Username,
+			NotificationType: messaging.NotificationTypeNewComment,
+			Content:          fmt.Sprintf("'%s' 评论了你的答案: '%s'", identity.Username, comment.Content),
+			TargetURL:        fmt.Sprintf("/questions/%d#comment-%d", answer.QuestionID, comment.ID),
+		}
+		s.publishNotificationEvent(ctx, notificationPayload)
+	}()
+
 	return comment, nil
 }
 

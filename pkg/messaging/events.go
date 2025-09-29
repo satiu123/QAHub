@@ -69,6 +69,11 @@ type QuestionDeletedEvent struct {
 // EventNotificationTriggered 表示一个通知被触发的事件
 const EventNotificationTriggered EventType = "notification.triggered"
 
+const (
+	NotificationTypeNewAnswer  = "new_answer"
+	NotificationTypeNewComment = "new_comment"
+)
+
 // NotificationPayload 是与通知相关的事件所携带的数据
 type NotificationPayload struct {
 	RecipientID      int64  `json:"recipient_id"` // 接收通知的用户ID
