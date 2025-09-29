@@ -6,18 +6,18 @@ WORKDIR /workspace
 # 预热 go.work 及各模块的 go.mod/go.sum，最大化缓存命中
 COPY go.work go.work
 COPY go.work.sum go.work.sum
+COPY cmd/notification-service/go.mod cmd/notification-service/go.sum ./cmd/notification-service/
 COPY cmd/user-service/go.mod cmd/user-service/go.sum ./cmd/user-service/
 COPY cmd/qa-service/go.mod cmd/qa-service/go.sum ./cmd/qa-service/
 COPY cmd/search-service/go.mod cmd/search-service/go.sum ./cmd/search-service/
-COPY cmd/notification-service/go.mod cmd/notification-service/go.sum ./cmd/notification-service/
 COPY pkg/go.mod pkg/go.sum ./pkg/
 COPY api/go.mod api/go.sum ./api/
 
 RUN --mount=type=cache,target=/go/pkg/mod \
     go work sync
 
-# 下载搜索服务依赖
-WORKDIR /workspace/cmd/search-service
+# 下载通知服务依赖
+WORKDIR /workspace/cmd/notification-service
 RUN --mount=type=cache,target=/go/pkg/mod \
     go mod download
 
@@ -25,20 +25,20 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 WORKDIR /workspace
 COPY . .
 
-# 编译搜索服务
-WORKDIR /workspace/cmd/search-service
+# 编译通知服务
+WORKDIR /workspace/cmd/notification-service
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /workspace/bin/search-service .
+    CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /workspace/bin/notification-service .
 
 # ---- Runtime Stage ----
 FROM alpine:latest
 
 WORKDIR /app
 
-COPY --from=builder /workspace/bin/search-service /app/search-service
+COPY --from=builder /workspace/bin/notification-service /app/notification-service
 COPY --from=builder /workspace/configs/config.docker.yaml /app/configs/config.yaml
 
-EXPOSE 8083
+EXPOSE 8084
 
-ENTRYPOINT ["/app/search-service"]
+ENTRYPOINT ["/app/notification-service"]
