@@ -41,7 +41,7 @@ elasticsearch:
 
 # MongoDB 配置 (供通知服务使用)
 mongodb:
-  uri: "mongodb://mongodb:27018"
+  uri: "mongodb://qahub_admin:12345678@mongodb:27017"
   database: "notification_db"
 
 # 服务特有配置

@@ -43,6 +43,11 @@ func (c *KafkaConsumer) SetHandlers(handlers map[EventType]EventHandler) {
 // Start 在一个无限循环中启动消费者
 func (c *KafkaConsumer) Start(ctx context.Context) {
 	log.Printf("开始消费 Kafka topic '%s' (Group: %s)...", c.reader.Config().Topic, c.reader.Config().GroupID)
+	log.Printf("注册的事件处理器数量: %d", len(c.handlers))
+	for eventType := range c.handlers {
+		log.Printf("已注册事件类型: %s", eventType)
+	}
+
 	for {
 		msg, err := c.reader.ReadMessage(ctx)
 		if err != nil {
