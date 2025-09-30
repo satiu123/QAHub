@@ -137,7 +137,7 @@ services:
       - KAFKA_NODE_ID=1
       - KAFKA_PROCESS_ROLES=broker,controller
       - KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
-      # 【关键修复】提供一个唯一的 Cluster ID，用于首次启动时格式化存储
+      # 提供一个唯一的 Cluster ID，用于首次启动时格式化存储
       - KAFKA_CLUSTER_ID=5L6g3nShT-eMCtK--X86sw
 
       # ----------- 监听器配置 -----------
