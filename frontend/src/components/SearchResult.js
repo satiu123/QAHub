@@ -2,8 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import axios from 'axios';
-
-const API_URL = 'http://localhost:8080/api/v1';
+import { API_BASE_URL } from '../config/api';
 
 const SearchResult = ({ token }) => {
     const [results, setResults] = useState([]);
@@ -19,7 +18,7 @@ const SearchResult = ({ token }) => {
 
         const fetchResults = async () => {
             try {
-                const response = await axios.get(`${API_URL}/search?q=${query}`, {
+                const response = await axios.get(`${API_BASE_URL}/search?q=${query}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }

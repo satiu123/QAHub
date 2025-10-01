@@ -11,3 +11,28 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+.notification-dropdown {
+  min-width: 320px;
+  max-width: 360px;
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.notification-scroll {
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.notification-entry:nth-child(odd) {
+  background-color: rgba(0, 0, 0, 0.01);
+}
+
+.notification-entry-unread {
+  border-left: 4px solid rgba(13, 110, 253, 0.6);
+  background-color: rgba(13, 110, 253, 0.08);
+}
+
+.notification-entry-unread button {
+  font-weight: 600;
+}
