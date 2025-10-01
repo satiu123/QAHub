@@ -115,44 +115,57 @@ const NotificationBell = ({ token }) => {
     }, []);
 
     const handleNotificationClick = useCallback(
-        async (notification) => {
+        async (notification, event) => {
             if (!notification) return;
 
+            // 阻止事件冒泡
+            if (event) {
+                event.stopPropagation();
+            }
+
             const notificationId = notification.id;
+
+            // 先标记为已读
             if (!notification.is_read) {
-                const previousState = notifications.map((item) => ({ ...item }));
                 markAsReadLocally([notificationId]);
                 try {
                     await markNotificationsRead({ token, notificationIds: [notificationId] });
                 } catch (err) {
                     console.error('Failed to mark notification as read', err);
-                    setNotifications(previousState);
+                    // 如果失败，重新加载通知列表
+                    handleFetchNotifications();
                 }
             }
 
             closeDropdown();
+
+            // 导航到目标页面
             if (notification.target_url) {
                 navigate(notification.target_url);
             }
         },
-        [notifications, markAsReadLocally, navigate, closeDropdown, token],
+        [markAsReadLocally, navigate, closeDropdown, token, handleFetchNotifications],
     );
 
-    const handleMarkAllRead = useCallback(async () => {
+    const handleMarkAllRead = useCallback(async (event) => {
+        if (event) {
+            event.stopPropagation();
+        }
+
         const unreadIds = notifications.filter((item) => !item.is_read).map((item) => item.id);
         if (unreadIds.length === 0) {
             return;
         }
 
-        const previousState = notifications.map((item) => ({ ...item }));
         markAsReadLocally(unreadIds);
         try {
             await markNotificationsRead({ token, notificationIds: unreadIds });
         } catch (err) {
-            console.error('Failed to mark notifications as read', err);
-            setNotifications(previousState);
+            console.error('Failed to mark all notifications as read', err);
+            // 如果失败，重新加载通知列表
+            handleFetchNotifications();
         }
-    }, [notifications, markAsReadLocally, token]);
+    }, [notifications, markAsReadLocally, token, handleFetchNotifications]);
 
     const toggleDropdown = useCallback(() => {
         setIsOpen((prev) => !prev);
@@ -265,14 +278,7 @@ const NotificationBell = ({ token }) => {
         };
     }, [isOpen]);
 
-    // Automatically mark notifications as read when opening the dropdown
-    useEffect(() => {
-        if (!isOpen) return;
-
-        if (notifications.some((item) => !item.is_read)) {
-            handleMarkAllRead();
-        }
-    }, [isOpen, notifications, handleMarkAllRead]);
+    // 移除自动标记已读功能，只在用户主动点击时标记
 
     if (!token) {
         return null;
@@ -302,10 +308,22 @@ const NotificationBell = ({ token }) => {
                 <div className="dropdown-menu dropdown-menu-end show p-0 shadow notification-dropdown">
                     <div className="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
                         <span className="fw-semibold">通知</span>
-                        <span className={`small d-flex align-items-center gap-1 ${statusStyle}`}>
-                            <span className="badge rounded-pill bg-light border">状态</span>
-                            {statusLabel}
-                        </span>
+                        <div className="d-flex align-items-center gap-2">
+                            <span className={`small d-flex align-items-center gap-1 ${statusStyle}`}>
+                                <span className="badge rounded-pill bg-light border">状态</span>
+                                {statusLabel}
+                            </span>
+                            {unreadCount > 0 && (
+                                <button
+                                    type="button"
+                                    className="btn btn-sm btn-link text-decoration-none p-0"
+                                    onClick={handleMarkAllRead}
+                                    title="全部标记为已读"
+                                >
+                                    全部已读
+                                </button>
+                            )}
+                        </div>
                     </div>
 
                     <div className="notification-scroll">
@@ -333,7 +351,7 @@ const NotificationBell = ({ token }) => {
                                             <button
                                                 type="button"
                                                 className="w-100 text-start border-0 bg-transparent px-3 py-2"
-                                                onClick={() => handleNotificationClick(notification)}
+                                                onClick={(e) => handleNotificationClick(notification, e)}
                                             >
                                                 <div className="d-flex justify-content-between align-items-start mb-1">
                                                     <span className="fw-semibold text-truncate me-2">
@@ -365,7 +383,19 @@ const NotificationBell = ({ token }) => {
                         >
                             刷新
                         </button>
-                        <span className="small text-muted">共 {notifications.length} 条</span>
+                        <div className="d-flex align-items-center gap-2">
+                            <span className="small text-muted">共 {notifications.length} 条</span>
+                            <button
+                                type="button"
+                                className="btn btn-link btn-sm text-decoration-none"
+                                onClick={() => {
+                                    closeDropdown();
+                                    navigate('/notifications');
+                                }}
+                            >
+                                查看全部
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

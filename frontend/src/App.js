@@ -10,6 +10,7 @@ import CreateQuestion from './components/CreateQuestion';
 import SearchBox from './components/SearchBox';
 import SearchResult from './components/SearchResult';
 import NotificationBell from './components/NotificationBell';
+import NotificationCenter from './components/NotificationCenter';
 import { API_BASE_URL } from './config/api';
 
 const Layout = () => {
@@ -88,6 +89,10 @@ const Layout = () => {
         <Route
           path="/search"
           element={token ? <SearchResult token={token} /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/notifications"
+          element={token ? <NotificationCenter token={token} /> : <Navigate to="/login" />}
         />
         <Route path="*" element={<Navigate to={token ? "/questions" : "/login"} />} />
       </Routes>

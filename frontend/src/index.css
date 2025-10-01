@@ -12,27 +12,127 @@ code {
     monospace;
 }
 
+/* 通知下拉框样式 */
 .notification-dropdown {
-  min-width: 320px;
-  max-width: 360px;
+  min-width: 360px;
+  max-width: 420px;
   border-radius: 0.75rem;
   overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .notification-scroll {
-  max-height: 360px;
+  max-height: 400px;
   overflow-y: auto;
 }
 
-.notification-entry:nth-child(odd) {
-  background-color: rgba(0, 0, 0, 0.01);
+.notification-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.notification-scroll::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.notification-scroll::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.notification-scroll::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.notification-entry {
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.notification-entry:last-child {
+  border-bottom: none;
+}
+
+.notification-entry:hover {
+  background-color: rgba(0, 0, 0, 0.03);
 }
 
 .notification-entry-unread {
-  border-left: 4px solid rgba(13, 110, 253, 0.6);
+  border-left: 4px solid #0d6efd;
   background-color: rgba(13, 110, 253, 0.08);
 }
 
-.notification-entry-unread button {
+.notification-entry-unread:hover {
+  background-color: rgba(13, 110, 253, 0.12);
+}
+
+.notification-entry button {
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.notification-entry button:hover {
+  opacity: 0.85;
+}
+
+/* 通知中心页面样式 */
+.list-group-item-action:hover {
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+.list-group-item-primary {
+  background-color: rgba(13, 110, 253, 0.08);
+  border-left: 4px solid #0d6efd;
+}
+
+.list-group-item-primary:hover {
+  background-color: rgba(13, 110, 253, 0.12);
+}
+
+/* Tab样式优化 */
+.nav-tabs .nav-link {
+  cursor: pointer;
+  border: none;
+  color: #6c757d;
+  transition: all 0.2s ease;
+}
+
+.nav-tabs .nav-link:hover {
+  color: #0d6efd;
+  border-color: transparent;
+}
+
+.nav-tabs .nav-link.active {
+  color: #0d6efd;
   font-weight: 600;
+  border-bottom: 2px solid #0d6efd;
+  background-color: transparent;
+}
+
+/* 徽章动画 */
+.badge {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 响应式优化 */
+@media (max-width: 768px) {
+  .notification-dropdown {
+    min-width: 280px;
+    max-width: 320px;
+  }
+
+  .notification-scroll {
+    max-height: 300px;
+  }
 }
