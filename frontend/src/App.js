@@ -9,9 +9,8 @@ import QuestionDetail from './components/QuestionDetail';
 import CreateQuestion from './components/CreateQuestion';
 import SearchBox from './components/SearchBox';
 import SearchResult from './components/SearchResult';
-
-
-const API_URL = 'http://localhost:8080/api/v1';
+import NotificationBell from './components/NotificationBell';
+import { API_BASE_URL } from './config/api';
 
 const Layout = () => {
   const [token, setToken] = useState(localStorage.getItem('token'));
@@ -25,7 +24,7 @@ const Layout = () => {
 
   const handleLogout = async () => {
     try {
-      await axios.post(`${API_URL}/users/logout`, null, {
+      await axios.post(`${API_BASE_URL}/users/logout`, null, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -58,9 +57,10 @@ const Layout = () => {
             )}
           </div>
           {token && (
-            <div className="d-flex align-items-center">
+            <div className="d-flex align-items-center gap-2">
               <SearchBox />
-              <button onClick={handleLogout} className="btn btn-link nav-link ms-2">Logout</button>
+              <NotificationBell token={token} />
+              <button onClick={handleLogout} className="btn btn-link nav-link">Logout</button>
             </div>
           )}
         </div>
@@ -85,7 +85,7 @@ const Layout = () => {
           path="/create-question"
           element={token ? <CreateQuestion token={token} /> : <Navigate to="/login" />}
         />
-        <Route 
+        <Route
           path="/search"
           element={token ? <SearchResult token={token} /> : <Navigate to="/login" />}
         />

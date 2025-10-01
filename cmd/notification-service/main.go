@@ -46,7 +46,7 @@ func main() {
 
 	// 6. 设置路由
 	apiGroup := router.Group("/api/v1")
-	apiGroup.Use(middleware.NginxAuthMiddleware()) // 使用 Nginx 传递的用户信息进行认证
+	apiGroup.Use(gin.Logger(), middleware.NginxAuthMiddleware(), middleware.CORSMiddleware()) // 使用 Nginx 传递的用户信息进行认证
 
 	// WebSocket 路由
 	apiGroup.GET("/ws", ntHandler.WsHandler)

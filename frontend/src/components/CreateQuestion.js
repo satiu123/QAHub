@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-
-const API_URL = 'http://localhost:8080/api/v1';
+import { API_BASE_URL } from '../config/api';
 
 function CreateQuestion({ token }) {
     const [title, setTitle] = useState('');
@@ -15,7 +14,7 @@ function CreateQuestion({ token }) {
         setError('');
 
         try {
-            await axios.post(`${API_URL}/questions`, {
+            await axios.post(`${API_BASE_URL}/questions`, {
                 title,
                 content
             }, {

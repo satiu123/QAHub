@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
+import { API_BASE_URL } from '../config/api';
 
-const API_URL = 'http://localhost:8080/api/v1';
+const API_URL = API_BASE_URL;
 
 const formatDisplayName = (name, fallbackId) => {
     if (name && name.trim().length > 0) {

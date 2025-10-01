@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-
-const API_URL = 'http://localhost:8080/api/v1';
+import { API_BASE_URL } from '../config/api';
 
 function QuestionList({ token }) {
     const [questions, setQuestions] = useState([]);
@@ -11,7 +10,7 @@ function QuestionList({ token }) {
     useEffect(() => {
         const fetchQuestions = async () => {
             try {
-                const response = await axios.get(`${API_URL}/questions`, {
+                const response = await axios.get(`${API_BASE_URL}/questions`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 // 后端返回的数据结构是 { total: number, data: Question[] }
