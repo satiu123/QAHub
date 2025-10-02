@@ -13,8 +13,8 @@ function QuestionList({ token }) {
                 const response = await axios.get(`${API_BASE_URL}/questions`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-                // 后端返回的数据结构是 { total: number, data: Question[] }
-                setQuestions(response.data.data || []);
+                // 后端返回的数据结构是 { questions: [], totalCount: "" }
+                setQuestions(response.data.questions || []);
             } catch (err) {
                 setError('Failed to fetch questions.');
                 console.error(err);
@@ -39,18 +39,16 @@ function QuestionList({ token }) {
             <ul className="list-group">
                 {questions.length > 0 ? (
                     questions.map(q => {
-                        const fallbackUser = q.UserID || q.user_id;
-                        const displayName = q.AuthorName || q.author_name || (fallbackUser ? `User ${fallbackUser}` : 'Anonymous');
-                        const createdAt = q.CreatedAt || q.created_at;
-                        const formattedDate = createdAt ? new Date(createdAt).toLocaleDateString() : '';
-                        const answerCount = q.AnswerCount ?? q.answer_count;
+                        const displayName = q.authorName || `User ${q.userId}`;
+                        const formattedDate = q.createdAt ? new Date(q.createdAt).toLocaleDateString() : '';
+                        const answerCount = q.answerCount;
 
                         return (
-                            <li key={q.ID || q.id} className="list-group-item">
+                            <li key={q.id} className="list-group-item">
                                 <div className="d-flex justify-content-between align-items-start">
                                     <div className="me-3">
-                                        <Link to={`/questions/${q.ID || q.id}`} className="fw-semibold text-decoration-none">
-                                            {q.Title || q.title}
+                                        <Link to={`/questions/${q.id}`} className="fw-semibold text-decoration-none">
+                                            {q.title}
                                         </Link>
                                         <p className="text-muted small mb-0">
                                             Asked by {displayName}

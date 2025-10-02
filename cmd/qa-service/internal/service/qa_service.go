@@ -58,11 +58,3 @@ func NewQAService(s store.QAStore, cfg config.Kafka) QAService {
 		cfg:           cfg,
 	}
 }
-
-// 计算offset
-func calculateOffset(page int64, pageSize int32) int64 {
-	if page < 1 {
-		page = 1
-	}
-	return (page - 1) * int64(pageSize)
-}

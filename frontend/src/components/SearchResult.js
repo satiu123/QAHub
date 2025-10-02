@@ -46,8 +46,8 @@ const SearchResult = ({ token }) => {
                         <li key={result.id} className="list-group-item">
                             <Link to={`/questions/${result.id}`}>{result.title}</Link>
                             <p className="mb-1">{result.content}</p>
-                            {result.author_name || result.AuthorName ? (
-                                <small className="text-muted">Asked by {result.author_name || result.AuthorName}</small>
+                            {result.authorName ? (
+                                <small className="text-muted">Asked by {result.authorName}</small>
                             ) : null}
                         </li>
                     ))}

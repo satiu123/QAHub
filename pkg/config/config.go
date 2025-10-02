@@ -111,20 +111,23 @@ type UserService struct {
 
 // QAService 对应于 [services.qa_service] 配置部分
 type QAService struct {
-	GrpcPort string `mapstructure:"grpc_port"`
-	HttpPort string `mapstructure:"http_port"`
+	GrpcPort      string   `mapstructure:"grpc_port"`
+	HttpPort      string   `mapstructure:"http_port"`
+	PublicMethods []string `mapstructure:"public_methods"`
 }
 
 // SearchService 对应于 [services.search_service] 配置部分
 type SearchService struct {
-	GrpcPort string `mapstructure:"grpc_port"`
-	HttpPort string `mapstructure:"http_port"`
+	GrpcPort      string   `mapstructure:"grpc_port"`
+	HttpPort      string   `mapstructure:"http_port"`
+	PublicMethods []string `mapstructure:"public_methods"`
 }
 
 // NotificationService 对应于 [services.notification_service] 配置部分
 type NotificationService struct {
-	GrpcPort string `mapstructure:"grpc_port"`
-	HttpPort string `mapstructure:"http_port"`
+	GrpcPort      string   `mapstructure:"grpc_port"`
+	HttpPort      string   `mapstructure:"http_port"`
+	PublicMethods []string `mapstructure:"public_methods"`
 }
 
 // Gateway 对应于 [service.gateway] 配置部分

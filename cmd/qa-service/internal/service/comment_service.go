@@ -7,6 +7,7 @@ import (
 	"log"
 	"qahub/pkg/auth"
 	"qahub/pkg/messaging"
+	"qahub/pkg/pagination"
 	"qahub/qa-service/internal/dto"
 	"qahub/qa-service/internal/model"
 	"time"
@@ -74,8 +75,8 @@ func (s *qaService) GetComment(ctx context.Context, commentID int64) (*model.Com
 
 // ListComments 返回分页的评论列表和总数
 func (s *qaService) ListComments(ctx context.Context, answerID int64, page int64, pageSize int32) ([]*dto.CommentResponse, int64, error) {
-	offset := calculateOffset(page, pageSize)
-	comments, err := s.store.ListCommentsByAnswerID(ctx, answerID, offset, pageSize)
+	limit, offset := pagination.CalculateOffset(page, pageSize)
+	comments, err := s.store.ListCommentsByAnswerID(ctx, answerID, offset, limit)
 	if err != nil {
 		return nil, 0, err
 	}

@@ -57,6 +57,9 @@ services:
   qa_service:
     grpc_port: "50052"
     http_port: "8082"
+    public_methods:
+      - "/qa.QAService/ListQuestions"
+      - "/qa.QAService/GetQuestion"
   search_service:
     grpc_port: "50053"
     http_port: "8083"

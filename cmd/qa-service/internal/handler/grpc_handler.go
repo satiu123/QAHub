@@ -9,6 +9,7 @@ import (
 	"qahub/pkg/clients"
 	"qahub/pkg/config"
 	"qahub/pkg/middleware"
+	"qahub/pkg/pagination"
 	"qahub/qa-service/internal/service"
 
 	"google.golang.org/grpc"
@@ -67,10 +68,12 @@ func (s *QAGrpcServer) GetQuestion(ctx context.Context, req *pb.GetQuestionReque
 }
 
 func (s *QAGrpcServer) ListQuestions(ctx context.Context, req *pb.ListQuestionsRequest) (*pb.ListQuestionsResponse, error) {
-	questions, count, err := s.qaService.ListQuestions(ctx, int64(req.Page), req.PageSize)
+	page, pageSize := pagination.NormalizePageAndSize(req)
+	questions, count, err := s.qaService.ListQuestions(ctx, page, pageSize)
 	if err != nil {
 		return nil, err
 	}
+	log.Println("Fetched questions:", questions)
 	var pbQuestions []*pb.Question
 	for _, q := range questions {
 		pbQuestions = append(pbQuestions, &pb.Question{
@@ -147,7 +150,8 @@ func (s *QAGrpcServer) ListAnswers(ctx context.Context, req *pb.ListAnswersReque
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "无法从context获取用户信息")
 	}
-	answers, count, err := s.qaService.ListAnswers(ctx, req.QuestionId, int64(req.Page), req.PageSize, identity.UserID)
+	page, pageSize := pagination.NormalizePageAndSize(req)
+	answers, count, err := s.qaService.ListAnswers(ctx, req.QuestionId, page, pageSize, identity.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -250,7 +254,13 @@ func (s *QAGrpcServer) CreateComment(ctx context.Context, req *pb.CreateCommentR
 }
 
 func (s *QAGrpcServer) ListComments(ctx context.Context, req *pb.ListCommentsRequest) (*pb.ListCommentsResponse, error) {
-	comments, count, err := s.qaService.ListComments(ctx, req.AnswerId, int64(req.Page), req.PageSize)
+	identity, ok := auth.FromContext(ctx)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "无法从context获取用户信息")
+	}
+	_ = identity // 目前未使用身份信息，但保留以备将来使用
+	page, pageSize := pagination.NormalizePageAndSize(req)
+	comments, count, err := s.qaService.ListComments(ctx, req.AnswerId, page, pageSize)
 	if err != nil {
 		return nil, err
 	}
@@ -317,7 +327,7 @@ func (s *QAGrpcServer) Run(ctx context.Context, config config.Config) error {
 	}
 	// 创建 gRPC 服务器实例，注册服务，并启动监听
 	server := grpc.NewServer(
-		grpc.UnaryInterceptor(middleware.GrpcAuthInterceptor(userClient)),
+		grpc.UnaryInterceptor(middleware.GrpcAuthInterceptor(userClient, config.Services.QAService.PublicMethods...)),
 	)
 	pb.RegisterQAServiceServer(server, s)
 
