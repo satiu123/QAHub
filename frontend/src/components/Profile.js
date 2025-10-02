@@ -41,7 +41,7 @@ function Profile({ token, onLogout }) {
                         'Authorization': `Bearer ${token}`
                     }
                 });
-                setUser(response.data);
+                setUser(response.data.user);
             } catch (err) {
                 setError('Failed to fetch user data.');
                 console.error(err); // 在控制台打印详细错误
@@ -86,7 +86,7 @@ function Profile({ token, onLogout }) {
                 }
             });
             // 从列表中移除已删除的问题
-            setMyQuestions(myQuestions.filter(q => q.ID !== questionId));
+            setMyQuestions(myQuestions.filter(q => q.id !== questionId));
         } catch (err) {
             console.error('Failed to delete question:', err);
             alert('删除问题失败，请重试。');
@@ -95,8 +95,8 @@ function Profile({ token, onLogout }) {
 
     const handleEditQuestion = (question) => {
         setEditingQuestion(question);
-        setEditTitle(question.Title);
-        setEditContent(question.Content);
+        setEditTitle(question.title);
+        setEditContent(question.content);
     };
 
     const handleUpdateQuestion = async (e) => {
@@ -109,7 +109,7 @@ function Profile({ token, onLogout }) {
         setIsUpdating(true);
         try {
             const response = await axios.put(
-                `${API_URL}/questions/${editingQuestion.ID}`,
+                `${API_URL}/questions/${editingQuestion.id}`,
                 {
                     title: editTitle,
                     content: editContent
@@ -123,7 +123,7 @@ function Profile({ token, onLogout }) {
 
             // 更新本地列表中的问题
             setMyQuestions(myQuestions.map(q =>
-                q.ID === editingQuestion.ID ? response.data : q
+                q.id === editingQuestion.id ? response.data : q
             ));
 
             // 关闭编辑模态框
@@ -408,20 +408,20 @@ function Profile({ token, onLogout }) {
                             {myQuestions.length > 0 ? (
                                 <div className="list-group">
                                     {myQuestions.map(question => (
-                                        <div key={question.ID} className="list-group-item">
+                                        <div key={question.id} className="list-group-item">
                                             <div className="d-flex justify-content-between align-items-start">
                                                 <div className="flex-grow-1">
                                                     <h6 className="mb-1">
-                                                        <Link to={`/questions/${question.ID}`}>
-                                                            {question.Title}
+                                                        <Link to={`/questions/${question.id}`}>
+                                                            {question.title}
                                                         </Link>
                                                     </h6>
                                                     <p className="mb-1 text-muted small">
-                                                        {question.Content?.substring(0, 100)}
-                                                        {question.Content?.length > 100 ? '...' : ''}
+                                                        {question.content?.substring(0, 100)}
+                                                        {question.content?.length > 100 ? '...' : ''}
                                                     </p>
                                                     <small className="text-muted">
-                                                        创建于: {new Date(question.CreatedAt).toLocaleDateString()}
+                                                        创建于: {new Date(question.createdAt).toLocaleDateString()}
                                                     </small>
                                                 </div>
                                                 <div className="ms-3">
@@ -433,7 +433,7 @@ function Profile({ token, onLogout }) {
                                                     </button>
                                                     <button
                                                         className="btn btn-sm btn-outline-danger"
-                                                        onClick={() => handleDeleteQuestion(question.ID)}
+                                                        onClick={() => handleDeleteQuestion(question.id)}
                                                     >
                                                         删除
                                                     </button>

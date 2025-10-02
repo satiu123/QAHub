@@ -26,7 +26,7 @@ const Comments = ({ answerId, token, onCommentAdded }) => {
             const response = await axios.get(`${API_URL}/answers/${answerId}/comments`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            setComments(response.data?.data || response.data?.comments || []);
+            setComments(response.data?.comments || []);
         } catch (err) {
             console.error(`Failed to fetch comments for answer ${answerId}`, err);
         }
@@ -71,16 +71,16 @@ const Comments = ({ answerId, token, onCommentAdded }) => {
                     <p className="text-muted small mb-3">No comments yet.</p>
                 ) : (
                     comments.map(comment => {
-                        const displayName = formatDisplayName(comment.Username || comment.username, comment.UserID || comment.user_id);
-                        const createdAt = comment.CreatedAt || comment.created_at;
+                        const displayName = formatDisplayName(comment.username, comment.userId);
+                        const createdAt = comment.createdAt;
 
                         return (
                             // MODIFIED: Added id for scrolling
-                            <div key={comment.ID || comment.id} id={`comment-${comment.ID || comment.id}`} className="mb-3">
+                            <div key={comment.id} id={`comment-${comment.id}`} className="mb-3">
                                 <div className="card border-0 bg-light">
                                     <div className="card-body py-2 px-3">
                                         <p className="card-text mb-2 small" style={{ lineHeight: '1.4' }}>
-                                            {comment.Content || comment.content}
+                                            {comment.content}
                                         </p>
                                         <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center">
                                             <small className="text-muted mb-1 mb-sm-0">
@@ -154,10 +154,10 @@ function QuestionDetail({ token }) {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
-            const answersWithVoteState = (aResponse.data?.data || aResponse.data?.answers || []).map(ans => ({
+            const answersWithVoteState = (aResponse.data?.answers || []).map(ans => ({
                 ...ans,
-                UpvoteCount: ans.UpvoteCount ?? ans.upvote_count ?? 0,
-                isUpvotedByUser: ans.is_upvoted_by_user ?? ans.IsUpvotedByUser ?? false,
+                upvoteCount: ans.upvoteCount ?? 0,
+                isUpvotedByUser: ans.isUpvotedByUser ?? false,
                 isVoting: false,
             }));
             setAnswers(answersWithVoteState);
@@ -205,17 +205,17 @@ function QuestionDetail({ token }) {
     // 处理点赞/取消点赞的函数
     const handleVote = async (answerId, isUpvotedByUser) => {
         // 找到当前正在操作的答案
-        const targetAnswer = answers.find(a => (a.ID || a.id) === answerId);
-        if (targetAnswer.isVoting) return; // 如果正在处理中，则不执行任何操作
+        const targetAnswer = answers.find(a => a.id === answerId);
+        if (targetAnswer.isVoting) return; // 如果正在处理中,则不执行任何操作
 
         const originalAnswers = [...answers]; // 保存原始状态以便在出错时回滚
 
         // 1. 乐观更新UI
         setAnswers(answers.map(ans => {
-            if ((ans.ID || ans.id) === answerId) {
+            if (ans.id === answerId) {
                 return {
                     ...ans,
-                    UpvoteCount: isUpvotedByUser ? ans.UpvoteCount - 1 : ans.UpvoteCount + 1,
+                    upvoteCount: isUpvotedByUser ? ans.upvoteCount - 1 : ans.upvoteCount + 1,
                     isUpvotedByUser: !isUpvotedByUser,
                     isVoting: true, // 设置为处理中
                 };
@@ -237,7 +237,7 @@ function QuestionDetail({ token }) {
         } finally {
             // 4. 无论成功或失败，都结束处理状态
             setAnswers(prevAnswers => prevAnswers.map(ans => {
-                if ((ans.ID || ans.id) === answerId) {
+                if (ans.id === answerId) {
                     return { ...ans, isVoting: false };
                 }
                 return ans;
@@ -282,14 +282,14 @@ function QuestionDetail({ token }) {
         <div className="container-fluid">
             <div className="card mb-4">
                 <div className="card-body">
-                    <h2 className="card-title mb-3">{question.Title || question.title}</h2>
-                    <p className="card-text mb-3" style={{ lineHeight: '1.6' }}>{question.Content || question.content}</p>
+                    <h2 className="card-title mb-3">{question.title}</h2>
+                    <p className="card-text mb-3" style={{ lineHeight: '1.6' }}>{question.content}</p>
                     <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mt-3">
                         <small className="text-muted mb-1 mb-sm-0">
-                            {`Asked by ${formatDisplayName(question.AuthorName || question.author_name, question.UserID || question.user_id)}`}
+                            {`Asked by ${formatDisplayName(question.authorName, question.userId)}`}
                         </small>
                         <small className="text-muted">
-                            {new Date(question.CreatedAt || question.created_at).toLocaleDateString()}
+                            {new Date(question.createdAt).toLocaleDateString()}
                         </small>
                     </div>
                 </div>
@@ -299,31 +299,31 @@ function QuestionDetail({ token }) {
             {answers.length > 0 ? (
                 answers.map(answer => (
                     // MODIFIED: Added id for scrolling
-                    <div key={answer.ID || answer.id} id={`answer-${answer.ID || answer.id}`} className="card mb-4 shadow-sm">
+                    <div key={answer.id} id={`answer-${answer.id}`} className="card mb-4 shadow-sm">
                         <div className="card-body">
-                            <p className="card-text mb-3" style={{ lineHeight: '1.6' }}>{answer.Content || answer.content}</p>
+                            <p className="card-text mb-3" style={{ lineHeight: '1.6' }}>{answer.content}</p>
                             <div className="row align-items-center mb-3">
                                 <div className="col-sm-8 col-12 mb-2 mb-sm-0">
                                     <div className="d-flex flex-column flex-sm-row justify-content-start align-items-start align-items-sm-center">
                                         <small className="text-muted mb-1 mb-sm-0 me-sm-3">
-                                            {`Answered by ${formatDisplayName(answer.Username || answer.username, answer.UserID || answer.user_id)}`}
+                                            {`Answered by ${formatDisplayName(answer.username, answer.userId)}`}
                                         </small>
                                         <small className="text-muted">
-                                            {new Date(answer.CreatedAt || answer.created_at).toLocaleDateString()}
+                                            {new Date(answer.createdAt).toLocaleDateString()}
                                         </small>
                                     </div>
                                 </div>
                                 <div className="col-sm-4 col-12 text-sm-end text-start">
                                     <button
                                         className={`btn ${answer.isUpvotedByUser ? 'btn-success' : 'btn-outline-success'} fs-6 px-3 py-2`}
-                                        onClick={() => handleVote(answer.ID || answer.id, answer.isUpvotedByUser)}
+                                        onClick={() => handleVote(answer.id, answer.isUpvotedByUser)}
                                         disabled={answer.isVoting}
                                     >
-                                        👍 {answer.UpvoteCount || answer.upvote_count || 0}
+                                        👍 {answer.upvoteCount || 0}
                                     </button>
                                 </div>
                             </div>
-                            <Comments answerId={answer.ID || answer.id} token={token} />
+                            <Comments answerId={answer.id} token={token} />
                         </div>
                     </div>
                 ))
