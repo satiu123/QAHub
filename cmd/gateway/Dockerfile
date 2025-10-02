@@ -41,6 +41,8 @@ WORKDIR /app
 
 # 复制二进制文件
 COPY --from=builder /workspace/bin/gateway /app/gateway
+# 复制配置文件
+COPY --from=builder /workspace/configs/config.docker.yaml /app/configs/config.yaml
 
 # 暴露端口
 EXPOSE 8080

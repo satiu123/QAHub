@@ -6,6 +6,7 @@ option go_package = "./;user";
 
 import "google/protobuf/empty.proto";
 import "google/api/annotations.proto";
+import "google/protobuf/field_mask.proto";
 
 // 用户服务定义
 service UserService {
@@ -20,6 +21,12 @@ service UserService {
     option (google.api.http) = {
       post : "/api/v1/auth/login"
       body : "*"
+    };
+  }
+
+  rpc Logout(google.protobuf.Empty) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post : "/api/v1/auth/logout"
     };
   }
 
@@ -101,6 +108,7 @@ message UpdateUserProfileRequest {
   string username = 2;
   string email = 3;
   string bio = 4;
+  google.protobuf.FieldMask update_mask = 5;
 }
 
 // DeleteUser 方法的请求消息

@@ -12,8 +12,8 @@ type QAStore interface {
 	// --- 问题相关 (Question) ---
 	CreateQuestion(ctx context.Context, question *model.Question) (int64, error)
 	GetQuestionByID(ctx context.Context, questionID int64) (*model.Question, error)
-	ListQuestions(ctx context.Context, offset int, limit int) ([]*model.Question, error)
-	ListQuestionsByUserID(ctx context.Context, userID int64, offset int, limit int) ([]*model.Question, error)
+	ListQuestions(ctx context.Context, offset int64, limit int32) ([]*model.Question, error)
+	ListQuestionsByUserID(ctx context.Context, userID int64, offset int64, limit int32) ([]*model.Question, error)
 	CountQuestions(ctx context.Context) (int64, error)
 	UpdateQuestion(ctx context.Context, question *model.Question) error
 	DeleteQuestion(ctx context.Context, questionID int64) error
@@ -23,7 +23,7 @@ type QAStore interface {
 	// --- 回答相关 (Answer) ---
 	CreateAnswer(ctx context.Context, answer *model.Answer) (int64, error)
 	GetAnswerByID(ctx context.Context, answerID int64) (*model.Answer, error)
-	ListAnswersByQuestionID(ctx context.Context, questionID int64, offset int, limit int) ([]*model.Answer, error)
+	ListAnswersByQuestionID(ctx context.Context, questionID int64, offset int64, limit int32) ([]*model.Answer, error)
 	// ListAnswersByUserID(ctx context.Context, userID int64, offset int, limit int) ([]*model.Answer, error)
 	CountAnswersByQuestionID(ctx context.Context, questionID int64) (int64, error)
 	GetUserVotesForAnswers(ctx context.Context, userID int64, answerIDs []int64) (map[int64]bool, error)
@@ -40,7 +40,7 @@ type QAStore interface {
 	// --- 评论相关 (Comment) ---
 	CreateComment(ctx context.Context, comment *model.Comment) (int64, error)
 	GetCommentByID(ctx context.Context, commentID int64) (*model.Comment, error)
-	ListCommentsByAnswerID(ctx context.Context, answerID int64, offset int, limit int) ([]*model.Comment, error)
+	ListCommentsByAnswerID(ctx context.Context, answerID int64, offset int64, limit int32) ([]*model.Comment, error)
 	CountCommentsByAnswerID(ctx context.Context, answerID int64) (int64, error)
 	UpdateComment(ctx context.Context, comment *model.Comment) error
 	DeleteComment(ctx context.Context, commentID int64) error
@@ -90,7 +90,7 @@ func (s *sqlxQAStore) GetQuestionByID(ctx context.Context, questionID int64) (*m
 	return &question, nil
 }
 
-func (s *sqlxQAStore) ListQuestions(ctx context.Context, offset int, limit int) ([]*model.Question, error) {
+func (s *sqlxQAStore) ListQuestions(ctx context.Context, offset int64, limit int32) ([]*model.Question, error) {
 	query := "SELECT id, title, content, user_id, created_at, updated_at FROM questions ORDER BY created_at DESC LIMIT ? OFFSET ?"
 	var questions []*model.Question
 	err := s.db.SelectContext(ctx, &questions, query, limit, offset)
@@ -100,7 +100,7 @@ func (s *sqlxQAStore) ListQuestions(ctx context.Context, offset int, limit int) 
 	return questions, nil
 }
 
-func (s *sqlxQAStore) ListQuestionsByUserID(ctx context.Context, userID int64, offset int, limit int) ([]*model.Question, error) {
+func (s *sqlxQAStore) ListQuestionsByUserID(ctx context.Context, userID int64, offset int64, limit int32) ([]*model.Question, error) {
 	query := "SELECT id, title, content, user_id, created_at, updated_at FROM questions WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?"
 	var questions []*model.Question
 	err := s.db.SelectContext(ctx, &questions, query, userID, limit, offset)
@@ -157,7 +157,7 @@ func (s *sqlxQAStore) GetAnswerByID(ctx context.Context, answerID int64) (*model
 	return &answer, nil
 }
 
-func (s *sqlxQAStore) ListAnswersByQuestionID(ctx context.Context, questionID int64, offset int, limit int) ([]*model.Answer, error) {
+func (s *sqlxQAStore) ListAnswersByQuestionID(ctx context.Context, questionID int64, offset int64, limit int32) ([]*model.Answer, error) {
 	query := "SELECT id, question_id, content, user_id, upvote_count, created_at, updated_at FROM answers WHERE question_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?"
 	var answers []*model.Answer
 	err := s.db.SelectContext(ctx, &answers, query, questionID, limit, offset)
@@ -299,7 +299,7 @@ func (s *sqlxQAStore) GetCommentByID(ctx context.Context, commentID int64) (*mod
 	return &comment, nil
 }
 
-func (s *sqlxQAStore) ListCommentsByAnswerID(ctx context.Context, answerID int64, offset int, limit int) ([]*model.Comment, error) {
+func (s *sqlxQAStore) ListCommentsByAnswerID(ctx context.Context, answerID int64, offset int64, limit int32) ([]*model.Comment, error) {
 	query := "SELECT id, answer_id, user_id, content, created_at, updated_at FROM comments WHERE answer_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?"
 	var comments []*model.Comment
 	err := s.db.SelectContext(ctx, &comments, query, answerID, limit, offset)

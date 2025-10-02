@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -19,13 +20,13 @@ import (
 
 // GrpcAuthInterceptor 创建一个 gRPC 服务端拦截器，用于通过 user-service 验证 token
 // 这个拦截器将 token 从 metadata 中提取出来，并调用 user-service 进行验证。
-func GrpcAuthInterceptor(userClient *clients.UserServiceClient) grpc.UnaryServerInterceptor {
+func GrpcAuthInterceptor(userClient *clients.UserServiceClient, publicMethods ...string) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-		// 对于大多数微服务，除了 user-service 本身，其他所有方法都应该被保护。
-		// 如果有特例（例如公开的gRPC健康检查），可以在这里添加白名单。
-		// if info.FullMethod == "/some.PublicService/PublicMethod" {
-		// 	 return handler(ctx, req)
-		// }
+		// 检查是否在白名单中
+		if slices.Contains(publicMethods, info.FullMethod) {
+			// 白名单路径，跳过认证
+			return handler(ctx, req)
+		}
 
 		md, ok := metadata.FromIncomingContext(ctx)
 		if !ok {

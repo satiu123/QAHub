@@ -8,9 +8,10 @@ services:
     restart: always
     ports:
       - "8080:8080"
-    command: ["/app/gateway", "-user-service-endpoint=user-service:50051", "-gateway-port=8080"]
+    command: ["/app/gateway"]
     depends_on:
       - user-service
+      - qa-service
 
   # API Gateway (Nginx)
   nginx:

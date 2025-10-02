@@ -51,6 +51,9 @@ services:
     token_expire_hours: 24 # JWT过期时间，单位：小时
     grpc_port: "50051" # gRPC 服务端口
     http_port: "8081" # HTTP 服务端口
+    public_methods: # 不需要身份验证的公共API路径
+      - "/user.UserService/Register"
+      - "/user.UserService/Login"
   qa_service:
     grpc_port: "50052"
     http_port: "8082"
@@ -60,3 +63,9 @@ services:
   notification_service:
     grpc_port: "50054"
     http_port: "8084"
+  gateway:
+    port: "8080" # gRPC-Gateway 监听端口
+    user_service_endpoint: "user-service:50051" # gRPC 用户服务地址
+    qa_service_endpoint: "qa-service:50052" # gRPC 问答服务地址
+    search_service_endpoint: "search-service:50053" # gRPC 搜索服务地址
+    notification_service_endpoint: "notification-service:50054" # gRPC 通知服务地址

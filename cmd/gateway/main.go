@@ -2,27 +2,28 @@ package main
 
 import (
 	"context"
-	"flag"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	qapb "qahub/api/proto/qa"
 	userpb "qahub/api/proto/user"
-)
-
-var (
-	// gRPC 服务地址
-	userServiceEndpoint = flag.String("user-service-endpoint", "localhost:50051", "User service endpoint")
-
-	// Gateway HTTP 服务端口
-	gatewayPort = flag.String("gateway-port", "8080", "Gateway HTTP port")
+	"qahub/pkg/config"
 )
 
 func main() {
-	flag.Parse()
+	if err := config.Init("configs"); err != nil {
+		os.Exit(1)
+	}
+	// 读取配置
+	gatewayConfig := config.Conf.Services.Gateway
+	userServiceEndpoint := gatewayConfig.UserServiceEndpoint
+	qaServiceEndpoint := gatewayConfig.QaServiceEndpoint
+	gatewayPort := gatewayConfig.Port
 
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
@@ -37,20 +38,27 @@ func main() {
 	}
 
 	// 注册 User Service
-	log.Printf("Connecting to User Service at %s", *userServiceEndpoint)
-	err := userpb.RegisterUserServiceHandlerFromEndpoint(ctx, mux, *userServiceEndpoint, opts)
+	log.Printf("Connecting to User Service at %s", userServiceEndpoint)
+	err := userpb.RegisterUserServiceHandlerFromEndpoint(ctx, mux, userServiceEndpoint, opts)
 	if err != nil {
 		log.Fatalf("Failed to register user service handler: %v", err)
+	}
+	// 注册 QA Service
+	log.Printf("Connecting to QA Service at %s", qaServiceEndpoint)
+	err = qapb.RegisterQAServiceHandlerFromEndpoint(ctx, mux, qaServiceEndpoint, opts)
+	if err != nil {
+		log.Fatalf("Failed to register QA service handler: %v", err)
 	}
 
 	// 添加 CORS 支持
 	handler := corsMiddleware(mux)
 
 	// 启动 HTTP 服务器
-	serverAddr := ":" + *gatewayPort
+	serverAddr := ":" + gatewayPort
 	log.Printf("🚀 gRPC-Gateway listening on %s", serverAddr)
-	log.Printf("📡 Proxying to User Service at %s", *userServiceEndpoint)
-	log.Printf("📝 Example: curl http://localhost:%s/api/v1/auth/login", *gatewayPort)
+	log.Printf("📡 Proxying to User Service at %s", userServiceEndpoint)
+	log.Printf("📡 Proxying to QA Service at %s", qaServiceEndpoint)
+	log.Printf("📝 Example: curl http://localhost:%s/api/v1/auth/login", gatewayPort)
 
 	if err := http.ListenAndServe(serverAddr, handler); err != nil {
 		log.Fatalf("Failed to serve: %v", err)

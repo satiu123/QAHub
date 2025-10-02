@@ -51,6 +51,7 @@ func ParseToken(tokenString string, secret []byte) (Identity, error) {
 		UserID:   userID,
 		Username: username,
 		Token:    tokenString,
+		Claims:   claims,
 	}, nil
 }
 

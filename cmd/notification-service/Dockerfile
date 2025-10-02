@@ -10,6 +10,7 @@ COPY cmd/notification-service/go.mod cmd/notification-service/go.sum ./cmd/notif
 COPY cmd/user-service/go.mod cmd/user-service/go.sum ./cmd/user-service/
 COPY cmd/qa-service/go.mod cmd/qa-service/go.sum ./cmd/qa-service/
 COPY cmd/search-service/go.mod cmd/search-service/go.sum ./cmd/search-service/
+COPY cmd/gateway/go.mod cmd/gateway/go.sum ./cmd/gateway/
 COPY pkg/go.mod pkg/go.sum ./pkg/
 COPY api/go.mod api/go.sum ./api/
 

@@ -7,14 +7,14 @@
 package user
 
 import (
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
-
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
+	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
@@ -516,6 +516,7 @@ type UpdateUserProfileRequest struct {
 	Username      string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
 	Email         string                 `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
 	Bio           string                 `protobuf:"bytes,4,opt,name=bio,proto3" json:"bio,omitempty"`
+	UpdateMask    *fieldmaskpb.FieldMask `protobuf:"bytes,5,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -578,6 +579,13 @@ func (x *UpdateUserProfileRequest) GetBio() string {
 	return ""
 }
 
+func (x *UpdateUserProfileRequest) GetUpdateMask() *fieldmaskpb.FieldMask {
+	if x != nil {
+		return x.UpdateMask
+	}
+	return nil
+}
+
 // DeleteUser 方法的请求消息
 type DeleteUserRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -627,7 +635,7 @@ var File_api_proto_user_user_proto protoreflect.FileDescriptor
 
 const file_api_proto_user_user_proto_rawDesc = "" +
 	"\n" +
-	"\x19api/proto/user/user.proto\x12\x04user\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1cgoogle/api/annotations.proto\"Z\n" +
+	"\x19api/proto/user/user.proto\x12\x04user\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1cgoogle/api/annotations.proto\x1a google/protobuf/field_mask.proto\"Z\n" +
 	"\x04User\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x1a\n" +
 	"\busername\x18\x02 \x01(\tR\busername\x12\x14\n" +
@@ -657,17 +665,20 @@ const file_api_proto_user_user_proto_rawDesc = "" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\"8\n" +
 	"\x16GetUserProfileResponse\x12\x1e\n" +
 	"\x04user\x18\x01 \x01(\v2\n" +
-	".user.UserR\x04user\"w\n" +
+	".user.UserR\x04user\"\xb4\x01\n" +
 	"\x18UpdateUserProfileRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x1a\n" +
 	"\busername\x18\x02 \x01(\tR\busername\x12\x14\n" +
 	"\x05email\x18\x03 \x01(\tR\x05email\x12\x10\n" +
-	"\x03bio\x18\x04 \x01(\tR\x03bio\",\n" +
+	"\x03bio\x18\x04 \x01(\tR\x03bio\x12;\n" +
+	"\vupdate_mask\x18\x05 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
+	"updateMask\",\n" +
 	"\x11DeleteUserRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\x03R\x06userId2\xe6\x04\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId2\xbd\x05\n" +
 	"\vUserService\x12[\n" +
 	"\bRegister\x12\x15.user.RegisterRequest\x1a\x16.user.RegisterResponse\" \x82\xd3\xe4\x93\x02\x1a:\x01*\"\x15/api/v1/auth/register\x12O\n" +
-	"\x05Login\x12\x12.user.LoginRequest\x1a\x13.user.LoginResponse\"\x1d\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/api/v1/auth/login\x12j\n" +
+	"\x05Login\x12\x12.user.LoginRequest\x1a\x13.user.LoginResponse\"\x1d\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/api/v1/auth/login\x12U\n" +
+	"\x06Logout\x12\x16.google.protobuf.Empty\x1a\x16.google.protobuf.Empty\"\x1b\x82\xd3\xe4\x93\x02\x15\"\x13/api/v1/auth/logout\x12j\n" +
 	"\rValidateToken\x12\x1a.user.ValidateTokenRequest\x1a\x1b.user.ValidateTokenResponse\" \x82\xd3\xe4\x93\x02\x1a:\x01*\"\x15/api/v1/auth/validate\x12l\n" +
 	"\x0eGetUserProfile\x12\x1b.user.GetUserProfileRequest\x1a\x1c.user.GetUserProfileResponse\"\x1f\x82\xd3\xe4\x93\x02\x19\x12\x17/api/v1/users/{user_id}\x12o\n" +
 	"\x11UpdateUserProfile\x12\x1e.user.UpdateUserProfileRequest\x1a\x16.google.protobuf.Empty\"\"\x82\xd3\xe4\x93\x02\x1c:\x01*\x1a\x17/api/v1/users/{user_id}\x12^\n" +
@@ -699,28 +710,32 @@ var file_api_proto_user_user_proto_goTypes = []any{
 	(*GetUserProfileResponse)(nil),   // 8: user.GetUserProfileResponse
 	(*UpdateUserProfileRequest)(nil), // 9: user.UpdateUserProfileRequest
 	(*DeleteUserRequest)(nil),        // 10: user.DeleteUserRequest
-	(*emptypb.Empty)(nil),            // 11: google.protobuf.Empty
+	(*fieldmaskpb.FieldMask)(nil),    // 11: google.protobuf.FieldMask
+	(*emptypb.Empty)(nil),            // 12: google.protobuf.Empty
 }
 var file_api_proto_user_user_proto_depIdxs = []int32{
 	0,  // 0: user.RegisterResponse.user:type_name -> user.User
 	0,  // 1: user.GetUserProfileResponse.user:type_name -> user.User
-	1,  // 2: user.UserService.Register:input_type -> user.RegisterRequest
-	3,  // 3: user.UserService.Login:input_type -> user.LoginRequest
-	5,  // 4: user.UserService.ValidateToken:input_type -> user.ValidateTokenRequest
-	7,  // 5: user.UserService.GetUserProfile:input_type -> user.GetUserProfileRequest
-	9,  // 6: user.UserService.UpdateUserProfile:input_type -> user.UpdateUserProfileRequest
-	10, // 7: user.UserService.DeleteUser:input_type -> user.DeleteUserRequest
-	2,  // 8: user.UserService.Register:output_type -> user.RegisterResponse
-	4,  // 9: user.UserService.Login:output_type -> user.LoginResponse
-	6,  // 10: user.UserService.ValidateToken:output_type -> user.ValidateTokenResponse
-	8,  // 11: user.UserService.GetUserProfile:output_type -> user.GetUserProfileResponse
-	11, // 12: user.UserService.UpdateUserProfile:output_type -> google.protobuf.Empty
-	11, // 13: user.UserService.DeleteUser:output_type -> google.protobuf.Empty
-	8,  // [8:14] is the sub-list for method output_type
-	2,  // [2:8] is the sub-list for method input_type
-	2,  // [2:2] is the sub-list for extension type_name
-	2,  // [2:2] is the sub-list for extension extendee
-	0,  // [0:2] is the sub-list for field type_name
+	11, // 2: user.UpdateUserProfileRequest.update_mask:type_name -> google.protobuf.FieldMask
+	1,  // 3: user.UserService.Register:input_type -> user.RegisterRequest
+	3,  // 4: user.UserService.Login:input_type -> user.LoginRequest
+	12, // 5: user.UserService.Logout:input_type -> google.protobuf.Empty
+	5,  // 6: user.UserService.ValidateToken:input_type -> user.ValidateTokenRequest
+	7,  // 7: user.UserService.GetUserProfile:input_type -> user.GetUserProfileRequest
+	9,  // 8: user.UserService.UpdateUserProfile:input_type -> user.UpdateUserProfileRequest
+	10, // 9: user.UserService.DeleteUser:input_type -> user.DeleteUserRequest
+	2,  // 10: user.UserService.Register:output_type -> user.RegisterResponse
+	4,  // 11: user.UserService.Login:output_type -> user.LoginResponse
+	12, // 12: user.UserService.Logout:output_type -> google.protobuf.Empty
+	6,  // 13: user.UserService.ValidateToken:output_type -> user.ValidateTokenResponse
+	8,  // 14: user.UserService.GetUserProfile:output_type -> user.GetUserProfileResponse
+	12, // 15: user.UserService.UpdateUserProfile:output_type -> google.protobuf.Empty
+	12, // 16: user.UserService.DeleteUser:output_type -> google.protobuf.Empty
+	10, // [10:17] is the sub-list for method output_type
+	3,  // [3:10] is the sub-list for method input_type
+	3,  // [3:3] is the sub-list for extension type_name
+	3,  // [3:3] is the sub-list for extension extendee
+	0,  // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_api_proto_user_user_proto_init() }
