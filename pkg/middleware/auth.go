@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"qahub/pkg/auth"
+	"qahub/pkg/clients"
 	"qahub/pkg/config"
 
 	"github.com/gin-gonic/gin"
@@ -16,24 +17,19 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// GrpcAuthInterceptor 创建一个 gRPC 一元拦截器，用于JWT身份验证
-func GrpcAuthInterceptor() grpc.UnaryServerInterceptor {
+// GrpcAuthInterceptor 创建一个 gRPC 服务端拦截器，用于通过 user-service 验证 token
+// 这个拦截器将 token 从 metadata 中提取出来，并调用 user-service 进行验证。
+func GrpcAuthInterceptor(userClient *clients.UserServiceClient) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-
-		// 定义需要保护的方法列表
-		protectedMethods := map[string]bool{
-			"/user.UserService/UpdateUserProfile": true,
-			"/user.UserService/DeleteUser":        true,
-		}
-
-		// 如果当前方法不需要保护，则直接跳过
-		if !protectedMethods[info.FullMethod] {
-			return handler(ctx, req)
-		}
+		// 对于大多数微服务，除了 user-service 本身，其他所有方法都应该被保护。
+		// 如果有特例（例如公开的gRPC健康检查），可以在这里添加白名单。
+		// if info.FullMethod == "/some.PublicService/PublicMethod" {
+		// 	 return handler(ctx, req)
+		// }
 
 		md, ok := metadata.FromIncomingContext(ctx)
 		if !ok {
-			return nil, status.Errorf(codes.Unauthenticated, "缺少认证信息")
+			return nil, status.Errorf(codes.Unauthenticated, "缺少认证信息 (metadata)")
 		}
 
 		authHeaders := md.Get("authorization")
@@ -41,18 +37,26 @@ func GrpcAuthInterceptor() grpc.UnaryServerInterceptor {
 			return nil, status.Errorf(codes.Unauthenticated, "请求未包含授权标头")
 		}
 
-		parts := strings.Split(authHeaders[0], " ")
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			return nil, status.Errorf(codes.Unauthenticated, "授权标头格式不正确")
+		authHeader := authHeaders[0]
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+		if tokenString == authHeader { // 如果没有 "Bearer " 前缀，TrimPrefix 不会改变字符串
+			return nil, status.Errorf(codes.Unauthenticated, "授权标头格式不正确，需要 'Bearer ' 前缀")
 		}
 
-		tokenString := parts[1]
-		identity, err := auth.ParseToken(tokenString, []byte(config.Conf.Services.UserService.JWTSecret))
+		// 调用 user-service 的 ValidateToken RPC
+		validateResp, err := userClient.ValidateToken(ctx, tokenString)
 		if err != nil {
-			return nil, status.Errorf(codes.Unauthenticated, "无效的token: %v", err)
+			return nil, status.Errorf(codes.Unauthenticated, "token 验证失败: %v", err)
 		}
 
+		// 验证成功，将用户信息注入到 context 中
+		identity := auth.Identity{
+			UserID:   validateResp.UserId,
+			Username: validateResp.Username,
+		}
 		newCtx := auth.WithIdentity(ctx, identity)
+
+		// 继续处理请求
 		return handler(newCtx, req)
 	}
 }
