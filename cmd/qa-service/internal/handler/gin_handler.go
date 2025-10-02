@@ -121,7 +121,7 @@ func getIDFromParam(c *gin.Context, paramName string) (int64, bool) {
 	return id, true
 }
 
-func getPagination(c *gin.Context) (int, int) {
+func getPagination(c *gin.Context) (int64, int32) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
 	if page < 1 {
@@ -130,7 +130,7 @@ func getPagination(c *gin.Context) (int, int) {
 	if pageSize < 1 {
 		pageSize = 10
 	}
-	return page, pageSize
+	return int64(page), int32(pageSize)
 }
 
 // --- Question Handlers ---

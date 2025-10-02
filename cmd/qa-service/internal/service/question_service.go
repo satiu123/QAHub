@@ -104,8 +104,8 @@ func (s *qaService) buildQuestionResponses(ctx context.Context, questions []*mod
 	return responses, nil
 }
 
-func (s *qaService) ListQuestions(ctx context.Context, page, pageSize int) ([]*dto.QuestionResponse, int64, error) {
-	offset := (page - 1) * pageSize
+func (s *qaService) ListQuestions(ctx context.Context, page int64, pageSize int32) ([]*dto.QuestionResponse, int64, error) {
+	offset := calculateOffset(page, pageSize)
 	questions, err := s.store.ListQuestions(ctx, offset, pageSize)
 	if err != nil {
 		return nil, 0, err
@@ -121,8 +121,8 @@ func (s *qaService) ListQuestions(ctx context.Context, page, pageSize int) ([]*d
 	return responses, count, nil
 }
 
-func (s *qaService) ListQuestionsByUserID(ctx context.Context, userID int64, page, pageSize int) ([]*dto.QuestionResponse, int64, error) {
-	offset := (page - 1) * pageSize
+func (s *qaService) ListQuestionsByUserID(ctx context.Context, userID int64, page int64, pageSize int32) ([]*dto.QuestionResponse, int64, error) {
+	offset := calculateOffset(page, pageSize)
 	questions, err := s.store.ListQuestionsByUserID(ctx, userID, offset, pageSize)
 	if err != nil {
 		return nil, 0, err

@@ -25,7 +25,7 @@ const Layout = () => {
 
   const handleLogout = async () => {
     try {
-      await axios.post(`${API_BASE_URL}/users/logout`, null, {
+      await axios.post(`${API_BASE_URL}/auth/logout`, null, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

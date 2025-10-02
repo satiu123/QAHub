@@ -63,8 +63,8 @@ func (s *qaService) GetAnswer(ctx context.Context, answerID int64) (*model.Answe
 	return s.store.GetAnswerByID(ctx, answerID)
 }
 
-func (s *qaService) ListAnswers(ctx context.Context, questionID int64, page, pageSize int, userID int64) ([]*dto.AnswerResponse, int64, error) {
-	offset := (page - 1) * pageSize
+func (s *qaService) ListAnswers(ctx context.Context, questionID int64, page int64, pageSize int32, userID int64) ([]*dto.AnswerResponse, int64, error) {
+	offset := calculateOffset(page, pageSize)
 	answers, err := s.store.ListAnswersByQuestionID(ctx, questionID, offset, pageSize)
 	if err != nil {
 		return nil, 0, err

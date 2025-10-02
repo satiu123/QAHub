@@ -55,6 +55,20 @@ func (s *UserGrpcServer) Login(ctx context.Context, req *pb.LoginRequest) (*pb.L
 	return &pb.LoginResponse{Token: token}, nil
 }
 
+func (s *UserGrpcServer) Logout(ctx context.Context, req *emptypb.Empty) (*emptypb.Empty, error) {
+	// 从 context 中获取认证用户ID
+	identity, ok := auth.FromContext(ctx)
+	if !ok || identity.UserID == 0 {
+		return nil, status.Errorf(codes.Internal, "无法从context获取用户信息")
+	}
+
+	err := s.userService.Logout(ctx, identity.Token, identity.Claims)
+	if err != nil {
+		return nil, err
+	}
+	return &emptypb.Empty{}, nil
+}
+
 func (s *UserGrpcServer) ValidateToken(ctx context.Context, req *pb.ValidateTokenRequest) (*pb.ValidateTokenResponse, error) {
 	identity, err := s.userService.ValidateToken(ctx, req.JwtToken)
 	if err != nil {
@@ -139,7 +153,10 @@ func (s *UserGrpcServer) Run(ctx context.Context, config config.UserService) err
 	if err != nil {
 		log.Fatalln("failed to listen:", err)
 	}
-	server := grpc.NewServer()
+	server := grpc.NewServer(
+		grpc.UnaryInterceptor(s.userService.AuthInterceptor(config.PublicMethods...)),
+	)
+	log.Println("Public gRPC methods:", config.PublicMethods)
 	pb.RegisterUserServiceServer(server, s)
 
 	// 注册 reflection 服务，使 grpcurl 等工具可以动态发现服务

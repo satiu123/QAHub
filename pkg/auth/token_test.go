@@ -36,6 +36,28 @@ func TestParseToken(t *testing.T) {
 	if identity.Token != tokenString {
 		t.Fatalf("expected raw token to be preserved")
 	}
+
+	// 测试 claims 字段
+	if identity.Claims == nil {
+		t.Fatalf("expected claims to be populated")
+	}
+
+	// 测试便捷方法
+	if username, ok := identity.GetStringClaim("username"); !ok || username != "alice" {
+		t.Fatalf("expected username claim to be alice, got %s", username)
+	}
+
+	if userID, ok := identity.GetInt64Claim("user_id"); !ok || userID != 42 {
+		t.Fatalf("expected user_id claim to be 42, got %d", userID)
+	}
+
+	if !identity.HasClaim("exp") {
+		t.Fatalf("expected exp claim to exist")
+	}
+
+	if identity.HasClaim("non_existent") {
+		t.Fatalf("expected non_existent claim to not exist")
+	}
 }
 
 func TestParseTokenMissingUserID(t *testing.T) {
