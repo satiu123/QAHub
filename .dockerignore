@@ -7,3 +7,4 @@ frontend/
 *.md
 docs/
 scripts/
+third_party/
