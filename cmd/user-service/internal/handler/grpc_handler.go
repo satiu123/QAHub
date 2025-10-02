@@ -16,6 +16,7 @@ import (
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // UserGrpcServer 实现了 user_grpc.pb.go 中定义的 UserServiceServer 接口
@@ -72,15 +73,21 @@ func (s *UserGrpcServer) Logout(ctx context.Context, req *emptypb.Empty) (*empty
 func (s *UserGrpcServer) ValidateToken(ctx context.Context, req *pb.ValidateTokenRequest) (*pb.ValidateTokenResponse, error) {
 	identity, err := s.userService.ValidateToken(ctx, req.JwtToken)
 	if err != nil {
-		return &pb.ValidateTokenResponse{
-			Valid: false,
-			Error: err.Error(),
-		}, nil
+		return &pb.ValidateTokenResponse{}, nil
 	}
+
+	// 将 jwt.MapClaims 转换为 map[string]string
+	claimsMap := make(map[string]*structpb.Value)
+	if identity.Claims != nil {
+		for key, value := range identity.Claims {
+			claimsMap[key], _ = structpb.NewValue(value)
+		}
+	}
+
 	return &pb.ValidateTokenResponse{
-		Valid:    true,
 		UserId:   identity.UserID,
 		Username: identity.Username,
+		Claims:   claimsMap,
 	}, nil
 }
 

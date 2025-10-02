@@ -12,6 +12,7 @@ import (
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
+	structpb "google.golang.org/protobuf/types/known/structpb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -352,11 +353,10 @@ func (x *ValidateTokenRequest) GetJwtToken() string {
 
 // ValidateToken 方法的响应消息
 type ValidateTokenResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Valid         bool                   `protobuf:"varint,1,opt,name=valid,proto3" json:"valid,omitempty"`
-	UserId        int64                  `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Username      string                 `protobuf:"bytes,3,opt,name=username,proto3" json:"username,omitempty"`
-	Error         string                 `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`
+	state         protoimpl.MessageState     `protogen:"open.v1"`
+	UserId        int64                      `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Username      string                     `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
+	Claims        map[string]*structpb.Value `protobuf:"bytes,3,rep,name=claims,proto3" json:"claims,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -391,13 +391,6 @@ func (*ValidateTokenResponse) Descriptor() ([]byte, []int) {
 	return file_api_proto_user_user_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *ValidateTokenResponse) GetValid() bool {
-	if x != nil {
-		return x.Valid
-	}
-	return false
-}
-
 func (x *ValidateTokenResponse) GetUserId() int64 {
 	if x != nil {
 		return x.UserId
@@ -412,11 +405,11 @@ func (x *ValidateTokenResponse) GetUsername() string {
 	return ""
 }
 
-func (x *ValidateTokenResponse) GetError() string {
+func (x *ValidateTokenResponse) GetClaims() map[string]*structpb.Value {
 	if x != nil {
-		return x.Error
+		return x.Claims
 	}
-	return ""
+	return nil
 }
 
 // GetUserProfile 方法的请求消息
@@ -635,7 +628,7 @@ var File_api_proto_user_user_proto protoreflect.FileDescriptor
 
 const file_api_proto_user_user_proto_rawDesc = "" +
 	"\n" +
-	"\x19api/proto/user/user.proto\x12\x04user\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1cgoogle/api/annotations.proto\x1a google/protobuf/field_mask.proto\"Z\n" +
+	"\x19api/proto/user/user.proto\x12\x04user\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1cgoogle/api/annotations.proto\x1a google/protobuf/field_mask.proto\x1a\x1cgoogle/protobuf/struct.proto\"Z\n" +
 	"\x04User\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x1a\n" +
 	"\busername\x18\x02 \x01(\tR\busername\x12\x14\n" +
@@ -655,12 +648,14 @@ const file_api_proto_user_user_proto_rawDesc = "" +
 	"\rLoginResponse\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\"2\n" +
 	"\x14ValidateTokenRequest\x12\x1a\n" +
-	"\bjwtToken\x18\x01 \x01(\tR\bjwtToken\"x\n" +
-	"\x15ValidateTokenResponse\x12\x14\n" +
-	"\x05valid\x18\x01 \x01(\bR\x05valid\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\x03R\x06userId\x12\x1a\n" +
-	"\busername\x18\x03 \x01(\tR\busername\x12\x14\n" +
-	"\x05error\x18\x04 \x01(\tR\x05error\"0\n" +
+	"\bjwtToken\x18\x01 \x01(\tR\bjwtToken\"\xe0\x01\n" +
+	"\x15ValidateTokenResponse\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x1a\n" +
+	"\busername\x18\x02 \x01(\tR\busername\x12?\n" +
+	"\x06claims\x18\x03 \x03(\v2'.user.ValidateTokenResponse.ClaimsEntryR\x06claims\x1aQ\n" +
+	"\vClaimsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12,\n" +
+	"\x05value\x18\x02 \x01(\v2\x16.google.protobuf.ValueR\x05value:\x028\x01\"0\n" +
 	"\x15GetUserProfileRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\"8\n" +
 	"\x16GetUserProfileResponse\x12\x1e\n" +
@@ -697,7 +692,7 @@ func file_api_proto_user_user_proto_rawDescGZIP() []byte {
 	return file_api_proto_user_user_proto_rawDescData
 }
 
-var file_api_proto_user_user_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_api_proto_user_user_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_api_proto_user_user_proto_goTypes = []any{
 	(*User)(nil),                     // 0: user.User
 	(*RegisterRequest)(nil),          // 1: user.RegisterRequest
@@ -710,32 +705,36 @@ var file_api_proto_user_user_proto_goTypes = []any{
 	(*GetUserProfileResponse)(nil),   // 8: user.GetUserProfileResponse
 	(*UpdateUserProfileRequest)(nil), // 9: user.UpdateUserProfileRequest
 	(*DeleteUserRequest)(nil),        // 10: user.DeleteUserRequest
-	(*fieldmaskpb.FieldMask)(nil),    // 11: google.protobuf.FieldMask
-	(*emptypb.Empty)(nil),            // 12: google.protobuf.Empty
+	nil,                              // 11: user.ValidateTokenResponse.ClaimsEntry
+	(*fieldmaskpb.FieldMask)(nil),    // 12: google.protobuf.FieldMask
+	(*structpb.Value)(nil),           // 13: google.protobuf.Value
+	(*emptypb.Empty)(nil),            // 14: google.protobuf.Empty
 }
 var file_api_proto_user_user_proto_depIdxs = []int32{
 	0,  // 0: user.RegisterResponse.user:type_name -> user.User
-	0,  // 1: user.GetUserProfileResponse.user:type_name -> user.User
-	11, // 2: user.UpdateUserProfileRequest.update_mask:type_name -> google.protobuf.FieldMask
-	1,  // 3: user.UserService.Register:input_type -> user.RegisterRequest
-	3,  // 4: user.UserService.Login:input_type -> user.LoginRequest
-	12, // 5: user.UserService.Logout:input_type -> google.protobuf.Empty
-	5,  // 6: user.UserService.ValidateToken:input_type -> user.ValidateTokenRequest
-	7,  // 7: user.UserService.GetUserProfile:input_type -> user.GetUserProfileRequest
-	9,  // 8: user.UserService.UpdateUserProfile:input_type -> user.UpdateUserProfileRequest
-	10, // 9: user.UserService.DeleteUser:input_type -> user.DeleteUserRequest
-	2,  // 10: user.UserService.Register:output_type -> user.RegisterResponse
-	4,  // 11: user.UserService.Login:output_type -> user.LoginResponse
-	12, // 12: user.UserService.Logout:output_type -> google.protobuf.Empty
-	6,  // 13: user.UserService.ValidateToken:output_type -> user.ValidateTokenResponse
-	8,  // 14: user.UserService.GetUserProfile:output_type -> user.GetUserProfileResponse
-	12, // 15: user.UserService.UpdateUserProfile:output_type -> google.protobuf.Empty
-	12, // 16: user.UserService.DeleteUser:output_type -> google.protobuf.Empty
-	10, // [10:17] is the sub-list for method output_type
-	3,  // [3:10] is the sub-list for method input_type
-	3,  // [3:3] is the sub-list for extension type_name
-	3,  // [3:3] is the sub-list for extension extendee
-	0,  // [0:3] is the sub-list for field type_name
+	11, // 1: user.ValidateTokenResponse.claims:type_name -> user.ValidateTokenResponse.ClaimsEntry
+	0,  // 2: user.GetUserProfileResponse.user:type_name -> user.User
+	12, // 3: user.UpdateUserProfileRequest.update_mask:type_name -> google.protobuf.FieldMask
+	13, // 4: user.ValidateTokenResponse.ClaimsEntry.value:type_name -> google.protobuf.Value
+	1,  // 5: user.UserService.Register:input_type -> user.RegisterRequest
+	3,  // 6: user.UserService.Login:input_type -> user.LoginRequest
+	14, // 7: user.UserService.Logout:input_type -> google.protobuf.Empty
+	5,  // 8: user.UserService.ValidateToken:input_type -> user.ValidateTokenRequest
+	7,  // 9: user.UserService.GetUserProfile:input_type -> user.GetUserProfileRequest
+	9,  // 10: user.UserService.UpdateUserProfile:input_type -> user.UpdateUserProfileRequest
+	10, // 11: user.UserService.DeleteUser:input_type -> user.DeleteUserRequest
+	2,  // 12: user.UserService.Register:output_type -> user.RegisterResponse
+	4,  // 13: user.UserService.Login:output_type -> user.LoginResponse
+	14, // 14: user.UserService.Logout:output_type -> google.protobuf.Empty
+	6,  // 15: user.UserService.ValidateToken:output_type -> user.ValidateTokenResponse
+	8,  // 16: user.UserService.GetUserProfile:output_type -> user.GetUserProfileResponse
+	14, // 17: user.UserService.UpdateUserProfile:output_type -> google.protobuf.Empty
+	14, // 18: user.UserService.DeleteUser:output_type -> google.protobuf.Empty
+	12, // [12:19] is the sub-list for method output_type
+	5,  // [5:12] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_api_proto_user_user_proto_init() }
@@ -749,7 +748,7 @@ func file_api_proto_user_user_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_proto_user_user_proto_rawDesc), len(file_api_proto_user_user_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   11,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
