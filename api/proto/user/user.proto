@@ -5,26 +5,51 @@ package user;
 option go_package = "./;user";
 
 import "google/protobuf/empty.proto";
+import "google/api/annotations.proto";
 
 // 用户服务定义
 service UserService {
-  // 注册新用户
-  rpc Register(RegisterRequest) returns (RegisterResponse);
+  rpc Register(RegisterRequest) returns (RegisterResponse) {
+    option (google.api.http) = {
+      post : "/api/v1/auth/register"
+      body : "*"
+    };
+  }
 
-  // 用户登录
-  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc Login(LoginRequest) returns (LoginResponse) {
+    option (google.api.http) = {
+      post : "/api/v1/auth/login"
+      body : "*"
+    };
+  }
 
-  // 获取用户个人资料
-  rpc GetUserProfile(GetUserProfileRequest) returns (GetUserProfileResponse);
+  rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse) {
+    option (google.api.http) = {
+      post : "/api/v1/auth/validate"
+      body : "*"
+    };
+  }
 
-  // 更新用户个人资料
+  rpc GetUserProfile(GetUserProfileRequest) returns (GetUserProfileResponse) {
+    option (google.api.http) = {
+      get : "/api/v1/users/{user_id}"
+    };
+  }
+
   rpc UpdateUserProfile(UpdateUserProfileRequest)
-      returns (google.protobuf.Empty);
+      returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put : "/api/v1/users/{user_id}"
+      body : "*"
+    };
+  }
 
-  // 删除用户
-  rpc DeleteUser(DeleteUserRequest) returns (google.protobuf.Empty);
+  rpc DeleteUser(DeleteUserRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete : "/api/v1/users/{user_id}"
+    };
+  }
 }
-
 // 用户信息
 message User {
   int64 id = 1;
@@ -52,6 +77,17 @@ message LoginRequest {
 
 // Login 方法的响应消息
 message LoginResponse { string token = 1; }
+
+// ValidateToken 方法的请求消息
+message ValidateTokenRequest { string jwtToken = 1; }
+
+// ValidateToken 方法的响应消息
+message ValidateTokenResponse {
+  bool valid = 1;
+  int64 user_id = 2;
+  string username = 3;
+  string error = 4;
+}
 
 // GetUserProfile 方法的请求消息
 message GetUserProfileRequest { int64 user_id = 1; }

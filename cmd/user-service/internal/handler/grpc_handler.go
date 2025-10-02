@@ -2,13 +2,18 @@ package handler
 
 import (
 	"context"
+	"log"
+	"net"
 
 	pb "qahub/api/proto/user"
 	"qahub/pkg/auth"
+	"qahub/pkg/config"
 	"qahub/user-service/internal/model"
 	"qahub/user-service/internal/service"
 
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -48,6 +53,21 @@ func (s *UserGrpcServer) Login(ctx context.Context, req *pb.LoginRequest) (*pb.L
 		return nil, err
 	}
 	return &pb.LoginResponse{Token: token}, nil
+}
+
+func (s *UserGrpcServer) ValidateToken(ctx context.Context, req *pb.ValidateTokenRequest) (*pb.ValidateTokenResponse, error) {
+	identity, err := s.userService.ValidateToken(ctx, req.JwtToken)
+	if err != nil {
+		return &pb.ValidateTokenResponse{
+			Valid: false,
+			Error: err.Error(),
+		}, nil
+	}
+	return &pb.ValidateTokenResponse{
+		Valid:    true,
+		UserId:   identity.UserID,
+		Username: identity.Username,
+	}, nil
 }
 
 func (s *UserGrpcServer) GetUserProfile(ctx context.Context, req *pb.GetUserProfileRequest) (*pb.GetUserProfileResponse, error) {
@@ -111,4 +131,30 @@ func (s *UserGrpcServer) DeleteUser(ctx context.Context, req *pb.DeleteUserReque
 	}
 
 	return &emptypb.Empty{}, nil
+}
+
+func (s *UserGrpcServer) Run(ctx context.Context, config config.UserService) error {
+	serverAddr := ":" + config.GrpcPort
+	lis, err := net.Listen("tcp", serverAddr)
+	if err != nil {
+		log.Fatalln("failed to listen:", err)
+	}
+	server := grpc.NewServer()
+	pb.RegisterUserServiceServer(server, s)
+
+	// 注册 reflection 服务，使 grpcurl 等工具可以动态发现服务
+	reflection.Register(server)
+
+	log.Printf("gRPC server listening at %v", lis.Addr())
+	go func() {
+		if err := server.Serve(lis); err != nil {
+			log.Fatalf("failed to serve: %v", err)
+		}
+	}()
+
+	<-ctx.Done()
+	log.Println("Shutting down gRPC server...")
+	server.GracefulStop()
+	log.Println("gRPC server stopped.")
+	return nil
 }
