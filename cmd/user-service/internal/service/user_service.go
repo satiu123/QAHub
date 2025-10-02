@@ -200,11 +200,7 @@ func (s *userService) AuthInterceptor(publicMethods ...string) grpc.UnaryServerI
 		}
 
 		// 验证成功，将用户信息注入到 context 中
-		identity := auth.Identity{
-			UserID:   validateResp.UserID,
-			Username: validateResp.Username,
-		}
-		newCtx := auth.WithIdentity(ctx, identity)
+		newCtx := auth.WithIdentity(ctx, validateResp)
 
 		// 继续处理请求
 		return handler(newCtx, req)
