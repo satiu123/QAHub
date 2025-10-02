@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"slices"
 	"strconv"
@@ -22,6 +23,7 @@ import (
 // 这个拦截器将 token 从 metadata 中提取出来，并调用 user-service 进行验证。
 func GrpcAuthInterceptor(userClient *clients.UserServiceClient, publicMethods ...string) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+		log.Println("gRPC method:", info.FullMethod)
 		// 检查是否在白名单中
 		if slices.Contains(publicMethods, info.FullMethod) {
 			// 白名单路径，跳过认证
@@ -50,10 +52,17 @@ func GrpcAuthInterceptor(userClient *clients.UserServiceClient, publicMethods ..
 			return nil, status.Errorf(codes.Unauthenticated, "token 验证失败: %v", err)
 		}
 
+		// 将 structpb.Value map 转换为 jwt.MapClaims
+		claims := make(map[string]any)
+		for k, v := range validateResp.Claims {
+			claims[k] = v.AsInterface()
+		}
+
 		// 验证成功，将用户信息注入到 context 中
 		identity := auth.Identity{
 			UserID:   validateResp.UserId,
 			Username: validateResp.Username,
+			Claims:   claims,
 		}
 		newCtx := auth.WithIdentity(ctx, identity)
 
