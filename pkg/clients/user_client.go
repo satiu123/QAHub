@@ -7,6 +7,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 )
 
 // UserServiceClient 是 UserService 的 gRPC 客户端封装
@@ -33,6 +34,11 @@ func NewUserServiceClient(address string) (*UserServiceClient, error) {
 
 // ValidateToken 验证 JWT token
 func (c *UserServiceClient) ValidateToken(ctx context.Context, token string) (*pb.ValidateTokenResponse, error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if ok {
+		ctx = metadata.NewOutgoingContext(ctx, md)
+	}
+	// 设置请求超时时间
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
