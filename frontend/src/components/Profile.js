@@ -65,7 +65,8 @@ function Profile({ token, onLogout }) {
                     'Authorization': `Bearer ${token}`
                 }
             });
-            setMyQuestions(response.data?.data || []);
+            console.log('Fetched user questions:', response.data);
+            setMyQuestions(response.data.questions || []);
         } catch (err) {
             console.error('Failed to fetch user questions:', err);
             setError('Failed to fetch your questions.');
@@ -421,7 +422,7 @@ function Profile({ token, onLogout }) {
                                                         {question.content?.length > 100 ? '...' : ''}
                                                     </p>
                                                     <small className="text-muted">
-                                                        创建于: {new Date(question.createdAt).toLocaleDateString()}
+                                                        创建于: {new Date(question.created_at).toLocaleDateString()}
                                                     </small>
                                                 </div>
                                                 <div className="ms-3">

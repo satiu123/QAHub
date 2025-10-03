@@ -39,23 +39,25 @@ function QuestionList({ token }) {
             <ul className="list-group">
                 {questions.length > 0 ? (
                     questions.map(q => {
-                        const displayName = q.authorName || `User ${q.userId}`;
-                        const formattedDate = q.createdAt ? new Date(q.createdAt).toLocaleDateString() : '';
-                        const answerCount = q.answerCount;
+                        const fallbackUser = q.UserID || q.user_id;
+                        const displayName = q.AuthorName || q.author_name || (fallbackUser ? `User ${fallbackUser}` : 'Anonymous');
+                        const createdAt = q.CreatedAt || q.created_at;
+                        const formattedDate = createdAt ? new Date(createdAt).toLocaleDateString() : '';
+                        const answerCount = q.AnswerCount ?? q.answer_count;
 
                         return (
-                            <li key={q.id} className="list-group-item">
+                            <li key={q.ID || q.id} className="list-group-item">
                                 <div className="d-flex justify-content-between align-items-start">
                                     <div className="me-3">
-                                        <Link to={`/questions/${q.id}`} className="fw-semibold text-decoration-none">
-                                            {q.title}
+                                        <Link to={`/questions/${q.ID || q.id}`} className="fw-semibold text-decoration-none">
+                                            {q.Title || q.title}
                                         </Link>
                                         <p className="text-muted small mb-0">
                                             Asked by {displayName}
                                             {formattedDate && ` · ${formattedDate}`}
                                         </p>
                                     </div>
-                                    {typeof answerCount === 'number' && (
+                                    {typeof answerCount != "" && (
                                         <span className="badge bg-secondary align-self-center">
                                             {answerCount} answers
                                         </span>

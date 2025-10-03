@@ -9,6 +9,7 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	qapb "qahub/api/proto/qa"
 	userpb "qahub/api/proto/user"
@@ -29,8 +30,21 @@ func main() {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	// 自定义JSONPb编解码器
+	jpb := &runtime.JSONPb{
+		MarshalOptions: protojson.MarshalOptions{
+			UseProtoNames:   true,
+			EmitUnpopulated: true,
+		},
+		UnmarshalOptions: protojson.UnmarshalOptions{
+			DiscardUnknown: true,
+		},
+	}
+
 	// 创建 gRPC-Gateway mux
-	mux := runtime.NewServeMux()
+	mux := runtime.NewServeMux(
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, jpb),
+	)
 
 	// 配置 gRPC 连接选项
 	opts := []grpc.DialOption{

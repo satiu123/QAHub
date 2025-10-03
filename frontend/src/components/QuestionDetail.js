@@ -282,14 +282,14 @@ function QuestionDetail({ token }) {
         <div className="container-fluid">
             <div className="card mb-4">
                 <div className="card-body">
-                    <h2 className="card-title mb-3">{question.title}</h2>
-                    <p className="card-text mb-3" style={{ lineHeight: '1.6' }}>{question.content}</p>
+                    <h2 className="card-title mb-3">{question.Title || question.title}</h2>
+                    <p className="card-text mb-3" style={{ lineHeight: '1.6' }}>{question.Content || question.content}</p>
                     <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mt-3">
                         <small className="text-muted mb-1 mb-sm-0">
-                            {`Asked by ${formatDisplayName(question.authorName, question.userId)}`}
+                            {`Asked by ${formatDisplayName(question.AuthorName || question.author_name, question.UserID || question.user_id)}`}
                         </small>
                         <small className="text-muted">
-                            {new Date(question.createdAt).toLocaleDateString()}
+                            {new Date(question.CreatedAt || question.created_at).toLocaleDateString()}
                         </small>
                     </div>
                 </div>
@@ -299,31 +299,31 @@ function QuestionDetail({ token }) {
             {answers.length > 0 ? (
                 answers.map(answer => (
                     // MODIFIED: Added id for scrolling
-                    <div key={answer.id} id={`answer-${answer.id}`} className="card mb-4 shadow-sm">
+                    <div key={answer.ID || answer.id} id={`answer-${answer.ID || answer.id}`} className="card mb-4 shadow-sm">
                         <div className="card-body">
-                            <p className="card-text mb-3" style={{ lineHeight: '1.6' }}>{answer.content}</p>
+                            <p className="card-text mb-3" style={{ lineHeight: '1.6' }}>{answer.Content || answer.content}</p>
                             <div className="row align-items-center mb-3">
                                 <div className="col-sm-8 col-12 mb-2 mb-sm-0">
                                     <div className="d-flex flex-column flex-sm-row justify-content-start align-items-start align-items-sm-center">
                                         <small className="text-muted mb-1 mb-sm-0 me-sm-3">
-                                            {`Answered by ${formatDisplayName(answer.username, answer.userId)}`}
+                                            {`Answered by ${formatDisplayName(answer.Username || answer.username, answer.UserID || answer.user_id)}`}
                                         </small>
                                         <small className="text-muted">
-                                            {new Date(answer.createdAt).toLocaleDateString()}
+                                            {new Date(answer.CreatedAt || answer.created_at).toLocaleDateString()}
                                         </small>
                                     </div>
                                 </div>
                                 <div className="col-sm-4 col-12 text-sm-end text-start">
                                     <button
                                         className={`btn ${answer.isUpvotedByUser ? 'btn-success' : 'btn-outline-success'} fs-6 px-3 py-2`}
-                                        onClick={() => handleVote(answer.id, answer.isUpvotedByUser)}
+                                        onClick={() => handleVote(answer.ID || answer.id, answer.isUpvotedByUser)}
                                         disabled={answer.isVoting}
                                     >
-                                        👍 {answer.upvoteCount || 0}
+                                        👍 {answer.UpvoteCount || answer.upvote_count || 0}
                                     </button>
                                 </div>
                             </div>
-                            <Comments answerId={answer.id} token={token} />
+                            <Comments answerId={answer.ID || answer.id} token={token} />
                         </div>
                     </div>
                 ))
