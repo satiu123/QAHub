@@ -32,7 +32,7 @@ func NewQAGrpcServer(svc service.QAService) *QAGrpcServer {
 	}
 }
 
-func (s *QAGrpcServer) CreateQuestion(ctx context.Context, req *pb.CreateQuestionRequest) (*pb.Question, error) {
+func (s *QAGrpcServer) CreateQuestion(ctx context.Context, req *pb.CreateQuestionRequest) (*pb.QuestionResponse, error) {
 	//从context中获取用户信息
 	identity, ok := auth.FromContext(ctx)
 	if !ok {
@@ -42,7 +42,7 @@ func (s *QAGrpcServer) CreateQuestion(ctx context.Context, req *pb.CreateQuestio
 	if err != nil {
 		return nil, err
 	}
-	return &pb.Question{
+	return &pb.QuestionResponse{
 		Id:        question.ID,
 		Title:     question.Title,
 		Content:   question.Content,
@@ -52,18 +52,20 @@ func (s *QAGrpcServer) CreateQuestion(ctx context.Context, req *pb.CreateQuestio
 	}, nil
 }
 
-func (s *QAGrpcServer) GetQuestion(ctx context.Context, req *pb.GetQuestionRequest) (*pb.Question, error) {
+func (s *QAGrpcServer) GetQuestion(ctx context.Context, req *pb.GetQuestionRequest) (*pb.QuestionResponse, error) {
 	question, err := s.qaService.GetQuestion(ctx, req.Id)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.Question{
-		Id:        question.ID,
-		Title:     question.Title,
-		Content:   question.Content,
-		UserId:    question.UserID,
-		CreatedAt: timestamppb.New(question.CreatedAt),
-		UpdatedAt: timestamppb.New(question.UpdatedAt),
+	return &pb.QuestionResponse{
+		Id:          question.ID,
+		Title:       question.Title,
+		Content:     question.Content,
+		UserId:      question.UserID,
+		CreatedAt:   timestamppb.New(question.CreatedAt),
+		UpdatedAt:   timestamppb.New(question.UpdatedAt),
+		AuthorName:  question.AuthorName,
+		AnswerCount: question.AnswerCount,
 	}, nil
 }
 
@@ -74,15 +76,17 @@ func (s *QAGrpcServer) ListQuestions(ctx context.Context, req *pb.ListQuestionsR
 		return nil, err
 	}
 	log.Println("Fetched questions:", questions)
-	var pbQuestions []*pb.Question
+	var pbQuestions []*pb.QuestionResponse
 	for _, q := range questions {
-		pbQuestions = append(pbQuestions, &pb.Question{
-			Id:        q.ID,
-			Title:     q.Title,
-			Content:   q.Content,
-			UserId:    q.UserID,
-			CreatedAt: timestamppb.New(q.CreatedAt),
-			UpdatedAt: timestamppb.New(q.UpdatedAt),
+		pbQuestions = append(pbQuestions, &pb.QuestionResponse{
+			Id:          q.ID,
+			Title:       q.Title,
+			Content:     q.Content,
+			UserId:      q.UserID,
+			CreatedAt:   timestamppb.New(q.CreatedAt),
+			UpdatedAt:   timestamppb.New(q.UpdatedAt),
+			AuthorName:  q.AuthorName,
+			AnswerCount: q.AnswerCount,
 		})
 	}
 	return &pb.ListQuestionsResponse{
@@ -91,7 +95,7 @@ func (s *QAGrpcServer) ListQuestions(ctx context.Context, req *pb.ListQuestionsR
 	}, nil
 }
 
-func (s *QAGrpcServer) UpdateQuestion(ctx context.Context, req *pb.UpdateQuestionRequest) (*pb.Question, error) {
+func (s *QAGrpcServer) UpdateQuestion(ctx context.Context, req *pb.UpdateQuestionRequest) (*pb.QuestionResponse, error) {
 	//从context中获取用户信息
 	identity, ok := auth.FromContext(ctx)
 	if !ok {
@@ -101,7 +105,7 @@ func (s *QAGrpcServer) UpdateQuestion(ctx context.Context, req *pb.UpdateQuestio
 	if err != nil {
 		return nil, err
 	}
-	return &pb.Question{
+	return &pb.QuestionResponse{
 		Id:        question.ID,
 		Title:     question.Title,
 		Content:   question.Content,
@@ -124,7 +128,7 @@ func (s *QAGrpcServer) DeleteQuestion(ctx context.Context, req *pb.DeleteQuestio
 	return &emptypb.Empty{}, nil
 }
 
-func (s *QAGrpcServer) CreateAnswer(ctx context.Context, req *pb.CreateAnswerRequest) (*pb.Answer, error) {
+func (s *QAGrpcServer) CreateAnswer(ctx context.Context, req *pb.CreateAnswerRequest) (*pb.AnswerResponse, error) {
 	//从context中获取用户信息
 	identity, ok := auth.FromContext(ctx)
 	if !ok {
@@ -134,7 +138,7 @@ func (s *QAGrpcServer) CreateAnswer(ctx context.Context, req *pb.CreateAnswerReq
 	if err != nil {
 		return nil, err
 	}
-	return &pb.Answer{
+	return &pb.AnswerResponse{
 		Id:          answer.ID,
 		QuestionId:  answer.QuestionID,
 		Content:     answer.Content,
@@ -155,16 +159,18 @@ func (s *QAGrpcServer) ListAnswers(ctx context.Context, req *pb.ListAnswersReque
 	if err != nil {
 		return nil, err
 	}
-	var pbAnswers []*pb.Answer
+	var pbAnswers []*pb.AnswerResponse
 	for _, a := range answers {
-		pbAnswers = append(pbAnswers, &pb.Answer{
-			Id:          a.ID,
-			QuestionId:  a.QuestionID,
-			Content:     a.Content,
-			UserId:      a.UserID,
-			UpvoteCount: int32(a.UpvoteCount),
-			CreatedAt:   timestamppb.New(a.CreatedAt),
-			UpdatedAt:   timestamppb.New(a.UpdatedAt),
+		pbAnswers = append(pbAnswers, &pb.AnswerResponse{
+			Id:              a.ID,
+			QuestionId:      a.QuestionID,
+			Content:         a.Content,
+			UserId:          a.UserID,
+			UpvoteCount:     int32(a.UpvoteCount),
+			CreatedAt:       timestamppb.New(a.CreatedAt),
+			UpdatedAt:       timestamppb.New(a.UpdatedAt),
+			Username:        a.Username,
+			IsUpvotedByUser: a.IsUpvotedByUser,
 		})
 	}
 	return &pb.ListAnswersResponse{
@@ -173,7 +179,7 @@ func (s *QAGrpcServer) ListAnswers(ctx context.Context, req *pb.ListAnswersReque
 	}, nil
 }
 
-func (s *QAGrpcServer) UpdateAnswer(ctx context.Context, req *pb.UpdateAnswerRequest) (*pb.Answer, error) {
+func (s *QAGrpcServer) UpdateAnswer(ctx context.Context, req *pb.UpdateAnswerRequest) (*pb.AnswerResponse, error) {
 	//从context中获取用户信息
 	identity, ok := auth.FromContext(ctx)
 	if !ok {
@@ -183,7 +189,7 @@ func (s *QAGrpcServer) UpdateAnswer(ctx context.Context, req *pb.UpdateAnswerReq
 	if err != nil {
 		return nil, err
 	}
-	return &pb.Answer{
+	return &pb.AnswerResponse{
 		Id:          answer.ID,
 		QuestionId:  answer.QuestionID,
 		Content:     answer.Content,
@@ -233,7 +239,7 @@ func (s *QAGrpcServer) DownvoteAnswer(ctx context.Context, req *pb.DownvoteAnswe
 	return &emptypb.Empty{}, nil
 }
 
-func (s *QAGrpcServer) CreateComment(ctx context.Context, req *pb.CreateCommentRequest) (*pb.Comment, error) {
+func (s *QAGrpcServer) CreateComment(ctx context.Context, req *pb.CreateCommentRequest) (*pb.CommentResponse, error) {
 	//从context中获取用户信息
 	identity, ok := auth.FromContext(ctx)
 	if !ok {
@@ -243,7 +249,7 @@ func (s *QAGrpcServer) CreateComment(ctx context.Context, req *pb.CreateCommentR
 	if err != nil {
 		return nil, err
 	}
-	return &pb.Comment{
+	return &pb.CommentResponse{
 		Id:        comment.ID,
 		AnswerId:  comment.AnswerID,
 		Content:   comment.Content,
@@ -264,15 +270,16 @@ func (s *QAGrpcServer) ListComments(ctx context.Context, req *pb.ListCommentsReq
 	if err != nil {
 		return nil, err
 	}
-	var pbComments []*pb.Comment
+	var pbComments []*pb.CommentResponse
 	for _, c := range comments {
-		pbComments = append(pbComments, &pb.Comment{
+		pbComments = append(pbComments, &pb.CommentResponse{
 			Id:        c.ID,
 			AnswerId:  c.AnswerID,
 			Content:   c.Content,
 			UserId:    c.UserID,
 			CreatedAt: timestamppb.New(c.CreatedAt),
 			UpdatedAt: timestamppb.New(c.UpdatedAt),
+			Username:  c.Username,
 		})
 	}
 	return &pb.ListCommentsResponse{
@@ -281,7 +288,7 @@ func (s *QAGrpcServer) ListComments(ctx context.Context, req *pb.ListCommentsReq
 	}, nil
 }
 
-func (s *QAGrpcServer) UpdateComment(ctx context.Context, req *pb.UpdateCommentRequest) (*pb.Comment, error) {
+func (s *QAGrpcServer) UpdateComment(ctx context.Context, req *pb.UpdateCommentRequest) (*pb.CommentResponse, error) {
 	//从context中获取用户信息
 	identity, ok := auth.FromContext(ctx)
 	if !ok {
@@ -291,7 +298,7 @@ func (s *QAGrpcServer) UpdateComment(ctx context.Context, req *pb.UpdateCommentR
 	if err != nil {
 		return nil, err
 	}
-	return &pb.Comment{
+	return &pb.CommentResponse{
 		Id:        comment.ID,
 		AnswerId:  comment.AnswerID,
 		Content:   comment.Content,

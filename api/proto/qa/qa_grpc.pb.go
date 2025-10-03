@@ -44,19 +44,19 @@ const (
 // QAService 定义了问答系统的相关接口
 type QAServiceClient interface {
 	// --- 问题 (Question) ---
-	CreateQuestion(ctx context.Context, in *CreateQuestionRequest, opts ...grpc.CallOption) (*Question, error)
-	GetQuestion(ctx context.Context, in *GetQuestionRequest, opts ...grpc.CallOption) (*Question, error)
+	CreateQuestion(ctx context.Context, in *CreateQuestionRequest, opts ...grpc.CallOption) (*QuestionResponse, error)
+	GetQuestion(ctx context.Context, in *GetQuestionRequest, opts ...grpc.CallOption) (*QuestionResponse, error)
 	ListQuestions(ctx context.Context, in *ListQuestionsRequest, opts ...grpc.CallOption) (*ListQuestionsResponse, error)
-	UpdateQuestion(ctx context.Context, in *UpdateQuestionRequest, opts ...grpc.CallOption) (*Question, error)
+	UpdateQuestion(ctx context.Context, in *UpdateQuestionRequest, opts ...grpc.CallOption) (*QuestionResponse, error)
 	DeleteQuestion(ctx context.Context, in *DeleteQuestionRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// --- 回答 (Answer) ---
-	CreateAnswer(ctx context.Context, in *CreateAnswerRequest, opts ...grpc.CallOption) (*Answer, error)
-	UpdateAnswer(ctx context.Context, in *UpdateAnswerRequest, opts ...grpc.CallOption) (*Answer, error)
+	CreateAnswer(ctx context.Context, in *CreateAnswerRequest, opts ...grpc.CallOption) (*AnswerResponse, error)
+	UpdateAnswer(ctx context.Context, in *UpdateAnswerRequest, opts ...grpc.CallOption) (*AnswerResponse, error)
 	DeleteAnswer(ctx context.Context, in *DeleteAnswerRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	ListAnswers(ctx context.Context, in *ListAnswersRequest, opts ...grpc.CallOption) (*ListAnswersResponse, error)
 	// --- 评论 (Comment) ---
-	CreateComment(ctx context.Context, in *CreateCommentRequest, opts ...grpc.CallOption) (*Comment, error)
-	UpdateComment(ctx context.Context, in *UpdateCommentRequest, opts ...grpc.CallOption) (*Comment, error)
+	CreateComment(ctx context.Context, in *CreateCommentRequest, opts ...grpc.CallOption) (*CommentResponse, error)
+	UpdateComment(ctx context.Context, in *UpdateCommentRequest, opts ...grpc.CallOption) (*CommentResponse, error)
 	DeleteComment(ctx context.Context, in *DeleteCommentRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	ListComments(ctx context.Context, in *ListCommentsRequest, opts ...grpc.CallOption) (*ListCommentsResponse, error)
 	UpvoteAnswer(ctx context.Context, in *UpvoteAnswerRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
@@ -71,9 +71,9 @@ func NewQAServiceClient(cc grpc.ClientConnInterface) QAServiceClient {
 	return &qAServiceClient{cc}
 }
 
-func (c *qAServiceClient) CreateQuestion(ctx context.Context, in *CreateQuestionRequest, opts ...grpc.CallOption) (*Question, error) {
+func (c *qAServiceClient) CreateQuestion(ctx context.Context, in *CreateQuestionRequest, opts ...grpc.CallOption) (*QuestionResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Question)
+	out := new(QuestionResponse)
 	err := c.cc.Invoke(ctx, QAService_CreateQuestion_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -81,9 +81,9 @@ func (c *qAServiceClient) CreateQuestion(ctx context.Context, in *CreateQuestion
 	return out, nil
 }
 
-func (c *qAServiceClient) GetQuestion(ctx context.Context, in *GetQuestionRequest, opts ...grpc.CallOption) (*Question, error) {
+func (c *qAServiceClient) GetQuestion(ctx context.Context, in *GetQuestionRequest, opts ...grpc.CallOption) (*QuestionResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Question)
+	out := new(QuestionResponse)
 	err := c.cc.Invoke(ctx, QAService_GetQuestion_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -101,9 +101,9 @@ func (c *qAServiceClient) ListQuestions(ctx context.Context, in *ListQuestionsRe
 	return out, nil
 }
 
-func (c *qAServiceClient) UpdateQuestion(ctx context.Context, in *UpdateQuestionRequest, opts ...grpc.CallOption) (*Question, error) {
+func (c *qAServiceClient) UpdateQuestion(ctx context.Context, in *UpdateQuestionRequest, opts ...grpc.CallOption) (*QuestionResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Question)
+	out := new(QuestionResponse)
 	err := c.cc.Invoke(ctx, QAService_UpdateQuestion_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -121,9 +121,9 @@ func (c *qAServiceClient) DeleteQuestion(ctx context.Context, in *DeleteQuestion
 	return out, nil
 }
 
-func (c *qAServiceClient) CreateAnswer(ctx context.Context, in *CreateAnswerRequest, opts ...grpc.CallOption) (*Answer, error) {
+func (c *qAServiceClient) CreateAnswer(ctx context.Context, in *CreateAnswerRequest, opts ...grpc.CallOption) (*AnswerResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Answer)
+	out := new(AnswerResponse)
 	err := c.cc.Invoke(ctx, QAService_CreateAnswer_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -131,9 +131,9 @@ func (c *qAServiceClient) CreateAnswer(ctx context.Context, in *CreateAnswerRequ
 	return out, nil
 }
 
-func (c *qAServiceClient) UpdateAnswer(ctx context.Context, in *UpdateAnswerRequest, opts ...grpc.CallOption) (*Answer, error) {
+func (c *qAServiceClient) UpdateAnswer(ctx context.Context, in *UpdateAnswerRequest, opts ...grpc.CallOption) (*AnswerResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Answer)
+	out := new(AnswerResponse)
 	err := c.cc.Invoke(ctx, QAService_UpdateAnswer_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -161,9 +161,9 @@ func (c *qAServiceClient) ListAnswers(ctx context.Context, in *ListAnswersReques
 	return out, nil
 }
 
-func (c *qAServiceClient) CreateComment(ctx context.Context, in *CreateCommentRequest, opts ...grpc.CallOption) (*Comment, error) {
+func (c *qAServiceClient) CreateComment(ctx context.Context, in *CreateCommentRequest, opts ...grpc.CallOption) (*CommentResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Comment)
+	out := new(CommentResponse)
 	err := c.cc.Invoke(ctx, QAService_CreateComment_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -171,9 +171,9 @@ func (c *qAServiceClient) CreateComment(ctx context.Context, in *CreateCommentRe
 	return out, nil
 }
 
-func (c *qAServiceClient) UpdateComment(ctx context.Context, in *UpdateCommentRequest, opts ...grpc.CallOption) (*Comment, error) {
+func (c *qAServiceClient) UpdateComment(ctx context.Context, in *UpdateCommentRequest, opts ...grpc.CallOption) (*CommentResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Comment)
+	out := new(CommentResponse)
 	err := c.cc.Invoke(ctx, QAService_UpdateComment_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -228,19 +228,19 @@ func (c *qAServiceClient) DownvoteAnswer(ctx context.Context, in *DownvoteAnswer
 // QAService 定义了问答系统的相关接口
 type QAServiceServer interface {
 	// --- 问题 (Question) ---
-	CreateQuestion(context.Context, *CreateQuestionRequest) (*Question, error)
-	GetQuestion(context.Context, *GetQuestionRequest) (*Question, error)
+	CreateQuestion(context.Context, *CreateQuestionRequest) (*QuestionResponse, error)
+	GetQuestion(context.Context, *GetQuestionRequest) (*QuestionResponse, error)
 	ListQuestions(context.Context, *ListQuestionsRequest) (*ListQuestionsResponse, error)
-	UpdateQuestion(context.Context, *UpdateQuestionRequest) (*Question, error)
+	UpdateQuestion(context.Context, *UpdateQuestionRequest) (*QuestionResponse, error)
 	DeleteQuestion(context.Context, *DeleteQuestionRequest) (*emptypb.Empty, error)
 	// --- 回答 (Answer) ---
-	CreateAnswer(context.Context, *CreateAnswerRequest) (*Answer, error)
-	UpdateAnswer(context.Context, *UpdateAnswerRequest) (*Answer, error)
+	CreateAnswer(context.Context, *CreateAnswerRequest) (*AnswerResponse, error)
+	UpdateAnswer(context.Context, *UpdateAnswerRequest) (*AnswerResponse, error)
 	DeleteAnswer(context.Context, *DeleteAnswerRequest) (*emptypb.Empty, error)
 	ListAnswers(context.Context, *ListAnswersRequest) (*ListAnswersResponse, error)
 	// --- 评论 (Comment) ---
-	CreateComment(context.Context, *CreateCommentRequest) (*Comment, error)
-	UpdateComment(context.Context, *UpdateCommentRequest) (*Comment, error)
+	CreateComment(context.Context, *CreateCommentRequest) (*CommentResponse, error)
+	UpdateComment(context.Context, *UpdateCommentRequest) (*CommentResponse, error)
 	DeleteComment(context.Context, *DeleteCommentRequest) (*emptypb.Empty, error)
 	ListComments(context.Context, *ListCommentsRequest) (*ListCommentsResponse, error)
 	UpvoteAnswer(context.Context, *UpvoteAnswerRequest) (*emptypb.Empty, error)
@@ -255,25 +255,25 @@ type QAServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedQAServiceServer struct{}
 
-func (UnimplementedQAServiceServer) CreateQuestion(context.Context, *CreateQuestionRequest) (*Question, error) {
+func (UnimplementedQAServiceServer) CreateQuestion(context.Context, *CreateQuestionRequest) (*QuestionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateQuestion not implemented")
 }
-func (UnimplementedQAServiceServer) GetQuestion(context.Context, *GetQuestionRequest) (*Question, error) {
+func (UnimplementedQAServiceServer) GetQuestion(context.Context, *GetQuestionRequest) (*QuestionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetQuestion not implemented")
 }
 func (UnimplementedQAServiceServer) ListQuestions(context.Context, *ListQuestionsRequest) (*ListQuestionsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListQuestions not implemented")
 }
-func (UnimplementedQAServiceServer) UpdateQuestion(context.Context, *UpdateQuestionRequest) (*Question, error) {
+func (UnimplementedQAServiceServer) UpdateQuestion(context.Context, *UpdateQuestionRequest) (*QuestionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateQuestion not implemented")
 }
 func (UnimplementedQAServiceServer) DeleteQuestion(context.Context, *DeleteQuestionRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteQuestion not implemented")
 }
-func (UnimplementedQAServiceServer) CreateAnswer(context.Context, *CreateAnswerRequest) (*Answer, error) {
+func (UnimplementedQAServiceServer) CreateAnswer(context.Context, *CreateAnswerRequest) (*AnswerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateAnswer not implemented")
 }
-func (UnimplementedQAServiceServer) UpdateAnswer(context.Context, *UpdateAnswerRequest) (*Answer, error) {
+func (UnimplementedQAServiceServer) UpdateAnswer(context.Context, *UpdateAnswerRequest) (*AnswerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateAnswer not implemented")
 }
 func (UnimplementedQAServiceServer) DeleteAnswer(context.Context, *DeleteAnswerRequest) (*emptypb.Empty, error) {
@@ -282,10 +282,10 @@ func (UnimplementedQAServiceServer) DeleteAnswer(context.Context, *DeleteAnswerR
 func (UnimplementedQAServiceServer) ListAnswers(context.Context, *ListAnswersRequest) (*ListAnswersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListAnswers not implemented")
 }
-func (UnimplementedQAServiceServer) CreateComment(context.Context, *CreateCommentRequest) (*Comment, error) {
+func (UnimplementedQAServiceServer) CreateComment(context.Context, *CreateCommentRequest) (*CommentResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateComment not implemented")
 }
-func (UnimplementedQAServiceServer) UpdateComment(context.Context, *UpdateCommentRequest) (*Comment, error) {
+func (UnimplementedQAServiceServer) UpdateComment(context.Context, *UpdateCommentRequest) (*CommentResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateComment not implemented")
 }
 func (UnimplementedQAServiceServer) DeleteComment(context.Context, *DeleteCommentRequest) (*emptypb.Empty, error) {
