@@ -321,7 +321,7 @@ func (s *QAGrpcServer) Run(ctx context.Context, config config.Config) error {
 		log.Fatalf("无法监听 gRPC 端口: %v", err)
 	}
 	// 初始化 user-service 的客户端连接
-	userClient, err := clients.NewUserServiceClient(config.Services.UserService.GrpcPort)
+	userClient, err := clients.NewUserServiceClient(config.Services.Gateway.UserServiceEndpoint)
 	if err != nil {
 		log.Fatalf("无法连接到 user-service: %v", err)
 	}
