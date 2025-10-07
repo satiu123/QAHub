@@ -1,32 +1,32 @@
 services:
   # gRPC Gateway (HTTP to gRPC)
-  gateway:
-    build:
-      context: .
-      dockerfile: cmd/gateway/Dockerfile
-    container_name: qahub-grpc-gateway
-    restart: always
-    ports:
-      - "8080:8080"
-    command: ["/app/gateway"]
-    depends_on:
-      - user-service
-      - qa-service
-      - search-service
+  # gateway:
+  #   build:
+  #     context: .
+  #     dockerfile: cmd/gateway/Dockerfile
+  #   container_name: qahub-grpc-gateway
+  #   restart: always
+  #   ports:
+  #     - "8080:8080"
+  #   command: ["/app/gateway"]
+  #   depends_on:
+  #     - user-service
+  #     - qa-service
+  #     - search-service
 
   # API Gateway (Nginx)
-  nginx:
-    build:
-      context: ./nginx
-    container_name: qahub-nginx-gateway
-    restart: always
-    ports:
-      - "80:80" # Nginx 监听 80 端口
-    depends_on:
-      - gateway
-      - user-service
-      - qa-service
-      - search-service
+  # nginx:
+  #   build:
+  #     context: ./nginx
+  #   container_name: qahub-nginx-gateway
+  #   restart: always
+  #   ports:
+  #     - "80:80" # Nginx 监听 80 端口
+  #   depends_on:
+  #     - gateway
+  #     - user-service
+  #     - qa-service
+  #     - search-service
 
   # 数据库迁移服务 (新添加)
   db-migrator:

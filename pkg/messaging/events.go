@@ -38,12 +38,14 @@ type EventHeader struct {
 
 // QuestionPayload 是与问题相关的事件所携带的数据
 type QuestionPayload struct {
-	ID         int64    `json:"id"`
-	Title      string   `json:"title"`
-	Content    string   `json:"content"`
-	Tags       []string `json:"tags,omitempty"`
-	AuthorID   int64    `json:"author_id"`
-	AuthorName string   `json:"author_name,omitempty"`
+	ID         int64     `json:"id"`
+	Title      string    `json:"title"`
+	Content    string    `json:"content"`
+	Tags       []string  `json:"tags,omitempty"`
+	AuthorID   int64     `json:"author_id"`
+	AuthorName string    `json:"author_name,omitempty"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
 }
 
 // QuestionCreatedEvent 是问题创建事件的完整结构

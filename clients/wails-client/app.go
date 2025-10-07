@@ -13,8 +13,9 @@ type App struct {
 	grpcClient *services.GRPCClient
 
 	// 服务实例
-	UserService *services.UserService
-	QAService   *services.QAService
+	UserService   *services.UserService
+	QAService     *services.QAService
+	SearchService *services.SearchService
 }
 
 // NewApp creates a new App application struct
@@ -32,18 +33,21 @@ func (a *App) startup(ctx context.Context) {
 	client, err := services.NewGRPCClient(
 		"localhost:50051", // user-service
 		"localhost:50052", // qa-service
+		"localhost:50053", // search-service
 	)
 	if err != nil {
 		log.Printf("⚠️  Failed to create gRPC client: %v", err)
 		log.Println("请确保服务在以下端口运行:")
 		log.Println("  - User Service: localhost:50051")
 		log.Println("  - QA Service: localhost:50052")
+		log.Println("  - Search Service: localhost:50053")
 		// 不要 fatal，允许应用启动，只是功能不可用
 	}
 
 	a.grpcClient = client
 	a.UserService = services.NewUserService(client)
 	a.QAService = services.NewQAService(client)
+	a.SearchService = services.NewSearchService(client)
 
 	log.Println("✅ QAHub Wails Client started successfully")
 }
@@ -172,4 +176,11 @@ func (a *App) UpdateComment(id int64, content string) (*services.Comment, error)
 // DeleteComment 删除评论
 func (a *App) DeleteComment(id int64) error {
 	return a.QAService.DeleteComment(a.ctx, id)
+}
+
+// ===== 搜索相关方法 (供前端调用) =====
+
+// SearchQuestions 搜索问题
+func (a *App) SearchQuestions(query string, limit, offset int32) ([]services.SearchResult, error) {
+	return a.SearchService.SearchQuestions(a.ctx, query, limit, offset)
 }

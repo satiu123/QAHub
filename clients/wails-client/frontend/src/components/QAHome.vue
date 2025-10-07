@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { ListQuestions, CreateQuestion, Logout, GetUsername } from '../../wailsjs/go/main/App'
+import { ListQuestions, CreateQuestion, Logout, GetUsername, SearchQuestions } from '../../wailsjs/go/main/App'
 import QuestionDetail from './QuestionDetail.vue'
 import UserProfile from './UserProfile.vue'
 
@@ -19,6 +19,8 @@ const loading = ref(false)
 const showCreateDialog = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(10)
+const searchQuery = ref('')
+const isSearchMode = ref(false)
 
 // 新建问题表单
 const newQuestion = ref({
@@ -32,12 +34,39 @@ async function loadQuestions() {
     loading.value = true
     const result = await ListQuestions(currentPage.value, pageSize.value)
     questions.value = result || []
+    isSearchMode.value = false
   } catch (error: any) {
     console.error('加载问题失败:', error)
     alert('加载问题失败: ' + error.toString())
   } finally {
     loading.value = false
   }
+}
+
+// 搜索问题
+async function handleSearch() {
+  if (!searchQuery.value.trim()) {
+    loadQuestions()
+    return
+  }
+
+  try {
+    loading.value = true
+    const result = await SearchQuestions(searchQuery.value, 50, 0)
+    questions.value = result || []
+    isSearchMode.value = true
+  } catch (error: any) {
+    console.error('搜索失败:', error)
+    alert('搜索失败: ' + error.toString())
+  } finally {
+    loading.value = false
+  }
+}
+
+// 清除搜索
+function clearSearch() {
+  searchQuery.value = ''
+  loadQuestions()
 }
 
 // 创建问题
@@ -71,7 +100,10 @@ function viewQuestion(question: any) {
 // 返回列表
 function backToList() {
   currentView.value = 'list'
-  loadQuestions()
+  // 如果是搜索模式，保持搜索结果；否则重新加载问题列表
+  if (!isSearchMode.value) {
+    loadQuestions()
+  }
 }
 
 // 打开个人中心
@@ -130,9 +162,36 @@ onMounted(() => {
       <!-- 主内容区 -->
       <main class="main-content">
         <div class="container">
+          <!-- 搜索栏 -->
+          <div class="search-bar">
+            <div class="search-input-wrapper">
+              <input 
+                v-model="searchQuery"
+                type="text"
+                placeholder="🔍 搜索问题..."
+                @keyup.enter="handleSearch"
+                class="search-input"
+              />
+              <button 
+                v-if="searchQuery"
+                @click="clearSearch"
+                class="btn-clear"
+                title="清除搜索"
+              >
+                ✕
+              </button>
+              <button 
+                @click="handleSearch"
+                class="btn-search"
+              >
+                搜索
+              </button>
+            </div>
+          </div>
+
           <!-- 操作栏 -->
           <div class="action-bar">
-            <h2>问题列表</h2>
+            <h2>{{ isSearchMode ? `搜索结果 (${questions.length})` : '问题列表' }}</h2>
             <button @click="showCreateDialog = true" class="btn-primary">
               ➕ 提问
             </button>
@@ -154,7 +213,7 @@ onMounted(() => {
             >
               <div class="question-header">
                 <h3 class="question-title">{{ question.title }}</h3>
-                <span class="answer-count">{{ question.answer_count }} 回答</span>
+                <span v-if="!isSearchMode" class="answer-count">{{ question.answer_count }} 回答</span>
               </div>
               <p class="question-content">{{ question.content }}</p>
               <div class="question-footer">
@@ -299,6 +358,64 @@ onMounted(() => {
   border-radius: 12px;
   padding: 24px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.search-bar {
+  margin-bottom: 24px;
+}
+
+.search-input-wrapper {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.search-input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 15px;
+  transition: border-color 0.3s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.btn-clear {
+  padding: 8px 12px;
+  background: #f0f0f0;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #666;
+  transition: all 0.3s;
+}
+
+.btn-clear:hover {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.btn-search {
+  padding: 12px 24px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.btn-search:hover {
+  background: #5568d3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
 .action-bar {

@@ -12,6 +12,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type SearchGrpcServer struct {
@@ -35,10 +36,13 @@ func (h *SearchGrpcServer) SearchQuestions(ctx context.Context, req *pb.SearchQu
 	}
 	for i, q := range results {
 		resp.Questions[i] = &pb.Question{
-			Id:       q.ID,
-			Title:    q.Title,
-			Content:  q.Content,
-			AuthorId: q.AuthorID,
+			Id:         q.ID,
+			Title:      q.Title,
+			Content:    q.Content,
+			AuthorId:   q.AuthorID,
+			AuthorName: q.AuthorName,
+			CreatedAt:  timestamppb.New(q.CreatedAt),
+			UpdatedAt:  timestamppb.New(q.UpdatedAt),
 		}
 	}
 

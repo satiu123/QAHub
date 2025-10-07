@@ -14,16 +14,19 @@ import (
 	// 注意：需要在项目根目录运行 wails dev
 
 	qapb "qahub/api/proto/qa"
+	searchpb "qahub/api/proto/search"
 	userpb "qahub/api/proto/user"
 )
 
 // GRPCClient 封装 gRPC 服务客户端
 type GRPCClient struct {
-	userConn *grpc.ClientConn
-	qaConn   *grpc.ClientConn
+	userConn   *grpc.ClientConn
+	qaConn     *grpc.ClientConn
+	searchConn *grpc.ClientConn
 
-	UserClient userpb.UserServiceClient
-	QAClient   qapb.QAServiceClient
+	UserClient   userpb.UserServiceClient
+	QAClient     qapb.QAServiceClient
+	SearchClient searchpb.SearchServiceClient
 
 	// 存储当前用户的 token 和信息
 	token    string
@@ -32,7 +35,7 @@ type GRPCClient struct {
 }
 
 // NewGRPCClient 创建新的 gRPC 客户端连接
-func NewGRPCClient(userAddr, qaAddr string) (*GRPCClient, error) {
+func NewGRPCClient(userAddr, qaAddr, searchAddr string) (*GRPCClient, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	}
@@ -50,16 +53,27 @@ func NewGRPCClient(userAddr, qaAddr string) (*GRPCClient, error) {
 		return nil, fmt.Errorf("failed to connect to qa service: %w", err)
 	}
 
+	// 连接 Search Service
+	searchConn, err := grpc.NewClient(searchAddr, opts...)
+	if err != nil {
+		userConn.Close()
+		qaConn.Close()
+		return nil, fmt.Errorf("failed to connect to search service: %w", err)
+	}
+
 	client := &GRPCClient{
-		userConn:   userConn,
-		qaConn:     qaConn,
-		UserClient: userpb.NewUserServiceClient(userConn),
-		QAClient:   qapb.NewQAServiceClient(qaConn),
+		userConn:     userConn,
+		qaConn:       qaConn,
+		searchConn:   searchConn,
+		UserClient:   userpb.NewUserServiceClient(userConn),
+		QAClient:     qapb.NewQAServiceClient(qaConn),
+		SearchClient: searchpb.NewSearchServiceClient(searchConn),
 	}
 
 	log.Println("✅ gRPC clients connected successfully")
 	log.Printf("  - User Service: %s", userAddr)
 	log.Printf("  - QA Service: %s", qaAddr)
+	log.Printf("  - Search Service: %s", searchAddr)
 	return client, nil
 }
 
@@ -70,6 +84,9 @@ func (c *GRPCClient) Close() error {
 	}
 	if c.qaConn != nil {
 		c.qaConn.Close()
+	}
+	if c.searchConn != nil {
+		c.searchConn.Close()
 	}
 	return nil
 }

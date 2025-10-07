@@ -36,6 +36,8 @@ export function Logout():Promise<void>;
 
 export function Register(arg1:string,arg2:string,arg3:string):Promise<services.RegisterResponse>;
 
+export function SearchQuestions(arg1:string,arg2:number,arg3:number):Promise<Array<services.SearchResult>>;
+
 export function UpdateAnswer(arg1:number,arg2:string):Promise<services.Answer>;
 
 export function UpdateComment(arg1:number,arg2:string):Promise<services.Comment>;

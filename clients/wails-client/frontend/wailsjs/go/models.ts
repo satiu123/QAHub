@@ -110,6 +110,30 @@ export namespace services {
 	        this.message = source["message"];
 	    }
 	}
+	export class SearchResult {
+	    id: number;
+	    title: string;
+	    content: string;
+	    author_id: number;
+	    author_name: string;
+	    created_at: string;
+	    updated_at: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new SearchResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.title = source["title"];
+	        this.content = source["content"];
+	        this.author_id = source["author_id"];
+	        this.author_name = source["author_name"];
+	        this.created_at = source["created_at"];
+	        this.updated_at = source["updated_at"];
+	    }
+	}
 	export class UserProfile {
 	    user_id: number;
 	    username: string;

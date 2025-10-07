@@ -70,6 +70,10 @@ export function Register(arg1, arg2, arg3) {
   return window['go']['main']['App']['Register'](arg1, arg2, arg3);
 }
 
+export function SearchQuestions(arg1, arg2, arg3) {
+  return window['go']['main']['App']['SearchQuestions'](arg1, arg2, arg3);
+}
+
 export function UpdateAnswer(arg1, arg2) {
   return window['go']['main']['App']['UpdateAnswer'](arg1, arg2);
 }
