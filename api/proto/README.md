@@ -61,3 +61,15 @@ protoc -I . \
        --grpc-gateway_opt=generate_unbound_methods=true \
        api/proto/search/search.proto
 ```
+
+### 4. 生成通知服务 (Notification Service) 代码
+
+```bash
+protoc -I . \
+       -I third_party/googleapis \
+       --go_out=. --go_opt=paths=source_relative \      
+       --go-grpc_out=. --go-grpc_opt=paths=source_relative \
+       --grpc-gateway_out=. --grpc-gateway_opt=paths=source_relative \       
+       --grpc-gateway_opt=generate_unbound_methods=true \
+       api/proto/notification/notification.proto
+```
