@@ -12,8 +12,9 @@ type App struct {
 	ctx        context.Context
 	grpcClient *services.GRPCClient
 
-	// 用户服务
+	// 服务实例
 	UserService *services.UserService
+	QAService   *services.QAService
 }
 
 // NewApp creates a new App application struct
@@ -26,17 +27,23 @@ func NewApp() *App {
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 
-	// 初始化 gRPC 客户端 (连接到本地 user-service)
-	// 注意：确保 user-service 在 localhost:50051 运行
-	client, err := services.NewGRPCClient("localhost:50051")
+	// 初始化 gRPC 客户端 (连接到本地服务)
+	// 注意：确保服务在对应端口运行
+	client, err := services.NewGRPCClient(
+		"localhost:50051", // user-service
+		"localhost:50052", // qa-service
+	)
 	if err != nil {
 		log.Printf("⚠️  Failed to create gRPC client: %v", err)
-		log.Println("请确保 user-service 在 localhost:50051 运行")
+		log.Println("请确保服务在以下端口运行:")
+		log.Println("  - User Service: localhost:50051")
+		log.Println("  - QA Service: localhost:50052")
 		// 不要 fatal，允许应用启动，只是功能不可用
 	}
 
 	a.grpcClient = client
 	a.UserService = services.NewUserService(client)
+	a.QAService = services.NewQAService(client)
 
 	log.Println("✅ QAHub Wails Client started successfully")
 }
@@ -87,3 +94,82 @@ func (a *App) GetUsername() string {
 	return a.UserService.GetUsername()
 }
 
+// ===== 问答相关方法 (供前端调用) =====
+
+// ListQuestions 获取问题列表
+func (a *App) ListQuestions(page, pageSize int32) ([]services.Question, error) {
+	questions, _, err := a.QAService.ListQuestions(a.ctx, page, pageSize)
+	return questions, err
+}
+
+// GetQuestion 获取问题详情
+func (a *App) GetQuestion(id int64) (*services.Question, error) {
+	return a.QAService.GetQuestion(a.ctx, id)
+}
+
+// CreateQuestion 创建问题
+func (a *App) CreateQuestion(title, content string) (*services.Question, error) {
+	return a.QAService.CreateQuestion(a.ctx, title, content)
+}
+
+// UpdateQuestion 更新问题
+func (a *App) UpdateQuestion(id int64, title, content string) (*services.Question, error) {
+	return a.QAService.UpdateQuestion(a.ctx, id, title, content)
+}
+
+// DeleteQuestion 删除问题
+func (a *App) DeleteQuestion(id int64) error {
+	return a.QAService.DeleteQuestion(a.ctx, id)
+}
+
+// ListAnswers 获取回答列表
+func (a *App) ListAnswers(questionID int64, page, pageSize int32) ([]services.Answer, error) {
+	answers, _, err := a.QAService.ListAnswers(a.ctx, questionID, page, pageSize)
+	return answers, err
+}
+
+// CreateAnswer 创建回答
+func (a *App) CreateAnswer(questionID int64, content string) (*services.Answer, error) {
+	return a.QAService.CreateAnswer(a.ctx, questionID, content)
+}
+
+// UpdateAnswer 更新回答
+func (a *App) UpdateAnswer(id int64, content string) (*services.Answer, error) {
+	return a.QAService.UpdateAnswer(a.ctx, id, content)
+}
+
+// DeleteAnswer 删除回答
+func (a *App) DeleteAnswer(id int64) error {
+	return a.QAService.DeleteAnswer(a.ctx, id)
+}
+
+// UpvoteAnswer 点赞回答
+func (a *App) UpvoteAnswer(answerID int64) error {
+	return a.QAService.UpvoteAnswer(a.ctx, answerID)
+}
+
+// DownvoteAnswer 取消点赞
+func (a *App) DownvoteAnswer(answerID int64) error {
+	return a.QAService.DownvoteAnswer(a.ctx, answerID)
+}
+
+// ListComments 获取评论列表
+func (a *App) ListComments(answerID int64, page, pageSize int32) ([]services.Comment, error) {
+	comments, _, err := a.QAService.ListComments(a.ctx, answerID, page, pageSize)
+	return comments, err
+}
+
+// CreateComment 创建评论
+func (a *App) CreateComment(answerID int64, content string) (*services.Comment, error) {
+	return a.QAService.CreateComment(a.ctx, answerID, content)
+}
+
+// UpdateComment 更新评论
+func (a *App) UpdateComment(id int64, content string) (*services.Comment, error) {
+	return a.QAService.UpdateComment(a.ctx, id, content)
+}
+
+// DeleteComment 删除评论
+func (a *App) DeleteComment(id int64) error {
+	return a.QAService.DeleteComment(a.ctx, id)
+}

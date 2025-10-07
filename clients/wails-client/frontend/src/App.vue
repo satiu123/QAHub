@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue'
 import { Login, Register, IsLoggedIn, GetUsername, Logout } from '../wailsjs/go/main/App'
+import QAHome from './components/QAHome.vue'
 
 const isLoggedIn = ref(false)
 const username = ref('')
@@ -94,31 +95,26 @@ async function handleRegister() {
   }
 }
 
-// 登出
-async function handleLogout() {
-  try {
-    await Logout()
-    isLoggedIn.value = false
-    username.value = ''
-    message.value = ''
-  } catch (error: any) {
-    message.value = '登出失败: ' + error.toString()
-  }
+// 登出回调
+function handleLogout() {
+  isLoggedIn.value = false
+  username.value = ''
+  message.value = ''
 }
 </script>
 
 <template>
   <div id="app">
-    <div class="container">
-      <!-- 已登录状态 -->
-      <div v-if="isLoggedIn" class="welcome-section">
-        <h1>🎉 欢迎, {{ username }}!</h1>
-        <p class="subtitle">您已成功登录 QAHub 桌面客户端</p>
-        <button @click="handleLogout" class="btn btn-secondary">登出</button>
-      </div>
+    <!-- 已登录：显示问答主界面 -->
+    <QAHome 
+      v-if="isLoggedIn" 
+      :username="username"
+      @logout="handleLogout"
+    />
 
-      <!-- 未登录状态 -->
-      <div v-else class="auth-section">
+    <!-- 未登录：显示登录/注册界面 -->
+    <div v-else class="auth-container">
+      <div class="auth-section">
         <img id="logo" alt="QAHub logo" src="./assets/images/logo-universal.png"/>
         <h1>QAHub 桌面客户端</h1>
         
@@ -215,20 +211,39 @@ async function handleLogout() {
   </div>
 </template>
 
-<style scoped>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
 #app {
+  min-height: 100vh;
+}
+</style>
+
+<style scoped>
+.auth-container {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
 
-.container {
+.auth-section {
   width: 100%;
   max-width: 450px;
-  padding: 20px;
+  background: white;
+  border-radius: 16px;
+  padding: 40px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  margin: 20px;
 }
 
 #logo {
@@ -239,14 +254,6 @@ async function handleLogout() {
   border-radius: 50%;
 }
 
-.auth-section,
-.welcome-section {
-  background: white;
-  border-radius: 16px;
-  padding: 40px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-}
-
 h1 {
   text-align: center;
   color: #333;
@@ -254,16 +261,10 @@ h1 {
   font-size: 28px;
 }
 
-.subtitle {
-  text-align: center;
-  color: #666;
-  margin-bottom: 30px;
-}
-
 .tab-buttons {
   display: flex;
   gap: 10px;
-  margin-bottom: 30px;
+  margin: 30px 0;
 }
 
 .tab-btn {
@@ -359,24 +360,5 @@ h1 {
   background: #5568d3;
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-}
-
-.btn-secondary {
-  background: #e0e0e0;
-  color: #333;
-  margin-top: 20px;
-}
-
-.btn-secondary:hover {
-  background: #d0d0d0;
-}
-
-.welcome-section {
-  text-align: center;
-}
-
-.welcome-section h1 {
-  font-size: 32px;
-  margin-bottom: 15px;
 }
 </style>

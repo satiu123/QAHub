@@ -9,18 +9,21 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
-)
 
-// 动态导入 proto (通过 go.work 工作区)
-// 注意：需要在项目根目录运行 wails dev
-import (
+	// 动态导入 proto (通过 go.work 工作区)
+	// 注意：需要在项目根目录运行 wails dev
+
+	qapb "qahub/api/proto/qa"
 	userpb "qahub/api/proto/user"
 )
 
 // GRPCClient 封装 gRPC 服务客户端
 type GRPCClient struct {
-	userConn   *grpc.ClientConn
+	userConn *grpc.ClientConn
+	qaConn   *grpc.ClientConn
+
 	UserClient userpb.UserServiceClient
+	QAClient   qapb.QAServiceClient
 
 	// 存储当前用户的 token 和信息
 	token    string
@@ -29,23 +32,34 @@ type GRPCClient struct {
 }
 
 // NewGRPCClient 创建新的 gRPC 客户端连接
-func NewGRPCClient(userAddr string) (*GRPCClient, error) {
+func NewGRPCClient(userAddr, qaAddr string) (*GRPCClient, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	}
 
 	// 连接 User Service
-	userConn, err := grpc.Dial(userAddr, opts...)
+	userConn, err := grpc.NewClient(userAddr, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to user service: %w", err)
 	}
 
-	client := &GRPCClient{
-		userConn:   userConn,
-		UserClient: userpb.NewUserServiceClient(userConn),
+	// 连接 QA Service
+	qaConn, err := grpc.NewClient(qaAddr, opts...)
+	if err != nil {
+		userConn.Close()
+		return nil, fmt.Errorf("failed to connect to qa service: %w", err)
 	}
 
-	log.Println("✅ gRPC client connected to user service at", userAddr)
+	client := &GRPCClient{
+		userConn:   userConn,
+		qaConn:     qaConn,
+		UserClient: userpb.NewUserServiceClient(userConn),
+		QAClient:   qapb.NewQAServiceClient(qaConn),
+	}
+
+	log.Println("✅ gRPC clients connected successfully")
+	log.Printf("  - User Service: %s", userAddr)
+	log.Printf("  - QA Service: %s", qaAddr)
 	return client, nil
 }
 
@@ -53,6 +67,9 @@ func NewGRPCClient(userAddr string) (*GRPCClient, error) {
 func (c *GRPCClient) Close() error {
 	if c.userConn != nil {
 		c.userConn.Close()
+	}
+	if c.qaConn != nil {
+		c.qaConn.Close()
 	}
 	return nil
 }
@@ -104,4 +121,3 @@ func init() {
 	// 确保导入路径正确
 	_ = filepath.Join
 }
-
