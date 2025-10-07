@@ -32,10 +32,10 @@ service UserService {
   }
 
   rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse) {
-    option (google.api.http) = {
-      post : "/api/v1/auth/validate"
-      body : "*"
-    };
+    // option (google.api.http) = {
+    //   post : "/api/v1/auth/validate"
+    //   body : "*"
+    // };
   }
 
   rpc GetUserProfile(GetUserProfileRequest) returns (GetUserProfileResponse) {

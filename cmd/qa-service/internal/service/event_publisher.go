@@ -22,10 +22,10 @@ func (s *qaService) publishQuestionEvent(ctx context.Context, eventType messagin
 			Timestamp: time.Now(),
 		},
 		Payload: messaging.QuestionPayload{
-			ID:         uint64(question.ID),
+			ID:         question.ID,
 			Title:      question.Title,
 			Content:    question.Content,
-			AuthorID:   uint64(question.UserID),
+			AuthorID:   question.UserID,
 			AuthorName: identity.Username,
 			// Tags: question.Tags, // 如果有Tags字段的话
 		},

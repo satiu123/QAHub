@@ -65,9 +65,9 @@ func (s *Store) IndexQuestion(ctx context.Context, question messaging.QuestionPa
 	res, err := s.client.Index(
 		IndexQuestions,        // 索引名称
 		bytes.NewReader(body), // 文档内容
-		s.client.Index.WithDocumentID(strconv.FormatUint(question.ID, 10)), // 设置文档ID
-		s.client.Index.WithContext(ctx),                                    // 传递上下文
-		s.client.Index.WithRefresh("true"),                                 // 索引后立即刷新，以便可以立即搜索到（在生产环境中可能会考虑其他策略）
+		s.client.Index.WithDocumentID(strconv.FormatInt(question.ID, 10)), // 设置文档ID
+		s.client.Index.WithContext(ctx),                                   // 传递上下文
+		s.client.Index.WithRefresh("true"),                                // 索引后立即刷新，以便可以立即搜索到（在生产环境中可能会考虑其他策略）
 	)
 	if err != nil {
 		return fmt.Errorf("索引文档失败: %w", err)
@@ -152,11 +152,11 @@ func (s *Store) SearchQuestions(ctx context.Context, query string) ([]messaging.
 }
 
 // DeleteQuestion 从 Elasticsearch 中删除一个问题文档
-func (s *Store) DeleteQuestion(ctx context.Context, questionID uint64) error {
+func (s *Store) DeleteQuestion(ctx context.Context, questionID int64) error {
 	// 使用 client.Delete 方法发送删除请求
 	res, err := s.client.Delete(
 		IndexQuestions,                      // 索引名称
-		strconv.FormatUint(questionID, 10),  // 文档ID
+		strconv.FormatInt(questionID, 10),   // 文档ID
 		s.client.Delete.WithContext(ctx),    // 传递上下文
 		s.client.Delete.WithRefresh("true"), // 删除后立即刷新
 	)

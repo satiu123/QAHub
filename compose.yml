@@ -12,6 +12,7 @@ services:
     depends_on:
       - user-service
       - qa-service
+      - search-service
 
   # API Gateway (Nginx)
   nginx:
@@ -68,6 +69,8 @@ services:
       dockerfile: cmd/qa-service/Dockerfile
     container_name: qahub-qa-service
     restart: always
+    ports:
+      - "50052:50052"  # gRPC 端口（用于测试）
     environment:
       - GIN_MODE=release
     depends_on:
@@ -84,6 +87,8 @@ services:
       dockerfile: cmd/search-service/Dockerfile
     container_name: qahub-search-service
     restart: always
+    ports:
+      - "50053:50053"  # gRPC 端口（用于测试）
     environment:
       - GIN_MODE=release
     depends_on:

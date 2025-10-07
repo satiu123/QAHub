@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package search;
+
+option go_package = "./;search";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+
+service SearchService {
+  rpc SearchQuestions(SearchQuestionsRequest)
+      returns (SearchQuestionsResponse) {
+    option (google.api.http) = {
+      get : "/api/v1/search/questions"
+    };
+  }
+}
+message SearchQuestionsRequest {
+  string query = 1; // 搜索关键词
+  int32 limit = 2;  // 返回结果的最大数量
+  int32 offset = 3; // 分页偏移量
+}
+message SearchQuestionsResponse {
+  repeated Question questions = 1; // 搜索结果中的问题列表
+}
+message Question {
+  int64 id = 1;
+  string title = 2;
+  string content = 3;
+  int64 author_id = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}

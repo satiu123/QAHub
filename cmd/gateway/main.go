@@ -12,6 +12,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	qapb "qahub/api/proto/qa"
+	searchpb "qahub/api/proto/search"
 	userpb "qahub/api/proto/user"
 	"qahub/pkg/config"
 )
@@ -22,9 +23,11 @@ func main() {
 	}
 	// 读取配置
 	gatewayConfig := config.Conf.Services.Gateway
+	gatewayPort := gatewayConfig.Port
+
 	userServiceEndpoint := gatewayConfig.UserServiceEndpoint
 	qaServiceEndpoint := gatewayConfig.QaServiceEndpoint
-	gatewayPort := gatewayConfig.Port
+	searchServiceEndpoint := gatewayConfig.SearchServiceEndpoint
 
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
@@ -62,6 +65,12 @@ func main() {
 	err = qapb.RegisterQAServiceHandlerFromEndpoint(ctx, mux, qaServiceEndpoint, opts)
 	if err != nil {
 		log.Fatalf("Failed to register QA service handler: %v", err)
+	}
+	// 注册 Search Service
+	log.Printf("Connecting to Search Service at %s", searchServiceEndpoint)
+	err = searchpb.RegisterSearchServiceHandlerFromEndpoint(ctx, mux, searchServiceEndpoint, opts)
+	if err != nil {
+		log.Fatalf("Failed to register search service handler: %v", err)
 	}
 
 	// 添加 CORS 支持

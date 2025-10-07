@@ -38,11 +38,11 @@ type EventHeader struct {
 
 // QuestionPayload 是与问题相关的事件所携带的数据
 type QuestionPayload struct {
-	ID         uint64   `json:"id"`
+	ID         int64    `json:"id"`
 	Title      string   `json:"title"`
 	Content    string   `json:"content"`
 	Tags       []string `json:"tags,omitempty"`
-	AuthorID   uint64   `json:"author_id"`
+	AuthorID   int64    `json:"author_id"`
 	AuthorName string   `json:"author_name,omitempty"`
 }
 
@@ -62,7 +62,7 @@ type QuestionUpdatedEvent struct {
 type QuestionDeletedEvent struct {
 	Header  EventHeader `json:"header"`
 	Payload struct {
-		ID uint64 `json:"id"`
+		ID int64 `json:"id"`
 	} `json:"payload"`
 }
 
