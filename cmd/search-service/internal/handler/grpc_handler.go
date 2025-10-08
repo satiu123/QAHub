@@ -49,6 +49,27 @@ func (h *SearchGrpcServer) SearchQuestions(ctx context.Context, req *pb.SearchQu
 	return resp, nil
 }
 
+func (h *SearchGrpcServer) IndexAllQuestions(ctx context.Context, req *pb.IndexAllQuestionsRequest) (*pb.IndexAllQuestionsResponse, error) {
+	err := h.service.IndexAllQuestions(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.IndexAllQuestionsResponse{
+		Message:      "成功索引所有问题",
+		IndexedCount: 0, // TODO: 返回实际索引的问题数量
+	}, nil
+}
+
+func (h *SearchGrpcServer) DeleteIndexAllQuestions(ctx context.Context, req *pb.DeleteIndexAllQuestionsRequest) (*pb.DeleteIndexAllQuestionsResponse, error) {
+	err := h.service.DeleteIndexAllQuestions(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.DeleteIndexAllQuestionsResponse{
+		Message: "成功删除所有问题索引",
+	}, nil
+}
+
 func (s *SearchGrpcServer) Run(ctx context.Context, config config.Config) error {
 	serverAddr := ":" + config.Services.SearchService.GrpcPort
 	lis, err := net.Listen("tcp", serverAddr)

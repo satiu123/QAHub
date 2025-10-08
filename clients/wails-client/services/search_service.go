@@ -58,3 +58,35 @@ func (s *SearchService) SearchQuestions(ctx context.Context, query string, limit
 
 	return results, nil
 }
+
+// IndexAllQuestions 索引所有问题（仅用于测试/管理）
+func (s *SearchService) IndexAllQuestions(ctx context.Context) (string, error) {
+	if s.client == nil || s.client.SearchClient == nil {
+		return "", fmt.Errorf("搜索服务未初始化")
+	}
+
+	authCtx := s.client.NewAuthContext(ctx)
+
+	resp, err := s.client.SearchClient.IndexAllQuestions(authCtx, &searchpb.IndexAllQuestionsRequest{})
+	if err != nil {
+		return "", fmt.Errorf("索引失败: %w", err)
+	}
+
+	return resp.Message, nil
+}
+
+// DeleteIndexAllQuestions 删除所有问题索引（仅用于测试/管理）
+func (s *SearchService) DeleteIndexAllQuestions(ctx context.Context) (string, error) {
+	if s.client == nil || s.client.SearchClient == nil {
+		return "", fmt.Errorf("搜索服务未初始化")
+	}
+
+	authCtx := s.client.NewAuthContext(ctx)
+
+	resp, err := s.client.SearchClient.DeleteIndexAllQuestions(authCtx, &searchpb.DeleteIndexAllQuestionsRequest{})
+	if err != nil {
+		return "", fmt.Errorf("删除索引失败: %w", err)
+	}
+
+	return resp.Message, nil
+}

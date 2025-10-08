@@ -8,6 +8,7 @@ import (
 	"log"
 	"strconv"
 
+	"qahub/pkg/clients"
 	"qahub/pkg/config"
 	"qahub/pkg/messaging"
 
@@ -20,11 +21,12 @@ const (
 
 // Store 结构体封装了与 Elasticsearch 的所有交互
 type Store struct {
-	client *elasticsearch.Client
+	client   *elasticsearch.Client
+	qaClient *clients.QAServiceClient
 }
 
 // New 函数创建一个新的 Store 实例
-func New(cfg config.Elasticsearch) (*Store, error) {
+func New(cfg config.Elasticsearch, qaServiceAddr string) (*Store, error) {
 	// 创建 Elasticsearch 客户端配置
 	esCfg := elasticsearch.Config{
 		Addresses: cfg.URLs,
@@ -50,7 +52,16 @@ func New(cfg config.Elasticsearch) (*Store, error) {
 
 	fmt.Println("成功连接到 Elasticsearch")
 
-	return &Store{client: client}, nil
+	// 创建 QA Service 客户端
+	qaClient, err := clients.NewQAServiceClient(qaServiceAddr)
+	if err != nil {
+		return nil, fmt.Errorf("创建 QA Service 客户端失败: %w", err)
+	}
+
+	return &Store{
+		client:   client,
+		qaClient: qaClient,
+	}, nil
 }
 
 // IndexQuestion 将一个问题文档索引到 Elasticsearch 中
@@ -196,5 +207,107 @@ func (s *Store) ClearIndex(ctx context.Context) error {
 		return fmt.Errorf("创建索引响应错误: %s", res.String())
 	}
 
+	return nil
+}
+
+// IndexAllQuestions 从 QA Service 获取所有问题并建立索引
+func (s *Store) IndexAllQuestions(ctx context.Context) error {
+	log.Println("开始索引所有问题...")
+
+	const pageSize = 100
+	page := int32(1)
+	totalIndexed := 0
+
+	for {
+		// 从 QA Service 获取问题列表
+		resp, err := s.qaClient.ListQuestions(ctx, page, pageSize)
+		if err != nil {
+			return fmt.Errorf("从 QA Service 获取问题列表失败 (page %d): %w", page, err)
+		}
+
+		// 如果没有更多问题，退出循环
+		if len(resp.Questions) == 0 {
+			break
+		}
+
+		// 索引每个问题
+		for _, q := range resp.Questions {
+			question := messaging.QuestionPayload{
+				ID:         q.Id,
+				Title:      q.Title,
+				Content:    q.Content,
+				AuthorID:   q.UserId,
+				AuthorName: q.AuthorName,
+				CreatedAt:  q.CreatedAt.AsTime(),
+				UpdatedAt:  q.UpdatedAt.AsTime(),
+			}
+
+			if err := s.IndexQuestion(ctx, question); err != nil {
+				log.Printf("索引问题 %d 失败: %v", q.Id, err)
+				// 继续处理其他问题，不中断整个流程
+				continue
+			}
+			totalIndexed++
+		}
+
+		log.Printf("已索引第 %d 页，共 %d 个问题", page, len(resp.Questions))
+
+		// 如果已经处理完所有问题，退出循环
+		if int64(page*pageSize) >= resp.TotalCount {
+			break
+		}
+
+		page++
+	}
+
+	log.Printf("成功索引 %d 个问题", totalIndexed)
+	return nil
+}
+
+// DeleteIndexAllQuestions 删除所有问题索引并重新创建空索引
+func (s *Store) DeleteIndexAllQuestions(ctx context.Context) error {
+	log.Println("开始删除所有问题索引...")
+
+	// 检查索引是否存在
+	res, err := s.client.Indices.Exists([]string{IndexQuestions}, s.client.Indices.Exists.WithContext(ctx))
+	if err != nil {
+		return fmt.Errorf("检查索引是否存在失败: %w", err)
+	}
+	defer res.Body.Close()
+
+	// 如果索引存在，先删除
+	if res.StatusCode == 200 {
+		res, err := s.client.Indices.Delete([]string{IndexQuestions}, s.client.Indices.Delete.WithContext(ctx))
+		if err != nil {
+			return fmt.Errorf("删除索引失败: %w", err)
+		}
+		defer res.Body.Close()
+
+		if res.IsError() {
+			return fmt.Errorf("删除索引响应错误: %s", res.String())
+		}
+		log.Printf("成功删除索引: %s", IndexQuestions)
+	}
+
+	// 重新创建索引
+	res, err = s.client.Indices.Create(IndexQuestions, s.client.Indices.Create.WithContext(ctx))
+	if err != nil {
+		return fmt.Errorf("创建索引失败: %w", err)
+	}
+	defer res.Body.Close()
+
+	if res.IsError() {
+		return fmt.Errorf("创建索引响应错误: %s", res.String())
+	}
+
+	log.Printf("成功重新创建空索引: %s", IndexQuestions)
+	return nil
+}
+
+// Close 关闭客户端连接
+func (s *Store) Close() error {
+	if s.qaClient != nil {
+		return s.qaClient.Close()
+	}
 	return nil
 }

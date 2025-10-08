@@ -10,6 +10,7 @@ import (
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	_ "google.golang.org/protobuf/types/known/emptypb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
@@ -219,11 +220,180 @@ func (x *Question) GetUpdatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+// 索引管理消息
+type IndexAllQuestionsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *IndexAllQuestionsRequest) Reset() {
+	*x = IndexAllQuestionsRequest{}
+	mi := &file_search_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *IndexAllQuestionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IndexAllQuestionsRequest) ProtoMessage() {}
+
+func (x *IndexAllQuestionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_search_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IndexAllQuestionsRequest.ProtoReflect.Descriptor instead.
+func (*IndexAllQuestionsRequest) Descriptor() ([]byte, []int) {
+	return file_search_proto_rawDescGZIP(), []int{3}
+}
+
+type IndexAllQuestionsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Message       string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+	IndexedCount  int32                  `protobuf:"varint,2,opt,name=indexed_count,json=indexedCount,proto3" json:"indexed_count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *IndexAllQuestionsResponse) Reset() {
+	*x = IndexAllQuestionsResponse{}
+	mi := &file_search_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *IndexAllQuestionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IndexAllQuestionsResponse) ProtoMessage() {}
+
+func (x *IndexAllQuestionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_search_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IndexAllQuestionsResponse.ProtoReflect.Descriptor instead.
+func (*IndexAllQuestionsResponse) Descriptor() ([]byte, []int) {
+	return file_search_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *IndexAllQuestionsResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *IndexAllQuestionsResponse) GetIndexedCount() int32 {
+	if x != nil {
+		return x.IndexedCount
+	}
+	return 0
+}
+
+type DeleteIndexAllQuestionsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteIndexAllQuestionsRequest) Reset() {
+	*x = DeleteIndexAllQuestionsRequest{}
+	mi := &file_search_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteIndexAllQuestionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteIndexAllQuestionsRequest) ProtoMessage() {}
+
+func (x *DeleteIndexAllQuestionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_search_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteIndexAllQuestionsRequest.ProtoReflect.Descriptor instead.
+func (*DeleteIndexAllQuestionsRequest) Descriptor() ([]byte, []int) {
+	return file_search_proto_rawDescGZIP(), []int{5}
+}
+
+type DeleteIndexAllQuestionsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Message       string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteIndexAllQuestionsResponse) Reset() {
+	*x = DeleteIndexAllQuestionsResponse{}
+	mi := &file_search_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteIndexAllQuestionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteIndexAllQuestionsResponse) ProtoMessage() {}
+
+func (x *DeleteIndexAllQuestionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_search_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteIndexAllQuestionsResponse.ProtoReflect.Descriptor instead.
+func (*DeleteIndexAllQuestionsResponse) Descriptor() ([]byte, []int) {
+	return file_search_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *DeleteIndexAllQuestionsResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
 var File_search_proto protoreflect.FileDescriptor
 
 const file_search_proto_rawDesc = "" +
 	"\n" +
-	"\fsearch.proto\x12\x06search\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\\\n" +
+	"\fsearch.proto\x12\x06search\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bgoogle/protobuf/empty.proto\"\\\n" +
 	"\x16SearchQuestionsRequest\x12\x14\n" +
 	"\x05query\x18\x01 \x01(\tR\x05query\x12\x14\n" +
 	"\x05limit\x18\x02 \x01(\x05R\x05limit\x12\x16\n" +
@@ -240,9 +410,18 @@ const file_search_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
-	"updated_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt2\x85\x01\n" +
+	"updated_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\x1a\n" +
+	"\x18IndexAllQuestionsRequest\"Z\n" +
+	"\x19IndexAllQuestionsResponse\x12\x18\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage\x12#\n" +
+	"\rindexed_count\x18\x02 \x01(\x05R\findexedCount\" \n" +
+	"\x1eDeleteIndexAllQuestionsRequest\";\n" +
+	"\x1fDeleteIndexAllQuestionsResponse\x12\x18\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage2\x88\x03\n" +
 	"\rSearchService\x12t\n" +
-	"\x0fSearchQuestions\x12\x1e.search.SearchQuestionsRequest\x1a\x1f.search.SearchQuestionsResponse\" \x82\xd3\xe4\x93\x02\x1a\x12\x18/api/v1/search/questionsB\vZ\t./;searchb\x06proto3"
+	"\x0fSearchQuestions\x12\x1e.search.SearchQuestionsRequest\x1a\x1f.search.SearchQuestionsResponse\" \x82\xd3\xe4\x93\x02\x1a\x12\x18/api/v1/search/questions\x12v\n" +
+	"\x11IndexAllQuestions\x12 .search.IndexAllQuestionsRequest\x1a!.search.IndexAllQuestionsResponse\"\x1c\x82\xd3\xe4\x93\x02\x16\"\x14/api/v1/search/index\x12\x88\x01\n" +
+	"\x17DeleteIndexAllQuestions\x12&.search.DeleteIndexAllQuestionsRequest\x1a'.search.DeleteIndexAllQuestionsResponse\"\x1c\x82\xd3\xe4\x93\x02\x16*\x14/api/v1/search/indexB\vZ\t./;searchb\x06proto3"
 
 var (
 	file_search_proto_rawDescOnce sync.Once
@@ -256,21 +435,29 @@ func file_search_proto_rawDescGZIP() []byte {
 	return file_search_proto_rawDescData
 }
 
-var file_search_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_search_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_search_proto_goTypes = []any{
-	(*SearchQuestionsRequest)(nil),  // 0: search.SearchQuestionsRequest
-	(*SearchQuestionsResponse)(nil), // 1: search.SearchQuestionsResponse
-	(*Question)(nil),                // 2: search.Question
-	(*timestamppb.Timestamp)(nil),   // 3: google.protobuf.Timestamp
+	(*SearchQuestionsRequest)(nil),          // 0: search.SearchQuestionsRequest
+	(*SearchQuestionsResponse)(nil),         // 1: search.SearchQuestionsResponse
+	(*Question)(nil),                        // 2: search.Question
+	(*IndexAllQuestionsRequest)(nil),        // 3: search.IndexAllQuestionsRequest
+	(*IndexAllQuestionsResponse)(nil),       // 4: search.IndexAllQuestionsResponse
+	(*DeleteIndexAllQuestionsRequest)(nil),  // 5: search.DeleteIndexAllQuestionsRequest
+	(*DeleteIndexAllQuestionsResponse)(nil), // 6: search.DeleteIndexAllQuestionsResponse
+	(*timestamppb.Timestamp)(nil),           // 7: google.protobuf.Timestamp
 }
 var file_search_proto_depIdxs = []int32{
 	2, // 0: search.SearchQuestionsResponse.questions:type_name -> search.Question
-	3, // 1: search.Question.created_at:type_name -> google.protobuf.Timestamp
-	3, // 2: search.Question.updated_at:type_name -> google.protobuf.Timestamp
+	7, // 1: search.Question.created_at:type_name -> google.protobuf.Timestamp
+	7, // 2: search.Question.updated_at:type_name -> google.protobuf.Timestamp
 	0, // 3: search.SearchService.SearchQuestions:input_type -> search.SearchQuestionsRequest
-	1, // 4: search.SearchService.SearchQuestions:output_type -> search.SearchQuestionsResponse
-	4, // [4:5] is the sub-list for method output_type
-	3, // [3:4] is the sub-list for method input_type
+	3, // 4: search.SearchService.IndexAllQuestions:input_type -> search.IndexAllQuestionsRequest
+	5, // 5: search.SearchService.DeleteIndexAllQuestions:input_type -> search.DeleteIndexAllQuestionsRequest
+	1, // 6: search.SearchService.SearchQuestions:output_type -> search.SearchQuestionsResponse
+	4, // 7: search.SearchService.IndexAllQuestions:output_type -> search.IndexAllQuestionsResponse
+	6, // 8: search.SearchService.DeleteIndexAllQuestions:output_type -> search.DeleteIndexAllQuestionsResponse
+	6, // [6:9] is the sub-list for method output_type
+	3, // [3:6] is the sub-list for method input_type
 	3, // [3:3] is the sub-list for extension type_name
 	3, // [3:3] is the sub-list for extension extendee
 	0, // [0:3] is the sub-list for field type_name
@@ -287,7 +474,7 @@ func file_search_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_search_proto_rawDesc), len(file_search_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -12,6 +12,8 @@ export function DeleteAnswer(arg1:number):Promise<void>;
 
 export function DeleteComment(arg1:number):Promise<void>;
 
+export function DeleteIndexAllQuestions():Promise<string>;
+
 export function DeleteQuestion(arg1:number):Promise<void>;
 
 export function DownvoteAnswer(arg1:number):Promise<void>;
@@ -21,6 +23,8 @@ export function GetCurrentUser():Promise<services.UserProfile>;
 export function GetQuestion(arg1:number):Promise<services.Question>;
 
 export function GetUsername():Promise<string>;
+
+export function IndexAllQuestions():Promise<string>;
 
 export function IsLoggedIn():Promise<boolean>;
 

@@ -22,6 +22,10 @@ export function DeleteComment(arg1) {
   return window['go']['main']['App']['DeleteComment'](arg1);
 }
 
+export function DeleteIndexAllQuestions() {
+  return window['go']['main']['App']['DeleteIndexAllQuestions']();
+}
+
 export function DeleteQuestion(arg1) {
   return window['go']['main']['App']['DeleteQuestion'](arg1);
 }
@@ -40,6 +44,10 @@ export function GetQuestion(arg1) {
 
 export function GetUsername() {
   return window['go']['main']['App']['GetUsername']();
+}
+
+export function IndexAllQuestions() {
+  return window['go']['main']['App']['IndexAllQuestions']();
 }
 
 export function IsLoggedIn() {

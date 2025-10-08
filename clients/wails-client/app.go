@@ -50,6 +50,7 @@ func (a *App) startup(ctx context.Context) {
 	a.SearchService = services.NewSearchService(client)
 
 	log.Println("✅ QAHub Wails Client started successfully")
+	_, _ = a.Login("saocong", "12345678") // 自动登录测试账号
 }
 
 // shutdown is called at application termination
@@ -183,4 +184,14 @@ func (a *App) DeleteComment(id int64) error {
 // SearchQuestions 搜索问题
 func (a *App) SearchQuestions(query string, limit, offset int32) ([]services.SearchResult, error) {
 	return a.SearchService.SearchQuestions(a.ctx, query, limit, offset)
+}
+
+// IndexAllQuestions 索引所有问题（仅用于测试/管理）
+func (a *App) IndexAllQuestions() (string, error) {
+	return a.SearchService.IndexAllQuestions(a.ctx)
+}
+
+// DeleteIndexAllQuestions 删除所有问题索引（仅用于测试/管理）
+func (a *App) DeleteIndexAllQuestions() (string, error) {
+	return a.SearchService.DeleteIndexAllQuestions(a.ctx)
 }

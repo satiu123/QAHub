@@ -19,7 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SearchService_SearchQuestions_FullMethodName = "/search.SearchService/SearchQuestions"
+	SearchService_SearchQuestions_FullMethodName         = "/search.SearchService/SearchQuestions"
+	SearchService_IndexAllQuestions_FullMethodName       = "/search.SearchService/IndexAllQuestions"
+	SearchService_DeleteIndexAllQuestions_FullMethodName = "/search.SearchService/DeleteIndexAllQuestions"
 )
 
 // SearchServiceClient is the client API for SearchService service.
@@ -27,6 +29,9 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SearchServiceClient interface {
 	SearchQuestions(ctx context.Context, in *SearchQuestionsRequest, opts ...grpc.CallOption) (*SearchQuestionsResponse, error)
+	// 索引管理方法（仅用于测试/管理）
+	IndexAllQuestions(ctx context.Context, in *IndexAllQuestionsRequest, opts ...grpc.CallOption) (*IndexAllQuestionsResponse, error)
+	DeleteIndexAllQuestions(ctx context.Context, in *DeleteIndexAllQuestionsRequest, opts ...grpc.CallOption) (*DeleteIndexAllQuestionsResponse, error)
 }
 
 type searchServiceClient struct {
@@ -47,11 +52,34 @@ func (c *searchServiceClient) SearchQuestions(ctx context.Context, in *SearchQue
 	return out, nil
 }
 
+func (c *searchServiceClient) IndexAllQuestions(ctx context.Context, in *IndexAllQuestionsRequest, opts ...grpc.CallOption) (*IndexAllQuestionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(IndexAllQuestionsResponse)
+	err := c.cc.Invoke(ctx, SearchService_IndexAllQuestions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *searchServiceClient) DeleteIndexAllQuestions(ctx context.Context, in *DeleteIndexAllQuestionsRequest, opts ...grpc.CallOption) (*DeleteIndexAllQuestionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteIndexAllQuestionsResponse)
+	err := c.cc.Invoke(ctx, SearchService_DeleteIndexAllQuestions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SearchServiceServer is the server API for SearchService service.
 // All implementations must embed UnimplementedSearchServiceServer
 // for forward compatibility.
 type SearchServiceServer interface {
 	SearchQuestions(context.Context, *SearchQuestionsRequest) (*SearchQuestionsResponse, error)
+	// 索引管理方法（仅用于测试/管理）
+	IndexAllQuestions(context.Context, *IndexAllQuestionsRequest) (*IndexAllQuestionsResponse, error)
+	DeleteIndexAllQuestions(context.Context, *DeleteIndexAllQuestionsRequest) (*DeleteIndexAllQuestionsResponse, error)
 	mustEmbedUnimplementedSearchServiceServer()
 }
 
@@ -64,6 +92,12 @@ type UnimplementedSearchServiceServer struct{}
 
 func (UnimplementedSearchServiceServer) SearchQuestions(context.Context, *SearchQuestionsRequest) (*SearchQuestionsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SearchQuestions not implemented")
+}
+func (UnimplementedSearchServiceServer) IndexAllQuestions(context.Context, *IndexAllQuestionsRequest) (*IndexAllQuestionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IndexAllQuestions not implemented")
+}
+func (UnimplementedSearchServiceServer) DeleteIndexAllQuestions(context.Context, *DeleteIndexAllQuestionsRequest) (*DeleteIndexAllQuestionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteIndexAllQuestions not implemented")
 }
 func (UnimplementedSearchServiceServer) mustEmbedUnimplementedSearchServiceServer() {}
 func (UnimplementedSearchServiceServer) testEmbeddedByValue()                       {}
@@ -104,6 +138,42 @@ func _SearchService_SearchQuestions_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SearchService_IndexAllQuestions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IndexAllQuestionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SearchServiceServer).IndexAllQuestions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SearchService_IndexAllQuestions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SearchServiceServer).IndexAllQuestions(ctx, req.(*IndexAllQuestionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SearchService_DeleteIndexAllQuestions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteIndexAllQuestionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SearchServiceServer).DeleteIndexAllQuestions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SearchService_DeleteIndexAllQuestions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SearchServiceServer).DeleteIndexAllQuestions(ctx, req.(*DeleteIndexAllQuestionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SearchService_ServiceDesc is the grpc.ServiceDesc for SearchService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -114,6 +184,14 @@ var SearchService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SearchQuestions",
 			Handler:    _SearchService_SearchQuestions_Handler,
+		},
+		{
+			MethodName: "IndexAllQuestions",
+			Handler:    _SearchService_IndexAllQuestions_Handler,
+		},
+		{
+			MethodName: "DeleteIndexAllQuestions",
+			Handler:    _SearchService_DeleteIndexAllQuestions_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

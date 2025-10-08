@@ -14,6 +14,21 @@ service SearchService {
       get : "/api/v1/search/questions"
     };
   }
+
+  // 索引管理方法（仅用于测试/管理）
+  rpc IndexAllQuestions(IndexAllQuestionsRequest)
+      returns (IndexAllQuestionsResponse) {
+    option (google.api.http) = {
+      post : "/api/v1/search/index"
+    };
+  }
+
+  rpc DeleteIndexAllQuestions(DeleteIndexAllQuestionsRequest)
+      returns (DeleteIndexAllQuestionsResponse) {
+    option (google.api.http) = {
+      delete : "/api/v1/search/index"
+    };
+  }
 }
 message SearchQuestionsRequest {
   string query = 1; // 搜索关键词
@@ -32,3 +47,15 @@ message Question {
   google.protobuf.Timestamp created_at = 6;
   google.protobuf.Timestamp updated_at = 7;
 }
+
+// 索引管理消息
+message IndexAllQuestionsRequest {}
+
+message IndexAllQuestionsResponse {
+  string message = 1;
+  int32 indexed_count = 2;
+}
+
+message DeleteIndexAllQuestionsRequest {}
+
+message DeleteIndexAllQuestionsResponse { string message = 1; }

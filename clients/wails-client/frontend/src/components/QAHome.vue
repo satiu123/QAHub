@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { ListQuestions, CreateQuestion, Logout, GetUsername, SearchQuestions } from '../../wailsjs/go/main/App'
+import { ListQuestions, CreateQuestion, Logout, GetUsername, SearchQuestions, IndexAllQuestions, DeleteIndexAllQuestions } from '../../wailsjs/go/main/App'
 import QuestionDetail from './QuestionDetail.vue'
 import UserProfile from './UserProfile.vue'
 
@@ -21,6 +21,7 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 const searchQuery = ref('')
 const isSearchMode = ref(false)
+const showAdminPanel = ref(false) // 管理面板显示状态
 
 // 新建问题表单
 const newQuestion = ref({
@@ -121,6 +122,40 @@ async function handleLogout() {
   }
 }
 
+// 索引所有问题（测试用）
+async function handleIndexAll() {
+  if (!confirm('确定要索引所有问题吗？这将从 QA 服务获取所有问题并建立搜索索引。')) {
+    return
+  }
+  
+  try {
+    loading.value = true
+    const message = await IndexAllQuestions()
+    alert(message || '索引创建成功！')
+  } catch (error: any) {
+    alert('索引创建失败: ' + error.toString())
+  } finally {
+    loading.value = false
+  }
+}
+
+// 删除所有索引（测试用）
+async function handleDeleteIndexAll() {
+  if (!confirm('确定要删除所有问题索引吗？这将清空搜索索引！')) {
+    return
+  }
+  
+  try {
+    loading.value = true
+    const message = await DeleteIndexAllQuestions()
+    alert(message || '索引删除成功！')
+  } catch (error: any) {
+    alert('索引删除失败: ' + error.toString())
+  } finally {
+    loading.value = false
+  }
+}
+
 // 页面加载时获取问题列表
 onMounted(() => {
   loadQuestions()
@@ -154,10 +189,29 @@ onMounted(() => {
             <button @click="openProfile" class="btn-profile">
               👤 {{ props.username }}
             </button>
+            <button @click="showAdminPanel = !showAdminPanel" class="btn-admin" title="管理面板">
+              ⚙️
+            </button>
             <button @click="handleLogout" class="btn-logout">登出</button>
           </div>
         </div>
       </header>
+
+      <!-- 管理面板 -->
+      <div v-if="showAdminPanel" class="admin-panel">
+        <div class="admin-content">
+          <h3>🔧 索引管理 (测试功能)</h3>
+          <p class="admin-desc">用于管理 Elasticsearch 搜索索引</p>
+          <div class="admin-actions">
+            <button @click="handleIndexAll" class="btn-admin-action btn-index" :disabled="loading">
+              📥 索引所有问题
+            </button>
+            <button @click="handleDeleteIndexAll" class="btn-admin-action btn-delete" :disabled="loading">
+              🗑️ 删除所有索引
+            </button>
+          </div>
+        </div>
+      </div>
 
       <!-- 主内容区 -->
       <main class="main-content">
@@ -327,6 +381,21 @@ onMounted(() => {
   background: #e0e0e0;
 }
 
+.btn-admin {
+  padding: 8px 12px;
+  background: #f0f0f0;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.3s;
+}
+
+.btn-admin:hover {
+  background: #667eea;
+  transform: scale(1.1);
+}
+
 .username {
   font-size: 14px;
   color: #666;
@@ -345,6 +414,68 @@ onMounted(() => {
 
 .btn-logout:hover {
   background: #d0d0d0;
+}
+
+.admin-panel {
+  max-width: 1200px;
+  margin: -12px auto 20px;
+  padding: 0 20px;
+}
+
+.admin-content {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  color: white;
+}
+
+.admin-content h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+}
+
+.admin-desc {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.admin-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-admin-action {
+  padding: 10px 20px;
+  border: 2px solid white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s;
+  background: transparent;
+  color: white;
+}
+
+.btn-admin-action:hover:not(:disabled) {
+  background: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-index:hover:not(:disabled) {
+  color: #667eea;
+}
+
+.btn-delete:hover:not(:disabled) {
+  color: #e74c3c;
+}
+
+.btn-admin-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .main-content {

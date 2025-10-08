@@ -14,7 +14,7 @@ import (
 // publishQuestionEvent 是一个辅助函数，用于发布与问题相关的事件
 func (s *qaService) publishQuestionEvent(ctx context.Context, eventType messaging.EventType, question *model.Question) {
 	identity, _ := auth.FromContext(ctx)
-	
+
 	event := messaging.QuestionCreatedEvent{
 		Header: messaging.EventHeader{
 			ID:        uuid.New().String(),
