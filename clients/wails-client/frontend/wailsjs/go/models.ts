@@ -206,6 +206,7 @@ export namespace services {
 	    username: string;
 	    email: string;
 	    bio: string;
+	    created_at: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new UserProfile(source);
@@ -217,6 +218,7 @@ export namespace services {
 	        this.username = source["username"];
 	        this.email = source["email"];
 	        this.bio = source["bio"];
+	        this.created_at = source["created_at"];
 	    }
 	}
 

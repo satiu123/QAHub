@@ -14,7 +14,10 @@ const emit = defineEmits<{
 }>()
 
 const currentView = ref<'list' | 'detail' | 'profile' | 'notifications'>('list')
+const previousView = ref<'list' | 'profile' | 'notifications'>('list') // 记录进入详情页前的视图
 const selectedQuestionId = ref<number>(0)
+const highlightId = ref<string | undefined>(undefined)
+const highlightType = ref<string | undefined>(undefined)
 const questions = ref<any[]>([])
 const loading = ref(false)
 const showCreateDialog = ref(false)
@@ -96,12 +99,37 @@ async function handleCreateQuestion() {
 
 // 查看问题详情
 function viewQuestion(question: any) {
+  previousView.value = currentView.value as 'list' | 'profile' | 'notifications'
   selectedQuestionId.value = question.id
+  highlightId.value = undefined
+  highlightType.value = undefined
   currentView.value = 'detail'
 }
 
-// 返回列表
+// 从通知跳转到问题详情
+function viewQuestionFromNotification(questionId: number, hId?: string, hType?: string) {
+  previousView.value = 'notifications' // 从通知跳转，记录前一个视图
+  selectedQuestionId.value = questionId
+  highlightId.value = hId
+  highlightType.value = hType
+  currentView.value = 'detail'
+}
+
+// 返回上一个视图
+function backToPrevious() {
+  currentView.value = previousView.value
+  // 清除高亮状态
+  highlightId.value = undefined
+  highlightType.value = undefined
+  // 如果返回列表且不是搜索模式，重新加载问题列表
+  if (currentView.value === 'list' && !isSearchMode.value) {
+    loadQuestions()
+  }
+}
+
+// 返回列表（保留用于兼容性）
 function backToList() {
+  previousView.value = 'list'
   currentView.value = 'list'
   // 如果是搜索模式，保持搜索结果；否则重新加载问题列表
   if (!isSearchMode.value) {
@@ -143,7 +171,7 @@ async function handleIndexAll() {
   if (!confirm('确定要索引所有问题吗？这将从 QA 服务获取所有问题并建立搜索索引。')) {
     return
   }
-  
+
   try {
     loading.value = true
     const message = await IndexAllQuestions()
@@ -160,7 +188,7 @@ async function handleDeleteIndexAll() {
   if (!confirm('确定要删除所有问题索引吗？这将清空搜索索引！')) {
     return
   }
-  
+
   try {
     loading.value = true
     const message = await DeleteIndexAllQuestions()
@@ -184,26 +212,15 @@ onMounted(() => {
 <template>
   <div class="qa-home">
     <!-- 问题详情页 -->
-    <QuestionDetail 
-      v-if="currentView === 'detail'"
-      :question-id="selectedQuestionId"
-      :username="props.username"
-      @back="backToList"
-    />
+    <QuestionDetail v-if="currentView === 'detail'" :question-id="selectedQuestionId" :username="props.username"
+      :highlight-id="highlightId" :highlight-type="highlightType" @back="backToPrevious" />
 
     <!-- 个人中心 -->
-    <UserProfile
-      v-else-if="currentView === 'profile'"
-      :username="props.username"
-      @back="backToList"
-    />
+    <UserProfile v-else-if="currentView === 'profile'" :username="props.username" @back="backToList" />
 
     <!-- 通知中心 -->
-    <NotificationCenter
-      v-else-if="currentView === 'notifications'"
-      :username="props.username"
-      @back="backToList"
-    />
+    <NotificationCenter v-else-if="currentView === 'notifications'" :username="props.username" @back="backToList"
+      @viewQuestion="viewQuestionFromNotification" />
 
     <!-- 问题列表页 -->
     <div v-else>
@@ -251,25 +268,12 @@ onMounted(() => {
           <!-- 搜索栏 -->
           <div class="search-bar">
             <div class="search-input-wrapper">
-              <input 
-                v-model="searchQuery"
-                type="text"
-                placeholder="🔍 搜索问题..."
-                @keyup.enter="handleSearch"
-                class="search-input"
-              />
-              <button 
-                v-if="searchQuery"
-                @click="clearSearch"
-                class="btn-clear"
-                title="清除搜索"
-              >
+              <input v-model="searchQuery" type="text" placeholder="🔍 搜索问题..." @keyup.enter="handleSearch"
+                class="search-input" />
+              <button v-if="searchQuery" @click="clearSearch" class="btn-clear" title="清除搜索">
                 ✕
               </button>
-              <button 
-                @click="handleSearch"
-                class="btn-search"
-              >
+              <button @click="handleSearch" class="btn-search">
                 搜索
               </button>
             </div>
@@ -291,12 +295,7 @@ onMounted(() => {
 
           <!-- 问题列表 -->
           <div v-else-if="questions.length > 0" class="question-list">
-            <div 
-              v-for="question in questions" 
-              :key="question.id"
-              class="question-card"
-              @click="viewQuestion(question)"
-            >
+            <div v-for="question in questions" :key="question.id" class="question-card" @click="viewQuestion(question)">
               <div class="question-header">
                 <h3 class="question-title">{{ question.title }}</h3>
                 <span v-if="!isSearchMode" class="answer-count">{{ question.answer_count }} 回答</span>
@@ -329,22 +328,11 @@ onMounted(() => {
           <form @submit.prevent="handleCreateQuestion" class="question-form">
             <div class="form-group">
               <label>标题</label>
-              <input 
-                v-model="newQuestion.title"
-                type="text"
-                placeholder="请输入问题标题"
-                required
-                maxlength="200"
-              />
+              <input v-model="newQuestion.title" type="text" placeholder="请输入问题标题" required maxlength="200" />
             </div>
             <div class="form-group">
               <label>详细描述</label>
-              <textarea 
-                v-model="newQuestion.content"
-                placeholder="请详细描述你的问题..."
-                required
-                rows="8"
-              ></textarea>
+              <textarea v-model="newQuestion.content" placeholder="请详细描述你的问题..." required rows="8"></textarea>
             </div>
             <div class="form-actions">
               <button type="button" @click="showCreateDialog = false" class="btn-secondary">
@@ -668,8 +656,13 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .question-list {

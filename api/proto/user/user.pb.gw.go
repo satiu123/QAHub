@@ -333,7 +333,7 @@ func RegisterUserServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/user.UserService/ValidateToken", runtime.WithHTTPPathPattern("/api/v1/auth/validate"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/user.UserService/ValidateToken", runtime.WithHTTPPathPattern("/user.UserService/ValidateToken"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -502,7 +502,7 @@ func RegisterUserServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/user.UserService/ValidateToken", runtime.WithHTTPPathPattern("/api/v1/auth/validate"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/user.UserService/ValidateToken", runtime.WithHTTPPathPattern("/user.UserService/ValidateToken"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -573,7 +573,7 @@ var (
 	pattern_UserService_Register_0          = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "v1", "auth", "register"}, ""))
 	pattern_UserService_Login_0             = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "v1", "auth", "login"}, ""))
 	pattern_UserService_Logout_0            = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "v1", "auth", "logout"}, ""))
-	pattern_UserService_ValidateToken_0     = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "v1", "auth", "validate"}, ""))
+	pattern_UserService_ValidateToken_0     = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"user.UserService", "ValidateToken"}, ""))
 	pattern_UserService_GetUserProfile_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "users", "user_id"}, ""))
 	pattern_UserService_UpdateUserProfile_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "users", "user_id"}, ""))
 	pattern_UserService_DeleteUser_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "users", "user_id"}, ""))

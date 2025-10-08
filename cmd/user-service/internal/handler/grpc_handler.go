@@ -17,6 +17,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // UserGrpcServer 实现了 user_grpc.pb.go 中定义的 UserServiceServer 接口
@@ -99,10 +100,11 @@ func (s *UserGrpcServer) GetUserProfile(ctx context.Context, req *pb.GetUserProf
 
 	return &pb.GetUserProfileResponse{
 		User: &pb.User{
-			Id:       userResponse.ID,
-			Username: userResponse.Username,
-			Email:    userResponse.Email,
-			Bio:      userResponse.Bio,
+			Id:        userResponse.ID,
+			Username:  userResponse.Username,
+			Email:     userResponse.Email,
+			Bio:       userResponse.Bio,
+			CreatedAt: timestamppb.New(userResponse.CreatedAt),
 		},
 	}, nil
 }

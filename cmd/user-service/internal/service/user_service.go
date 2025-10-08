@@ -146,15 +146,17 @@ func (s *userService) ValidateToken(ctx context.Context, tokenString string) (au
 
 func (s *userService) GetUserProfile(ctx context.Context, userID int64) (*dto.UserResponse, error) {
 	user, err := s.userStore.GetUserByID(ctx, userID)
+	log.Println("userService GetUserProfile user:", user)
 	if err != nil {
 		return nil, err
 	}
 	// 转换为DTO
 	response := &dto.UserResponse{
-		ID:       user.ID,
-		Username: user.Username,
-		Email:    user.Email,
-		Bio:      user.Bio,
+		ID:        user.ID,
+		Username:  user.Username,
+		Email:     user.Email,
+		Bio:       user.Bio,
+		CreatedAt: user.CreatedAt,
 	}
 
 	return response, nil

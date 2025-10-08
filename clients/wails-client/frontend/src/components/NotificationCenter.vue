@@ -9,6 +9,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   back: []
+  viewQuestion: [questionId: number, highlightId?: string, highlightType?: string]
 }>()
 
 const notifications = ref<any[]>([])
@@ -19,6 +20,46 @@ const currentPage = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
 const streamConnected = ref(false)
+
+// 解析通知的 target_url
+function parseTargetUrl(url: string): { questionId: number, highlightId?: string, highlightType?: string } | null {
+  // target_url 格式示例: 
+  // /questions/123#answer-456
+  // /questions/123#comment-789
+  if (!url) return null
+
+  const match = url.match(/\/questions\/(\d+)(?:#(answer|comment)-(\w+))?/)
+  if (!match) return null
+
+  const questionId = parseInt(match[1])
+  const highlightType = match[2]
+  const highlightId = match[3]
+
+  return { questionId, highlightId, highlightType }
+}
+
+// 处理通知点击
+function handleNotificationClick(notification: any) {
+  console.log('Notification clicked:', notification)
+  console.log('Target URL:', notification.target_url)
+
+  const parsedUrl = parseTargetUrl(notification.target_url)
+  console.log('Parsed URL:', parsedUrl)
+
+  if (!parsedUrl) {
+    console.warn('Invalid target_url:', notification.target_url)
+    return
+  }
+
+  // 如果未读，先标记为已读
+  if (!notification.is_read) {
+    handleMarkAsRead(notification.id)
+  }
+
+  // 跳转到问题详情
+  console.log('Emitting viewQuestion:', parsedUrl.questionId, parsedUrl.highlightId, parsedUrl.highlightType)
+  emit('viewQuestion', parsedUrl.questionId, parsedUrl.highlightId, parsedUrl.highlightType)
+}
 
 // 加载通知列表
 async function loadNotifications() {
@@ -60,18 +101,18 @@ async function startStream() {
 // 处理接收到的实时通知
 function handleRealtimeNotification(notification: any) {
   console.log('📨 收到实时通知:', notification)
-  
+
   // 如果当前显示全部或未读通知，添加到列表顶部
   if (!showOnlyUnread.value || !notification.is_read) {
     notifications.value.unshift(notification)
     total.value++
   }
-  
+
   // 更新未读数量
   if (!notification.is_read) {
     unreadCount.value++
   }
-  
+
   // 显示桌面通知（可选）
   showDesktopNotification(notification)
 }
@@ -80,7 +121,7 @@ function handleRealtimeNotification(notification: any) {
 function showDesktopNotification(notification: any) {
   const title = `来自 ${notification.sender_name || '系统'} 的通知`
   const body = notification.content
-  
+
   // 这里可以用 Wails 的通知 API 或浏览器通知
   console.log(`🔔 桌面通知: ${title} - ${body}`)
 }
@@ -100,7 +141,7 @@ async function handleMarkAllAsRead() {
   if (!confirm('确定要标记全部通知为已读吗？')) {
     return
   }
-  
+
   try {
     loading.value = true
     await MarkAsRead([], true)
@@ -118,7 +159,7 @@ async function handleDelete(notificationId: string) {
   if (!confirm('确定要删除这条通知吗？')) {
     return
   }
-  
+
   try {
     await DeleteNotification(notificationId)
     await loadNotifications()
@@ -162,10 +203,10 @@ function getNotificationColor(type: string): string {
 onMounted(async () => {
   loadNotifications()
   loadUnreadCount()
-  
+
   // 启动通知流
   await startStream()
-  
+
   // 监听实时通知事件（使用 Wails 事件系统）
   // 注意：我们需要在后端通过 Wails runtime 发送事件
   EventsOn('notification:received', handleRealtimeNotification)
@@ -211,12 +252,9 @@ onUnmounted(() => {
 
     <!-- 通知列表 -->
     <div v-else-if="notifications.length > 0" class="notifications-list">
-      <div 
-        v-for="notification in notifications" 
-        :key="notification.id"
-        class="notification-item"
-        :class="{ unread: !notification.is_read }"
-      >
+      <div v-for="notification in notifications" :key="notification.id" class="notification-item"
+        :class="{ unread: !notification.is_read, clickable: notification.target_url }"
+        @click="notification.target_url && handleNotificationClick(notification)">
         <div class="notification-icon" :style="{ backgroundColor: getNotificationColor(notification.type) }">
           {{ getNotificationIcon(notification.type) }}
         </div>
@@ -227,17 +265,10 @@ onUnmounted(() => {
           </div>
           <p class="notification-text">{{ notification.content }}</p>
           <div class="notification-footer">
-            <button 
-              v-if="!notification.is_read"
-              @click="handleMarkAsRead(notification.id)"
-              class="btn-mark-read"
-            >
+            <button v-if="!notification.is_read" @click.stop="handleMarkAsRead(notification.id)" class="btn-mark-read">
               标记已读
             </button>
-            <button 
-              @click="handleDelete(notification.id)"
-              class="btn-delete"
-            >
+            <button @click.stop="handleDelete(notification.id)" class="btn-delete">
               删除
             </button>
           </div>
@@ -388,8 +419,13 @@ onUnmounted(() => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .notifications-list {
@@ -407,6 +443,15 @@ onUnmounted(() => {
   gap: 16px;
   position: relative;
   transition: all 0.3s;
+}
+
+.notification-item.clickable {
+  cursor: pointer;
+}
+
+.notification-item.clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 .notification-item.unread {
@@ -505,9 +550,12 @@ onUnmounted(() => {
 }
 
 @keyframes pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.5;
   }

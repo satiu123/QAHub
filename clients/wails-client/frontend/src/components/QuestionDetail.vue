@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { 
-  GetQuestion, 
-  ListAnswers, 
+import { ref, onMounted, nextTick } from 'vue'
+import {
+  GetQuestion,
+  ListAnswers,
   CreateAnswer,
   UpvoteAnswer,
   DownvoteAnswer,
@@ -13,6 +13,8 @@ import {
 const props = defineProps<{
   questionId: number
   username: string
+  highlightId?: string
+  highlightType?: string
 }>()
 
 const emit = defineEmits<{
@@ -28,6 +30,86 @@ const showComments = ref<{ [key: number]: boolean }>({})
 const comments = ref<{ [key: number]: any[] }>({})
 const loadingComments = ref<{ [key: number]: boolean }>({})
 
+// 添加滚动到高亮元素的函数
+function scrollToHighlight(retry = 0) {
+  if (!props.highlightId || !props.highlightType) {
+    console.log('No highlight needed')
+    return
+  }
+
+  console.log('Attempting to highlight (retry:', retry, '):', props.highlightType, props.highlightId)
+
+  const elementId = `${props.highlightType}-${props.highlightId}`
+  const element = document.getElementById(elementId) as HTMLElement
+
+  if (element) {
+    console.log('Element found, scrolling...')
+
+    // 先添加高亮样式
+    element.classList.add('highlight-flash')
+
+    // 获取元素位置并滚动
+    const rect = element.getBoundingClientRect()
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop
+    const targetY = rect.top + scrollTop - (window.innerHeight / 2) + (rect.height / 2)
+
+    // 立即滚动
+    window.scrollTo({
+      top: Math.max(0, targetY),
+      behavior: 'smooth'
+    })
+
+    // 3秒后移除高亮
+    setTimeout(() => element.classList.remove('highlight-flash'), 3000)
+  } else if (retry < 5) {
+    // 如果元素还没渲染，短时间后重试
+    console.log('Element not found, will retry...')
+    setTimeout(() => scrollToHighlight(retry + 1), 200)
+  } else {
+    console.warn('Element not found after retries:', elementId)
+  }
+}
+
+// 页面加载
+onMounted(async () => {
+  console.log('QuestionDetail mounted with props:', {
+    questionId: props.questionId,
+    highlightId: props.highlightId,
+    highlightType: props.highlightType
+  })
+
+  // 先启动数据加载（不等待）
+  const loadPromise = Promise.all([loadQuestion(), loadAnswers()])
+
+  // 如果是评论高亮，先展开评论
+  if (props.highlightId && props.highlightType === 'comment') {
+    const answerId = parseInt(props.highlightId.split('-')[0] || '0')
+    console.log('Need to expand comments for answer:', answerId)
+
+    if (answerId) {
+      // 等待回答加载完成
+      await loadPromise
+      await nextTick()
+
+      // 展开评论
+      toggleComments(answerId)
+      await nextTick()
+
+      // 立即尝试滚动
+      setTimeout(() => scrollToHighlight(), 100)
+    }
+  } else if (props.highlightId && props.highlightType === 'answer') {
+    // 对于回答的高亮，数据加载时就开始尝试滚动
+    await loadPromise
+    await nextTick()
+
+    // 立即尝试滚动
+    setTimeout(() => scrollToHighlight(), 100)
+  } else {
+    // 没有高亮，正常等待加载完成
+    await loadPromise
+  }
+})
 // 加载问题详情
 async function loadQuestion() {
   try {
@@ -137,12 +219,6 @@ async function handleSubmitComment(answerId: number) {
     alert('提交评论失败: ' + error.toString())
   }
 }
-
-// 页面加载
-onMounted(async () => {
-  await loadQuestion()
-  await loadAnswers()
-})
 </script>
 
 <template>
@@ -181,11 +257,7 @@ onMounted(async () => {
 
         <!-- 回答列表 -->
         <div v-if="answers.length > 0" class="answers-list">
-          <div 
-            v-for="answer in answers" 
-            :key="answer.id"
-            class="answer-card"
-          >
+          <div v-for="answer in answers" :key="answer.id" :id="`answer-${answer.id}`" class="answer-card">
             <div class="answer-header">
               <span class="answer-author">👤 {{ answer.username }}</span>
               <span class="answer-time">{{ answer.created_at }}</span>
@@ -194,10 +266,8 @@ onMounted(async () => {
               {{ answer.content }}
             </div>
             <div class="answer-footer">
-              <button 
-                @click="answer.is_upvoted ? handleDownvote(answer.id) : handleUpvote(answer.id)"
-                :class="['btn-vote', { active: answer.is_upvoted }]"
-              >
+              <button @click="answer.is_upvoted ? handleDownvote(answer.id) : handleUpvote(answer.id)"
+                :class="['btn-vote', { active: answer.is_upvoted }]">
                 {{ answer.is_upvoted ? '👍 已赞' : '👍 点赞' }} ({{ answer.upvote_count }})
               </button>
               <button @click="toggleComments(answer.id)" class="btn-comment">
@@ -213,11 +283,8 @@ onMounted(async () => {
               <div v-else>
                 <!-- 评论列表 -->
                 <div v-if="comments[answer.id]?.length > 0" class="comments-list">
-                  <div 
-                    v-for="comment in comments[answer.id]" 
-                    :key="comment.id"
-                    class="comment-item"
-                  >
+                  <div v-for="comment in comments[answer.id]" :key="comment.id" :id="`comment-${comment.id}`"
+                    class="comment-item">
                     <div class="comment-header">
                       <span class="comment-author">{{ comment.username }}</span>
                       <span class="comment-time">{{ comment.created_at }}</span>
@@ -231,16 +298,9 @@ onMounted(async () => {
 
                 <!-- 添加评论 -->
                 <div class="comment-input">
-                  <input
-                    v-model="commentContent[answer.id]"
-                    type="text"
-                    placeholder="写下你的评论..."
-                    @keyup.enter="handleSubmitComment(answer.id)"
-                  />
-                  <button 
-                    @click="handleSubmitComment(answer.id)"
-                    class="btn-submit-comment"
-                  >
+                  <input v-model="commentContent[answer.id]" type="text" placeholder="写下你的评论..."
+                    @keyup.enter="handleSubmitComment(answer.id)" />
+                  <button @click="handleSubmitComment(answer.id)" class="btn-submit-comment">
                     发送
                   </button>
                 </div>
@@ -258,17 +318,9 @@ onMounted(async () => {
       <!-- 回答输入区 -->
       <div class="answer-input-section">
         <h3>写下你的回答</h3>
-        <textarea
-          v-model="answerContent"
-          placeholder="分享你的见解..."
-          rows="6"
-        ></textarea>
+        <textarea v-model="answerContent" placeholder="分享你的见解..." rows="6"></textarea>
         <div class="input-actions">
-          <button 
-            @click="handleSubmitAnswer" 
-            class="btn-submit"
-            :disabled="loading || !answerContent.trim()"
-          >
+          <button @click="handleSubmitAnswer" class="btn-submit" :disabled="loading || !answerContent.trim()">
             {{ loading ? '提交中...' : '提交回答' }}
           </button>
         </div>
@@ -322,8 +374,30 @@ onMounted(async () => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes highlight {
+
+  0%,
+  100% {
+    background-color: transparent;
+  }
+
+  50% {
+    background-color: #fff3cd;
+  }
+}
+
+.highlight-flash {
+  animation: highlight 1s ease-in-out 3;
+  border-left: 4px solid #ffc107 !important;
 }
 
 .detail-content {

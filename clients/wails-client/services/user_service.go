@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"log"
 
 	userpb "qahub/api/proto/user"
 )
@@ -46,10 +47,11 @@ type RegisterResponse struct {
 
 // UserProfile 用户信息
 type UserProfile struct {
-	UserID   int64  `json:"user_id"`
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Bio      string `json:"bio"`
+	UserID    int64  `json:"user_id"`
+	Username  string `json:"username"`
+	Email     string `json:"email"`
+	Bio       string `json:"bio"`
+	CreatedAt string `json:"created_at"`
 }
 
 // Login 用户登录
@@ -107,12 +109,13 @@ func (s *UserService) GetProfile(ctx context.Context, userID int64) (*UserProfil
 	if err != nil {
 		return nil, fmt.Errorf("获取用户信息失败: %w", err)
 	}
-
+	log.Println("Fetched user profile:", resp.User.CreatedAt.AsTime().Format("2006-01-02 15:04:05"))
 	return &UserProfile{
-		UserID:   resp.User.Id,
-		Username: resp.User.Username,
-		Email:    resp.User.Email,
-		Bio:      resp.User.Bio,
+		UserID:    resp.User.Id,
+		Username:  resp.User.Username,
+		Email:     resp.User.Email,
+		Bio:       resp.User.Bio,
+		CreatedAt: resp.User.CreatedAt.AsTime().Format("2006-01-02 15:04:05"),
 	}, nil
 }
 
