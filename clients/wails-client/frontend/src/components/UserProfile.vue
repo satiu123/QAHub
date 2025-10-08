@@ -8,12 +8,18 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   back: []
+  viewQuestion: [questionId: number]
 }>()
 
 const userProfile = ref<any>(null)
 const myQuestions = ref<any[]>([])
 const loading = ref(false)
 const activeTab = ref('profile') // 'profile' or 'questions'
+
+// 查看问题详情
+function viewQuestion(questionId: number) {
+  emit('viewQuestion', questionId)
+}
 
 // 加载用户信息
 async function loadUserProfile() {
@@ -105,16 +111,10 @@ onMounted(() => {
 
       <!-- 标签页 -->
       <div class="tabs">
-        <button 
-          @click="switchTab('profile')"
-          :class="['tab-btn', { active: activeTab === 'profile' }]"
-        >
+        <button @click="switchTab('profile')" :class="['tab-btn', { active: activeTab === 'profile' }]">
           📋 个人信息
         </button>
-        <button 
-          @click="switchTab('questions')"
-          :class="['tab-btn', { active: activeTab === 'questions' }]"
-        >
+        <button @click="switchTab('questions')" :class="['tab-btn', { active: activeTab === 'questions' }]">
           ❓ 我的问题
         </button>
       </div>
@@ -186,11 +186,8 @@ onMounted(() => {
         </div>
 
         <div v-else-if="myQuestions.length > 0" class="questions-list">
-          <div 
-            v-for="question in myQuestions" 
-            :key="question.id"
-            class="question-item"
-          >
+          <div v-for="question in myQuestions" :key="question.id" class="question-item"
+            @click="viewQuestion(question.id)">
             <div class="question-header">
               <h4 class="question-title">{{ question.title }}</h4>
               <span class="answer-badge">{{ question.answer_count }} 回答</span>
@@ -278,8 +275,13 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .profile-content {

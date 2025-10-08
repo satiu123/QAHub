@@ -115,6 +115,15 @@ function viewQuestionFromNotification(questionId: number, hId?: string, hType?: 
   currentView.value = 'detail'
 }
 
+// 从个人中心跳转到问题详情
+function viewQuestionFromProfile(questionId: number) {
+  previousView.value = 'profile' // 从个人中心跳转，记录前一个视图
+  selectedQuestionId.value = questionId
+  highlightId.value = undefined
+  highlightType.value = undefined
+  currentView.value = 'detail'
+}
+
 // 返回上一个视图
 function backToPrevious() {
   currentView.value = previousView.value
@@ -216,7 +225,8 @@ onMounted(() => {
       :highlight-id="highlightId" :highlight-type="highlightType" @back="backToPrevious" />
 
     <!-- 个人中心 -->
-    <UserProfile v-else-if="currentView === 'profile'" :username="props.username" @back="backToList" />
+    <UserProfile v-else-if="currentView === 'profile'" :username="props.username" @back="backToList"
+      @viewQuestion="viewQuestionFromProfile" />
 
     <!-- 通知中心 -->
     <NotificationCenter v-else-if="currentView === 'notifications'" :username="props.username" @back="backToList"
