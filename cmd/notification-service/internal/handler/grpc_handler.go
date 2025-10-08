@@ -84,6 +84,34 @@ func (s *NotificationGrpcServer) GetUnreadCount(ctx context.Context, req *pb.Get
 	}, nil
 }
 
+// SubscribeNotifications 实现服务端流式推送实时通知
+func (s *NotificationGrpcServer) SubscribeNotifications(req *pb.SubscribeNotificationsRequest, stream pb.NotificationService_SubscribeNotificationsServer) error {
+	userID := req.GetUserId()
+	log.Printf("User %d subscribing to notifications stream", userID)
+
+	// 创建流客户端
+	streamClient := &service.StreamClient{
+		UserID: userID,
+		Stream: stream,
+		Done:   make(chan struct{}),
+	}
+
+	// 注册到 StreamHub
+	streamHub := s.notificationService.GetStreamHub()
+	streamHub.Register(streamClient)
+	defer streamHub.Unregister(streamClient)
+
+	// 保持连接直到客户端断开或上下文取消
+	select {
+	case <-stream.Context().Done():
+		log.Printf("User %d stream context done: %v", userID, stream.Context().Err())
+		return stream.Context().Err()
+	case <-streamClient.Done:
+		log.Printf("User %d stream client closed", userID)
+		return nil
+	}
+}
+
 func (s *NotificationGrpcServer) Run(ctx context.Context, config config.Config) error {
 	serverAddr := ":" + config.Services.NotificationService.GrpcPort
 	lis, err := net.Listen("tcp", serverAddr)

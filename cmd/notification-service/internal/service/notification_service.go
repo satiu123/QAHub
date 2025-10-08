@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	pb "qahub/api/proto/notification"
 	"qahub/notification-service/internal/model"
 	"qahub/notification-service/internal/store"
 	"qahub/pkg/config"
 	"qahub/pkg/messaging"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -22,26 +23,26 @@ const (
 type NotificationService interface {
 	StartConsumer(ctx context.Context)
 	Close() error
-	ServeWs(c *gin.Context, userID int64)
 	GetNotifications(ctx context.Context, userID int64, limit int32, offset int64) ([]*model.Notification, error)
 	MarkNotificationsAsRead(ctx context.Context, userID int64, notificationIDs []string, markAll bool) (int64, error)
 	DeleteNotification(ctx context.Context, userID int64, notificationID string) error
 	DeleteNotifications(ctx context.Context, userID int64, notificationIDs []string) (int64, error)
 	GetUnreadCount(ctx context.Context, userID int64) (int64, error)
+	GetStreamHub() *StreamHub
 }
 
 // notificationService 是 NotificationService 接口的具体实现
 type notificationService struct {
 	store         store.NotificationStore
-	hub           *Hub
+	streamHub     *StreamHub
 	kafkaConsumer *messaging.KafkaConsumer
 }
 
 // NewNotificationService 创建一个新的 NotificationService 实例
-func NewNotificationService(store store.NotificationStore, hub *Hub, cfg config.Kafka) NotificationService {
+func NewNotificationService(store store.NotificationStore, streamHub *StreamHub, cfg config.Kafka) NotificationService {
 	s := &notificationService{
-		store: store,
-		hub:   hub,
+		store:     store,
+		streamHub: streamHub,
 	}
 	// 必须在service实例化后设置consumer，因为handler需要引用service
 	consumer := messaging.NewKafkaConsumer(cfg, TopicNotifications, GroupID, s.getEventHandlers())
@@ -49,9 +50,9 @@ func NewNotificationService(store store.NotificationStore, hub *Hub, cfg config.
 	return s
 }
 
-// ServeWs 处理来自客户端的 websocket 请求
-func (s *notificationService) ServeWs(c *gin.Context, userID int64) {
-	ServeWs(s.hub, c, userID)
+// GetStreamHub 返回 StreamHub 实例
+func (s *notificationService) GetStreamHub() *StreamHub {
+	return s.streamHub
 }
 
 // GetNotifications 获取用户的通知列表
@@ -131,16 +132,12 @@ func (s *notificationService) handleNotificationTriggered(ctx context.Context, e
 		return err
 	}
 
-	// 3. 将新创建的通知（包含数据库生成的ID和时间戳）序列化为JSON
-	notificationJSON, err := json.Marshal(notification)
-	if err != nil {
-		log.Printf("failed to marshal notification for push: %v", err)
-		// 即使序列化失败，数据也已入库，所以这里只记录日志而不返回错误
-		return nil
+	// 3. 通过 gRPC StreamHub 推送给在线用户
+	if s.streamHub != nil {
+		pbNotification := convertModelToProto(notification)
+		s.streamHub.SendToUser(notification.RecipientID, pbNotification)
+		log.Printf("Notification pushed to user %d via gRPC stream", notification.RecipientID)
 	}
-
-	// 4. 通过WebSocket Hub推送给在线用户
-	s.hub.SendToUser(notification.RecipientID, notificationJSON)
 
 	return nil
 }
@@ -153,4 +150,19 @@ func (s *notificationService) StartConsumer(ctx context.Context) {
 // Close 方法用于优雅地关闭服务资源，例如 Kafka reader
 func (s *notificationService) Close() error {
 	return s.kafkaConsumer.Close()
+}
+
+// convertModelToProto 将 model.Notification 转换为 pb.Notification
+func convertModelToProto(n *model.Notification) *pb.Notification {
+	return &pb.Notification{
+		Id:          n.ID.Hex(),
+		RecipientId: n.RecipientID,
+		SenderId:    n.SenderID,
+		SenderName:  n.SenderName,
+		Type:        n.Type,
+		Content:     n.Content,
+		TargetUrl:   n.TargetURL,
+		IsRead:      n.IsRead,
+		CreatedAt:   timestamppb.New(n.CreatedAt),
+	}
 }

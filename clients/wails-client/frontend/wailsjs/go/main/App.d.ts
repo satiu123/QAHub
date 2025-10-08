@@ -35,6 +35,8 @@ export function IndexAllQuestions():Promise<string>;
 
 export function IsLoggedIn():Promise<boolean>;
 
+export function IsNotificationStreamConnected():Promise<boolean>;
+
 export function ListAnswers(arg1:number,arg2:number,arg3:number):Promise<Array<services.Answer>>;
 
 export function ListComments(arg1:number,arg2:number,arg3:number):Promise<Array<services.Comment>>;
@@ -50,6 +52,10 @@ export function MarkAsRead(arg1:Array<string>,arg2:boolean):Promise<number>;
 export function Register(arg1:string,arg2:string,arg3:string):Promise<services.RegisterResponse>;
 
 export function SearchQuestions(arg1:string,arg2:number,arg3:number):Promise<Array<services.SearchResult>>;
+
+export function StartNotificationStream():Promise<void>;
+
+export function StopNotificationStream():Promise<void>;
 
 export function UpdateAnswer(arg1:number,arg2:string):Promise<services.Answer>;
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { GetNotifications, GetUnreadCount, MarkAsRead, DeleteNotification } from '../../wailsjs/go/main/App'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { GetNotifications, GetUnreadCount, MarkAsRead, DeleteNotification, StartNotificationStream, StopNotificationStream, IsNotificationStreamConnected } from '../../wailsjs/go/main/App'
+import { EventsOn, EventsOff } from '../../wailsjs/runtime/runtime'
 
 const props = defineProps<{
   username: string
@@ -17,6 +18,7 @@ const showOnlyUnread = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
+const streamConnected = ref(false)
 
 // 加载通知列表
 async function loadNotifications() {
@@ -42,6 +44,45 @@ async function loadUnreadCount() {
   } catch (error: any) {
     console.error('加载未读数量失败:', error)
   }
+}
+
+// 启动通知流
+async function startStream() {
+  try {
+    await StartNotificationStream()
+    streamConnected.value = await IsNotificationStreamConnected()
+    console.log('✅ 通知流已启动')
+  } catch (error: any) {
+    console.error('启动通知流失败:', error)
+  }
+}
+
+// 处理接收到的实时通知
+function handleRealtimeNotification(notification: any) {
+  console.log('📨 收到实时通知:', notification)
+  
+  // 如果当前显示全部或未读通知，添加到列表顶部
+  if (!showOnlyUnread.value || !notification.is_read) {
+    notifications.value.unshift(notification)
+    total.value++
+  }
+  
+  // 更新未读数量
+  if (!notification.is_read) {
+    unreadCount.value++
+  }
+  
+  // 显示桌面通知（可选）
+  showDesktopNotification(notification)
+}
+
+// 显示桌面通知
+function showDesktopNotification(notification: any) {
+  const title = `来自 ${notification.sender_name || '系统'} 的通知`
+  const body = notification.content
+  
+  // 这里可以用 Wails 的通知 API 或浏览器通知
+  console.log(`🔔 桌面通知: ${title} - ${body}`)
 }
 
 // 标记单个通知为已读
@@ -118,9 +159,21 @@ function getNotificationColor(type: string): string {
 }
 
 // 页面加载
-onMounted(() => {
+onMounted(async () => {
   loadNotifications()
   loadUnreadCount()
+  
+  // 启动通知流
+  await startStream()
+  
+  // 监听实时通知事件（使用 Wails 事件系统）
+  // 注意：我们需要在后端通过 Wails runtime 发送事件
+  EventsOn('notification:received', handleRealtimeNotification)
+})
+
+// 页面卸载
+onUnmounted(() => {
+  EventsOff('notification:received')
 })
 </script>
 

@@ -2,9 +2,12 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"changeme/services"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // App struct
@@ -17,6 +20,10 @@ type App struct {
 	QAService           *services.QAService
 	SearchService       *services.SearchService
 	NotificationService *services.NotificationService
+	NotificationStream  *services.NotificationStream
+
+	// 前端通知回调
+	onNotificationReceived func(notification *services.Notification)
 }
 
 // NewApp creates a new App application struct
@@ -52,12 +59,26 @@ func (a *App) startup(ctx context.Context) {
 	a.QAService = services.NewQAService(client)
 	a.SearchService = services.NewSearchService(client)
 	a.NotificationService = services.NewNotificationService(client)
+
+	// 初始化通知流
+	a.NotificationStream = services.NewNotificationStream(client)
+
+	// 添加通知处理器：收到通知时发送到前端
+	a.NotificationStream.AddHandler(func(notification *services.Notification) {
+		log.Printf("📨 Received notification in app: %s", notification.Content)
+		// 发送事件到前端
+		runtime.EventsEmit(a.ctx, "notification:received", notification)
+	})
+
 	log.Println("✅ QAHub Wails Client started successfully")
 	_, _ = a.Login("saocong", "12345678") // 自动登录测试账号
 }
 
 // shutdown is called at application termination
 func (a *App) shutdown(ctx context.Context) {
+	if a.NotificationStream != nil {
+		a.NotificationStream.Stop()
+	}
 	if a.grpcClient != nil {
 		a.grpcClient.Close()
 	}
@@ -234,4 +255,27 @@ func (a *App) MarkAsRead(notificationIDs []string, markAll bool) (int64, error) 
 // DeleteNotification 删除通知
 func (a *App) DeleteNotification(notificationID string) error {
 	return a.NotificationService.DeleteNotification(a.ctx, notificationID)
+}
+
+// StartNotificationStream 启动通知流连接
+func (a *App) StartNotificationStream() error {
+	if a.NotificationStream == nil {
+		return fmt.Errorf("notification stream not initialized")
+	}
+	return a.NotificationStream.Start()
+}
+
+// StopNotificationStream 停止通知流连接
+func (a *App) StopNotificationStream() {
+	if a.NotificationStream != nil {
+		a.NotificationStream.Stop()
+	}
+}
+
+// IsNotificationStreamConnected 检查通知流是否已连接
+func (a *App) IsNotificationStreamConnected() bool {
+	if a.NotificationStream == nil {
+		return false
+	}
+	return a.NotificationStream.IsConnected()
 }

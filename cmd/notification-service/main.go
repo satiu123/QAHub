@@ -26,11 +26,11 @@ func main() {
 	}
 	defer client.Disconnect(ctx)
 
-	// 3.初始化store, hub, service
+	// 3.初始化store, streamHub, service
 	ntStore := store.NewMongoNotificationStore(client.Database(config.Conf.MongoDB.Database))
-	hub := service.NewHub()
-	go hub.Run()
-	ntService := service.NewNotificationService(ntStore, hub, config.Conf.Kafka)
+	streamHub := service.NewStreamHub()
+	go streamHub.Run()
+	ntService := service.NewNotificationService(ntStore, streamHub, config.Conf.Kafka)
 	defer ntService.Close()
 
 	// 4.启动Kafka消费者
