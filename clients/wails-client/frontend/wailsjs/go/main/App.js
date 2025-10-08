@@ -26,6 +26,10 @@ export function DeleteIndexAllQuestions() {
   return window['go']['main']['App']['DeleteIndexAllQuestions']();
 }
 
+export function DeleteNotification(arg1) {
+  return window['go']['main']['App']['DeleteNotification'](arg1);
+}
+
 export function DeleteQuestion(arg1) {
   return window['go']['main']['App']['DeleteQuestion'](arg1);
 }
@@ -38,8 +42,16 @@ export function GetCurrentUser() {
   return window['go']['main']['App']['GetCurrentUser']();
 }
 
+export function GetNotifications(arg1, arg2, arg3) {
+  return window['go']['main']['App']['GetNotifications'](arg1, arg2, arg3);
+}
+
 export function GetQuestion(arg1) {
   return window['go']['main']['App']['GetQuestion'](arg1);
+}
+
+export function GetUnreadCount() {
+  return window['go']['main']['App']['GetUnreadCount']();
 }
 
 export function GetUsername() {
@@ -72,6 +84,10 @@ export function Login(arg1, arg2) {
 
 export function Logout() {
   return window['go']['main']['App']['Logout']();
+}
+
+export function MarkAsRead(arg1, arg2) {
+  return window['go']['main']['App']['MarkAsRead'](arg1, arg2);
 }
 
 export function Register(arg1, arg2, arg3) {

@@ -33,3 +33,8 @@ func NormalizePageAndSize(req Paginatable) (page int64, pageSize int32) {
 func CalculateOffset(page int64, pageSize int32) (limit int32, offset int64) {
 	return pageSize, (page - 1) * int64(pageSize)
 }
+
+func LimitOffsetFromRequest(req Paginatable) (limit int32, offset int64) {
+	page, pageSize := NormalizePageAndSize(req)
+	return CalculateOffset(page, pageSize)
+}

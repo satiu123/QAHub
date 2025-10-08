@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { ListQuestions, CreateQuestion, Logout, GetUsername, SearchQuestions, IndexAllQuestions, DeleteIndexAllQuestions } from '../../wailsjs/go/main/App'
+import { ListQuestions, CreateQuestion, Logout, GetUsername, SearchQuestions, IndexAllQuestions, DeleteIndexAllQuestions, GetUnreadCount } from '../../wailsjs/go/main/App'
 import QuestionDetail from './QuestionDetail.vue'
 import UserProfile from './UserProfile.vue'
+import NotificationCenter from './NotificationCenter.vue'
 
 const props = defineProps<{
   username: string
@@ -12,7 +13,7 @@ const emit = defineEmits<{
   logout: []
 }>()
 
-const currentView = ref<'list' | 'detail' | 'profile'>('list')
+const currentView = ref<'list' | 'detail' | 'profile' | 'notifications'>('list')
 const selectedQuestionId = ref<number>(0)
 const questions = ref<any[]>([])
 const loading = ref(false)
@@ -22,6 +23,7 @@ const pageSize = ref(10)
 const searchQuery = ref('')
 const isSearchMode = ref(false)
 const showAdminPanel = ref(false) // 管理面板显示状态
+const unreadNotificationCount = ref(0) // 未读通知数量
 
 // 新建问题表单
 const newQuestion = ref({
@@ -112,6 +114,20 @@ function openProfile() {
   currentView.value = 'profile'
 }
 
+// 打开通知中心
+function openNotifications() {
+  currentView.value = 'notifications'
+}
+
+// 加载未读通知数量
+async function loadUnreadCount() {
+  try {
+    unreadNotificationCount.value = await GetUnreadCount()
+  } catch (error: any) {
+    console.error('加载未读通知数量失败:', error)
+  }
+}
+
 // 登出
 async function handleLogout() {
   try {
@@ -159,6 +175,9 @@ async function handleDeleteIndexAll() {
 // 页面加载时获取问题列表
 onMounted(() => {
   loadQuestions()
+  loadUnreadCount()
+  // 定期刷新未读通知数量
+  setInterval(loadUnreadCount, 30000) // 每30秒刷新一次
 })
 </script>
 
@@ -179,6 +198,13 @@ onMounted(() => {
       @back="backToList"
     />
 
+    <!-- 通知中心 -->
+    <NotificationCenter
+      v-else-if="currentView === 'notifications'"
+      :username="props.username"
+      @back="backToList"
+    />
+
     <!-- 问题列表页 -->
     <div v-else>
       <!-- 顶部导航栏 -->
@@ -186,6 +212,12 @@ onMounted(() => {
         <div class="header-content">
           <h1 class="logo">🎓 QAHub</h1>
           <div class="header-right">
+            <button @click="openNotifications" class="btn-notifications" title="通知中心">
+              🔔
+              <span v-if="unreadNotificationCount > 0" class="notification-badge">
+                {{ unreadNotificationCount > 99 ? '99+' : unreadNotificationCount }}
+              </span>
+            </button>
             <button @click="openProfile" class="btn-profile">
               👤 {{ props.username }}
             </button>
@@ -404,16 +436,47 @@ onMounted(() => {
 
 .btn-logout {
   padding: 8px 16px;
-  background: #e0e0e0;
+  background-color: #dc3545;
+  color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
-  transition: all 0.3s;
+  transition: background-color 0.3s;
+}
+
+.btn-notifications {
+  position: relative;
+  padding: 8px 12px;
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-right: 10px;
+  font-size: 18px;
+}
+
+.btn-notifications:hover {
+  background-color: #5a6268;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background-color: #dc3545;
+  color: white;
+  border-radius: 10px;
+  padding: 2px 6px;
+  font-size: 12px;
+  font-weight: bold;
+  min-width: 20px;
+  text-align: center;
 }
 
 .btn-logout:hover {
-  background: #d0d0d0;
+  background-color: #c82333;
 }
 
 .admin-panel {

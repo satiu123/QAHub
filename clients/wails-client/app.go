@@ -13,9 +13,10 @@ type App struct {
 	grpcClient *services.GRPCClient
 
 	// 服务实例
-	UserService   *services.UserService
-	QAService     *services.QAService
-	SearchService *services.SearchService
+	UserService         *services.UserService
+	QAService           *services.QAService
+	SearchService       *services.SearchService
+	NotificationService *services.NotificationService
 }
 
 // NewApp creates a new App application struct
@@ -34,6 +35,7 @@ func (a *App) startup(ctx context.Context) {
 		"localhost:50051", // user-service
 		"localhost:50052", // qa-service
 		"localhost:50053", // search-service
+		"localhost:50054", // notification-service
 	)
 	if err != nil {
 		log.Printf("⚠️  Failed to create gRPC client: %v", err)
@@ -41,6 +43,7 @@ func (a *App) startup(ctx context.Context) {
 		log.Println("  - User Service: localhost:50051")
 		log.Println("  - QA Service: localhost:50052")
 		log.Println("  - Search Service: localhost:50053")
+		log.Println("  - Notification Service: localhost:50054")
 		// 不要 fatal，允许应用启动，只是功能不可用
 	}
 
@@ -48,7 +51,7 @@ func (a *App) startup(ctx context.Context) {
 	a.UserService = services.NewUserService(client)
 	a.QAService = services.NewQAService(client)
 	a.SearchService = services.NewSearchService(client)
-
+	a.NotificationService = services.NewNotificationService(client)
 	log.Println("✅ QAHub Wails Client started successfully")
 	_, _ = a.Login("saocong", "12345678") // 自动登录测试账号
 }
@@ -194,4 +197,41 @@ func (a *App) IndexAllQuestions() (string, error) {
 // DeleteIndexAllQuestions 删除所有问题索引（仅用于测试/管理）
 func (a *App) DeleteIndexAllQuestions() (string, error) {
 	return a.SearchService.DeleteIndexAllQuestions(a.ctx)
+}
+
+// ===== 通知相关方法 (供前端调用) =====
+
+// NotificationListResult 通知列表结果
+type NotificationListResult struct {
+	Notifications []services.Notification `json:"notifications"`
+	Total         int64                   `json:"total"`
+	UnreadCount   int64                   `json:"unread_count"`
+}
+
+// GetNotifications 获取通知列表
+func (a *App) GetNotifications(page int32, pageSize int64, unreadOnly bool) (*NotificationListResult, error) {
+	notifications, total, unreadCount, err := a.NotificationService.GetNotifications(a.ctx, page, pageSize, unreadOnly)
+	if err != nil {
+		return nil, err
+	}
+	return &NotificationListResult{
+		Notifications: notifications,
+		Total:         total,
+		UnreadCount:   unreadCount,
+	}, nil
+}
+
+// GetUnreadCount 获取未读通知数量
+func (a *App) GetUnreadCount() (int64, error) {
+	return a.NotificationService.GetUnreadCount(a.ctx)
+}
+
+// MarkAsRead 标记通知为已读
+func (a *App) MarkAsRead(notificationIDs []string, markAll bool) (int64, error) {
+	return a.NotificationService.MarkAsRead(a.ctx, notificationIDs, markAll)
+}
+
+// DeleteNotification 删除通知
+func (a *App) DeleteNotification(notificationID string) error {
+	return a.NotificationService.DeleteNotification(a.ctx, notificationID)
 }

@@ -103,6 +103,8 @@ services:
       dockerfile: cmd/notification-service/Dockerfile
     container_name: qahub-notification-service
     restart: always
+    ports:
+      - "50054:50054"  # gRPC 端口（用于测试）
     environment:
       - GIN_MODE=release
     depends_on:

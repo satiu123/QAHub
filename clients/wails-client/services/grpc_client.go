@@ -10,9 +10,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 
-	// 动态导入 proto (通过 go.work 工作区)
-	// 注意：需要在项目根目录运行 wails dev
-
+	ntpb "qahub/api/proto/notification"
 	qapb "qahub/api/proto/qa"
 	searchpb "qahub/api/proto/search"
 	userpb "qahub/api/proto/user"
@@ -20,13 +18,15 @@ import (
 
 // GRPCClient 封装 gRPC 服务客户端
 type GRPCClient struct {
-	userConn   *grpc.ClientConn
-	qaConn     *grpc.ClientConn
-	searchConn *grpc.ClientConn
+	userConn         *grpc.ClientConn
+	qaConn           *grpc.ClientConn
+	searchConn       *grpc.ClientConn
+	notificationConn *grpc.ClientConn
 
-	UserClient   userpb.UserServiceClient
-	QAClient     qapb.QAServiceClient
-	SearchClient searchpb.SearchServiceClient
+	UserClient         userpb.UserServiceClient
+	QAClient           qapb.QAServiceClient
+	SearchClient       searchpb.SearchServiceClient
+	NotificationClient ntpb.NotificationServiceClient
 
 	// 存储当前用户的 token 和信息
 	token    string
@@ -35,7 +35,7 @@ type GRPCClient struct {
 }
 
 // NewGRPCClient 创建新的 gRPC 客户端连接
-func NewGRPCClient(userAddr, qaAddr, searchAddr string) (*GRPCClient, error) {
+func NewGRPCClient(userAddr, qaAddr, searchAddr, notificationAddr string) (*GRPCClient, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	}
@@ -61,19 +61,30 @@ func NewGRPCClient(userAddr, qaAddr, searchAddr string) (*GRPCClient, error) {
 		return nil, fmt.Errorf("failed to connect to search service: %w", err)
 	}
 
+	// 连接 Notification Service
+	notificationConn, err := grpc.NewClient(notificationAddr, opts...)
+	if err != nil {
+		userConn.Close()
+		qaConn.Close()
+		searchConn.Close()
+		return nil, fmt.Errorf("failed to connect to notification service: %w", err)
+	}
 	client := &GRPCClient{
-		userConn:     userConn,
-		qaConn:       qaConn,
-		searchConn:   searchConn,
-		UserClient:   userpb.NewUserServiceClient(userConn),
-		QAClient:     qapb.NewQAServiceClient(qaConn),
-		SearchClient: searchpb.NewSearchServiceClient(searchConn),
+		userConn:           userConn,
+		qaConn:             qaConn,
+		searchConn:         searchConn,
+		notificationConn:   notificationConn,
+		UserClient:         userpb.NewUserServiceClient(userConn),
+		QAClient:           qapb.NewQAServiceClient(qaConn),
+		SearchClient:       searchpb.NewSearchServiceClient(searchConn),
+		NotificationClient: ntpb.NewNotificationServiceClient(notificationConn),
 	}
 
 	log.Println("✅ gRPC clients connected successfully")
 	log.Printf("  - User Service: %s", userAddr)
 	log.Printf("  - QA Service: %s", qaAddr)
 	log.Printf("  - Search Service: %s", searchAddr)
+	log.Printf("  - Notification Service: %s", notificationAddr)
 	return client, nil
 }
 
@@ -87,6 +98,9 @@ func (c *GRPCClient) Close() error {
 	}
 	if c.searchConn != nil {
 		c.searchConn.Close()
+	}
+	if c.notificationConn != nil {
+		c.notificationConn.Close()
 	}
 	return nil
 }

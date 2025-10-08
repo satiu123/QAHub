@@ -23,9 +23,11 @@ type NotificationService interface {
 	StartConsumer(ctx context.Context)
 	Close() error
 	ServeWs(c *gin.Context, userID int64)
-	GetNotifications(ctx context.Context, userID int64, limit, offset int) ([]*model.Notification, error)
-	MarkNotificationsAsRead(ctx context.Context, userID int64, notificationIDs []string) (int64, error)
+	GetNotifications(ctx context.Context, userID int64, limit int32, offset int64) ([]*model.Notification, error)
+	MarkNotificationsAsRead(ctx context.Context, userID int64, notificationIDs []string, markAll bool) (int64, error)
 	DeleteNotification(ctx context.Context, userID int64, notificationID string) error
+	DeleteNotifications(ctx context.Context, userID int64, notificationIDs []string) (int64, error)
+	GetUnreadCount(ctx context.Context, userID int64) (int64, error)
 }
 
 // notificationService 是 NotificationService 接口的具体实现
@@ -53,15 +55,15 @@ func (s *notificationService) ServeWs(c *gin.Context, userID int64) {
 }
 
 // GetNotifications 获取用户的通知列表
-func (s *notificationService) GetNotifications(ctx context.Context, userID int64, limit, offset int) ([]*model.Notification, error) {
+func (s *notificationService) GetNotifications(ctx context.Context, userID int64, limit int32, offset int64) ([]*model.Notification, error) {
 	return s.store.GetByRecipientID(ctx, userID, limit, offset)
 }
 
 // MarkNotificationsAsRead 标记通知为已读
 // 如果 notificationIDs 为空，则将该用户所有未读通知标记为已读
-func (s *notificationService) MarkNotificationsAsRead(ctx context.Context, userID int64, notificationIDs []string) (int64, error) {
-	// 如果传入的id列表为空，则获取所有未读通知并标记
-	if len(notificationIDs) == 0 {
+func (s *notificationService) MarkNotificationsAsRead(ctx context.Context, userID int64, notificationIDs []string, markAll bool) (int64, error) {
+	// 如果传入的id列表为空且markAll标记为true，则获取所有未读通知并标记
+	if len(notificationIDs) == 0 && markAll {
 		// 为了简化，这里我们获取所有通知（不分页），在实际应用中可能需要考虑性能
 		notifications, err := s.store.GetByRecipientID(ctx, userID, 1000, 0) // 假设最多处理1000条
 		if err != nil {
@@ -84,6 +86,16 @@ func (s *notificationService) MarkNotificationsAsRead(ctx context.Context, userI
 // DeleteNotification 删除一条通知
 func (s *notificationService) DeleteNotification(ctx context.Context, userID int64, notificationID string) error {
 	return s.store.Delete(ctx, notificationID, userID)
+}
+
+// DeleteNotifications 删除多条通知
+func (s *notificationService) DeleteNotifications(ctx context.Context, userID int64, notificationIDs []string) (int64, error) {
+	return s.store.DeleteMany(ctx, notificationIDs, userID)
+}
+
+// GetUnreadCount 获取用户的未读通知数量
+func (s *notificationService) GetUnreadCount(ctx context.Context, userID int64) (int64, error) {
+	return s.store.CountUnread(ctx, userID)
 }
 
 // getEventHandlers 返回此服务处理的事件及其对应的处理函数

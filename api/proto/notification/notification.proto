@@ -5,7 +5,6 @@ package notification;
 option go_package = "./;notification";
 
 import "google/api/annotations.proto";
-import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 
 // NotificationService 定义通知中心的核心能力，包括列表查询、
@@ -29,7 +28,7 @@ service NotificationService {
 
   // DeleteNotification 删除单条通知。
   rpc DeleteNotification(DeleteNotificationRequest)
-      returns (google.protobuf.Empty) {
+      returns (DeleteNotificationResponse) {
     option (google.api.http) = {
       delete : "/api/v1/notifications/{notification_id}"
     };
@@ -65,11 +64,11 @@ message Notification {
   google.protobuf.Timestamp created_at = 9; // 创建时间
 }
 
-// GetNotificationsRequest 支持基于 limit/offset 的分页，可选过滤未读。
+// GetNotificationsRequest 采用 page + page_size 的方式进行分页。
 message GetNotificationsRequest {
-  int64 user_id = 1;    // 服务间调用时可以直接传递；HTTP 网关可从认证信息填充
-  int32 limit = 2;      // 每页数量，默认由服务端兜底
-  int32 offset = 3;     // 偏移量
+  int64 user_id = 1;   // 服务间调用时可以直接传递；HTTP 网关可从认证信息填充
+  int32 page_size = 2; // 每页数量，服务端可以设置默认值和最大值限制。
+  int32 page = 3;      // 页码，例如从 1 开始。服务端应处理 0 或负数等边缘情况。
   bool unread_only = 4; // 是否只返回未读通知
 }
 
@@ -92,6 +91,8 @@ message DeleteNotificationRequest {
   int64 user_id = 1;
   string notification_id = 2;
 }
+
+message DeleteNotificationResponse { string notification_id = 1; }
 
 message GetUnreadCountRequest { int64 user_id = 1; }
 
