@@ -6,12 +6,99 @@ option go_package = "./;qa";
 
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/field_mask.proto";
+import "google/api/annotations.proto";
 
-// ==================================
-// 核心数据结构 (Core Data Structures)
-// ==================================
+// QAService 定义了问答系统的相关接口
+service QAService {
+  // --- 问题 (Question) ---
+  rpc CreateQuestion(CreateQuestionRequest) returns (QuestionResponse) {
+    option (google.api.http) = {
+      post : "/api/v1/questions"
+      body : "*"
+    };
+  };
+  rpc GetQuestion(GetQuestionRequest) returns (QuestionResponse) {
+    option (google.api.http) = {
+      get : "/api/v1/questions/{id}"
+    };
+  };
+  rpc ListQuestions(ListQuestionsRequest) returns (ListQuestionsResponse) {
+    option (google.api.http) = {
+      get : "/api/v1/questions"
+    };
+  };
+  rpc UpdateQuestion(UpdateQuestionRequest) returns (QuestionResponse) {
+    option (google.api.http) = {
+      put : "/api/v1/questions/{id}"
+      body : "*"
+    };
+  };
+  rpc DeleteQuestion(DeleteQuestionRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete : "/api/v1/questions/{id}"
+    };
+  };
 
-// 问题
+  // --- 回答 (Answer) ---
+  rpc CreateAnswer(CreateAnswerRequest) returns (AnswerResponse) {
+    option (google.api.http) = {
+      post : "/api/v1/questions/{question_id}/answers"
+      body : "*"
+    };
+  };
+  rpc UpdateAnswer(UpdateAnswerRequest) returns (AnswerResponse) {
+    option (google.api.http) = {
+      put : "/api/v1/answers/{id}"
+      body : "*"
+    };
+  };
+  rpc DeleteAnswer(DeleteAnswerRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete : "/api/v1/answers/{id}"
+    };
+  };
+  rpc ListAnswers(ListAnswersRequest) returns (ListAnswersResponse) {
+    option (google.api.http) = {
+      get : "/api/v1/questions/{question_id}/answers"
+    };
+  };
+
+  // --- 评论 (Comment) ---
+  rpc CreateComment(CreateCommentRequest) returns (CommentResponse) {
+    option (google.api.http) = {
+      post : "/api/v1/answers/{answer_id}/comments"
+      body : "*"
+    };
+  };
+  rpc UpdateComment(UpdateCommentRequest) returns (CommentResponse) {
+    option (google.api.http) = {
+      put : "/api/v1/comments/{id}"
+      body : "*"
+    };
+  };
+  rpc DeleteComment(DeleteCommentRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete : "/api/v1/comments/{id}"
+    };
+  };
+  rpc ListComments(ListCommentsRequest) returns (ListCommentsResponse) {
+    option (google.api.http) = {
+      get : "/api/v1/answers/{answer_id}/comments"
+    };
+  };
+  rpc UpvoteAnswer(UpvoteAnswerRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post : "/api/v1/answers/{answer_id}/upvote"
+    };
+  };
+  rpc DownvoteAnswer(DownvoteAnswerRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post : "/api/v1/answers/{answer_id}/downvote"
+    };
+  };
+}
+
 message Question {
   int64 id = 1;
   string title = 2;
@@ -21,17 +108,18 @@ message Question {
   google.protobuf.Timestamp updated_at = 6;
 }
 
-// 评论
-message Comment {
+// QuestionResponse 包含问题信息及额外的展示字段
+message QuestionResponse {
   int64 id = 1;
-  int64 answer_id = 2;
-  int64 user_id = 3;
-  string content = 4;
+  string title = 2;
+  string content = 3;
+  int64 user_id = 4;
   google.protobuf.Timestamp created_at = 5;
   google.protobuf.Timestamp updated_at = 6;
+  string author_name = 7; // 提问者的用户名
+  int64 answer_count = 8; // 回答数量
 }
 
-// 回答
 message Answer {
   int64 id = 1;
   int64 question_id = 2;
@@ -42,87 +130,77 @@ message Answer {
   google.protobuf.Timestamp updated_at = 7;
 }
 
-// ==================================
-// 服务定义 (Service Definition)
-// ==================================
-
-// 问答服务定义
-service QAService {
-  // --- 问题相关 (Question RPCs) ---
-  rpc CreateQuestion(CreateQuestionRequest) returns (Question);
-  rpc GetQuestion(GetQuestionRequest) returns (Question); // 返回单个问题
-  rpc ListQuestions(ListQuestionsRequest) returns (ListQuestionsResponse);
-  rpc UpdateQuestion(UpdateQuestionRequest) returns (Question);
-  rpc DeleteQuestion(DeleteQuestionRequest) returns (google.protobuf.Empty);
-
-  // --- 回答相关 (Answer RPCs) ---
-  rpc CreateAnswer(CreateAnswerRequest) returns (Answer);
-  rpc UpdateAnswer(UpdateAnswerRequest) returns (Answer);
-  rpc DeleteAnswer(DeleteAnswerRequest) returns (google.protobuf.Empty);
-  rpc ListAnswers(ListAnswersRequest) returns (ListAnswersResponse);
-
-  // --- 评论相关 (Comment RPCs) ---
-  rpc CreateComment(CreateCommentRequest) returns (Comment);
-  rpc UpdateComment(UpdateCommentRequest) returns (Comment);
-  rpc DeleteComment(DeleteCommentRequest) returns (google.protobuf.Empty);
-  rpc ListComments(ListCommentsRequest) returns (ListCommentsResponse);
+// AnswerResponse 包含回答信息及额外的展示字段
+message AnswerResponse {
+  int64 id = 1;
+  int64 question_id = 2;
+  string content = 3;
+  int64 user_id = 4;
+  int32 upvote_count = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+  string username = 8;         // 回答者的用户名
+  bool is_upvoted_by_user = 9; // 当前用户是否点赞了该答案
 }
 
-// ==================================
-// 请求/响应消息 (Request/Response Messages)
-// ==================================
+message Comment {
+  int64 id = 1;
+  int64 answer_id = 2;
+  int64 user_id = 3;
+  string content = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
 
-// --- 问题 (Question) ---
+// CommentResponse 包含评论信息及额外的展示字段
+message CommentResponse {
+  int64 id = 1;
+  int64 answer_id = 2;
+  int64 user_id = 3;
+  string content = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+  string username = 7; // 评论者的用户名
+}
+
 message CreateQuestionRequest {
   string title = 1;
   string content = 2;
-  int64 user_id =
-      3; // 注：在实际应用中，此ID应从gRPC元数据中的认证令牌（如JWT）解析得出，而非由客户端直接提供。
 }
 
-message GetQuestionRequest {
-  int64 id = 1; // 问题ID
-}
+message GetQuestionRequest { int64 id = 1; }
 
 message ListQuestionsRequest {
-  int32 page = 1;      // 页码
-  int32 page_size = 2; // 每页数量
+  int32 page = 1;
+  int32 page_size = 2;
 }
 
 message ListQuestionsResponse {
-  repeated Question questions = 1;
-  int32 total_count = 2;
+  repeated QuestionResponse questions = 1;
+  int64 total_count = 2;
 }
 
 message UpdateQuestionRequest {
-  int64 id = 1; // 要更新的问题ID
+  int64 id = 1;
   string title = 2;
   string content = 3;
-  int64 user_id = 4; // 用于权限验证
+  google.protobuf.FieldMask update_mask = 4;
 }
 
-message DeleteQuestionRequest {
-  int64 id = 1;      // 要删除的问题ID
-  int64 user_id = 2; // 用于权限验证
-}
+message DeleteQuestionRequest { int64 id = 1; }
 
-// --- 回答 (Answer) ---
 message CreateAnswerRequest {
-  int64 question_id = 1; // 回答所属的问题ID
+  int64 question_id = 1;
   string content = 2;
-  int64 user_id = 3; // 回答者ID，同样应从认证信息中获取
 }
 
 message UpdateAnswerRequest {
-  int64 id = 1; // 要更新的回答ID
+  int64 id = 1;
   string content = 2;
-  int64 user_id = 3; // 用于权限验证
+  google.protobuf.FieldMask update_mask = 3;
 }
 
-message DeleteAnswerRequest {
-  int64 id = 1;      // 要删除的回答ID
-  int64 user_id = 2; // 用于权限验证
-}
+message DeleteAnswerRequest { int64 id = 1; }
 
 message ListAnswersRequest {
   int64 question_id = 1;
@@ -131,27 +209,22 @@ message ListAnswersRequest {
 }
 
 message ListAnswersResponse {
-  repeated Answer answers = 1;
-  int32 total_count = 2;
+  repeated AnswerResponse answers = 1;
+  int64 total_count = 2;
 }
 
-// --- 评论 (Comment) ---
 message CreateCommentRequest {
-  int64 answer_id = 1; // 评论所属的回答ID
+  int64 answer_id = 1;
   string content = 2;
-  int64 user_id = 3; // 评论者ID，同样应从认证信息中获取
 }
 
 message UpdateCommentRequest {
-  int64 id = 1; // 要更新的评论ID
+  int64 id = 1;
   string content = 2;
-  int64 user_id = 3; // 用于权限验证
+  google.protobuf.FieldMask update_mask = 3;
 }
 
-message DeleteCommentRequest {
-  int64 id = 1;      // 要删除的评论ID
-  int64 user_id = 2; // 用于权限验证
-}
+message DeleteCommentRequest { int64 id = 1; }
 
 message ListCommentsRequest {
   int64 answer_id = 1;
@@ -160,6 +233,9 @@ message ListCommentsRequest {
 }
 
 message ListCommentsResponse {
-  repeated Comment comments = 1;
-  int32 total_count = 2;
+  repeated CommentResponse comments = 1;
+  int64 total_count = 2;
 }
+
+message UpvoteAnswerRequest { int64 answer_id = 1; }
+message DownvoteAnswerRequest { int64 answer_id = 1; }

@@ -15,8 +15,8 @@ type QAService interface {
 
 	CreateQuestion(ctx context.Context, title, content string, userID int64) (*model.Question, error)
 	GetQuestion(ctx context.Context, questionID int64) (*dto.QuestionResponse, error)
-	ListQuestions(ctx context.Context, page, pageSize int) ([]*dto.QuestionResponse, int64, error)
-	ListQuestionsByUserID(ctx context.Context, userID int64, page, pageSize int) ([]*dto.QuestionResponse, int64, error)
+	ListQuestions(ctx context.Context, page int64, pageSize int32) ([]*dto.QuestionResponse, int64, error)
+	ListQuestionsByUserID(ctx context.Context, userID int64, page int64, pageSize int32) ([]*dto.QuestionResponse, int64, error)
 	UpdateQuestion(ctx context.Context, questionID int64, title, content string, userID int64) (*model.Question, error)
 	DeleteQuestion(ctx context.Context, questionID, userID int64) error
 
@@ -24,7 +24,7 @@ type QAService interface {
 
 	CreateAnswer(ctx context.Context, questionID int64, content string, userID int64) (*model.Answer, error)
 	GetAnswer(ctx context.Context, answerID int64) (*model.Answer, error)
-	ListAnswers(ctx context.Context, questionID int64, page, pageSize int, userID int64) ([]*dto.AnswerResponse, int64, error)
+	ListAnswers(ctx context.Context, questionID int64, page int64, pageSize int32, userID int64) ([]*dto.AnswerResponse, int64, error)
 
 	UpvoteAnswer(ctx context.Context, answerID, userID int64) error
 	DownvoteAnswer(ctx context.Context, answerID, userID int64) error
@@ -37,7 +37,7 @@ type QAService interface {
 
 	CreateComment(ctx context.Context, answerID int64, content string, userID int64) (*model.Comment, error)
 	GetComment(ctx context.Context, commentID int64) (*model.Comment, error)
-	ListComments(ctx context.Context, answerID int64, page, pageSize int) ([]*dto.CommentResponse, int64, error)
+	ListComments(ctx context.Context, answerID int64, page int64, pageSize int32) ([]*dto.CommentResponse, int64, error)
 	UpdateComment(ctx context.Context, commentID int64, content string, userID int64) (*model.Comment, error)
 	DeleteComment(ctx context.Context, commentID, userID int64) error
 }

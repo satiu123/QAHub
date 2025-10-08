@@ -8,9 +8,6 @@ import (
 	"qahub/notification-service/internal/store"
 	"qahub/pkg/config"
 	"qahub/pkg/database"
-	"qahub/pkg/middleware"
-
-	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -18,7 +15,6 @@ func main() {
 	if err := config.Init("configs"); err != nil {
 		log.Fatalf("加载配置失败: %v", err)
 	}
-	cfg := config.Conf.Services.NotificationService
 
 	// 2.连接数据库
 	ctx, cancel := context.WithCancel(context.Background())
@@ -30,39 +26,23 @@ func main() {
 	}
 	defer client.Disconnect(ctx)
 
-	// 3.初始化store, hub, service
+	// 3.初始化store, streamHub, service
 	ntStore := store.NewMongoNotificationStore(client.Database(config.Conf.MongoDB.Database))
-	hub := service.NewHub()
-	go hub.Run()
-	ntService := service.NewNotificationService(ntStore, hub, config.Conf.Kafka)
+	streamHub := service.NewStreamHub()
+	go streamHub.Run()
+	ntService := service.NewNotificationService(ntStore, streamHub, config.Conf.Kafka)
 	defer ntService.Close()
 
 	// 4.启动Kafka消费者
 	go ntService.StartConsumer(ctx)
 
-	// 5. 初始化 gin handler 和 router
-	ntHandler := handler.NewHandler(ntService)
-	router := gin.Default()
+	//5. 初始化GrpcServer
+	ntServer := handler.NewNotificationGrpcServer(ntService)
 
-	// 6. 设置路由
-	apiGroup := router.Group("/api/v1")
-	apiGroup.Use(gin.Logger(), middleware.NginxAuthMiddleware(), middleware.CORSMiddleware()) // 使用 Nginx 传递的用户信息进行认证
-
-	// WebSocket 路由
-	apiGroup.GET("/ws", ntHandler.WsHandler)
-
-	// 通知管理路由
-	notificationGroup := apiGroup.Group("/notifications")
-	{
-		notificationGroup.GET("", ntHandler.GetNotifications)
-		notificationGroup.POST("/read", ntHandler.MarkAsRead) // 也可以用PUT
-		notificationGroup.DELETE("/:id", ntHandler.DeleteNotification)
-	}
-
-	// 7. 启动服务器
-	serveAddr := ":" + cfg.HttpPort
-	log.Printf("通知服务正在端口 %s 上运行", serveAddr)
-	if err := router.Run(serveAddr); err != nil {
-		log.Fatalf("启动服务器失败: %v", err)
+	// 启动 gRPC 服务器
+	gctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	if err := ntServer.Run(gctx, config.Conf); err != nil {
+		log.Fatalf("failed to run gRPC server: %v", err)
 	}
 }

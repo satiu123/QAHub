@@ -10,8 +10,10 @@ COPY cmd/user-service/go.mod cmd/user-service/go.sum ./cmd/user-service/
 COPY cmd/qa-service/go.mod cmd/qa-service/go.sum ./cmd/qa-service/
 COPY cmd/search-service/go.mod cmd/search-service/go.sum ./cmd/search-service/
 COPY cmd/notification-service/go.mod cmd/notification-service/go.sum ./cmd/notification-service/
+COPY cmd/gateway/go.mod cmd/gateway/go.sum ./cmd/gateway/
 COPY pkg/go.mod pkg/go.sum ./pkg/
 COPY api/go.mod api/go.sum ./api/
+COPY clients/wails-client/go.mod clients/wails-client/go.sum ./clients/wails-client/
 
 RUN --mount=type=cache,target=/go/pkg/mod \
     go work sync

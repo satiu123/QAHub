@@ -97,32 +97,46 @@ type Services struct {
 	QAService           QAService           `mapstructure:"qa_service"`
 	SearchService       SearchService       `mapstructure:"search_service"`
 	NotificationService NotificationService `mapstructure:"notification_service"`
+	Gateway             Gateway             `mapstructure:"gateway"`
 }
 
 // UserService 对应于 [services.user_service] 配置部分
 type UserService struct {
-	JWTSecret        string `mapstructure:"jwt_secret"`
-	TokenExpireHours int    `mapstructure:"token_expire_hours"`
-	GrpcPort         string `mapstructure:"grpc_port"`
-	HttpPort         string `mapstructure:"http_port"`
+	JWTSecret        string   `mapstructure:"jwt_secret"`
+	TokenExpireHours int      `mapstructure:"token_expire_hours"`
+	GrpcPort         string   `mapstructure:"grpc_port"`
+	HttpPort         string   `mapstructure:"http_port"`
+	PublicMethods    []string `mapstructure:"public_methods"`
 }
 
 // QAService 对应于 [services.qa_service] 配置部分
 type QAService struct {
-	GrpcPort string `mapstructure:"grpc_port"`
-	HttpPort string `mapstructure:"http_port"`
+	GrpcPort      string   `mapstructure:"grpc_port"`
+	HttpPort      string   `mapstructure:"http_port"`
+	PublicMethods []string `mapstructure:"public_methods"`
 }
 
 // SearchService 对应于 [services.search_service] 配置部分
 type SearchService struct {
-	GrpcPort string `mapstructure:"grpc_port"`
-	HttpPort string `mapstructure:"http_port"`
+	GrpcPort      string   `mapstructure:"grpc_port"`
+	HttpPort      string   `mapstructure:"http_port"`
+	PublicMethods []string `mapstructure:"public_methods"`
 }
 
 // NotificationService 对应于 [services.notification_service] 配置部分
 type NotificationService struct {
-	GrpcPort string `mapstructure:"grpc_port"`
-	HttpPort string `mapstructure:"http_port"`
+	GrpcPort      string   `mapstructure:"grpc_port"`
+	HttpPort      string   `mapstructure:"http_port"`
+	PublicMethods []string `mapstructure:"public_methods"`
+}
+
+// Gateway 对应于 [service.gateway] 配置部分
+type Gateway struct {
+	Port                        string `mapstructure:"port"`
+	UserServiceEndpoint         string `mapstructure:"user_service_endpoint"`
+	QaServiceEndpoint           string `mapstructure:"qa_service_endpoint"`
+	SearchServiceEndpoint       string `mapstructure:"search_service_endpoint"`
+	NotificationServiceEndpoint string `mapstructure:"notification_service_endpoint"`
 }
 
 // Init 函数用于初始化配置加载

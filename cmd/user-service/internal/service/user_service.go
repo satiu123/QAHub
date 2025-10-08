@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+	"slices"
+	"strings"
 	"time"
 
 	"qahub/pkg/auth"
@@ -14,6 +17,10 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 type UserService interface {
@@ -21,6 +28,7 @@ type UserService interface {
 	Login(ctx context.Context, username, password string) (string, error)
 	Logout(ctx context.Context, tokenString string, claims jwt.MapClaims) error
 	ValidateToken(ctx context.Context, tokenString string) (auth.Identity, error)
+	AuthInterceptor(publicMethods ...string) grpc.UnaryServerInterceptor
 	GetUserProfile(ctx context.Context, userID int64) (*dto.UserResponse, error)
 	UpdateUserProfile(ctx context.Context, user *model.User) error
 	DeleteUser(ctx context.Context, userID int64) error
@@ -138,15 +146,17 @@ func (s *userService) ValidateToken(ctx context.Context, tokenString string) (au
 
 func (s *userService) GetUserProfile(ctx context.Context, userID int64) (*dto.UserResponse, error) {
 	user, err := s.userStore.GetUserByID(ctx, userID)
+	log.Println("userService GetUserProfile user:", user)
 	if err != nil {
 		return nil, err
 	}
 	// 转换为DTO
 	response := &dto.UserResponse{
-		ID:       user.ID,
-		Username: user.Username,
-		Email:    user.Email,
-		Bio:      user.Bio,
+		ID:        user.ID,
+		Username:  user.Username,
+		Email:     user.Email,
+		Bio:       user.Bio,
+		CreatedAt: user.CreatedAt,
 	}
 
 	return response, nil
@@ -158,4 +168,43 @@ func (s *userService) UpdateUserProfile(ctx context.Context, user *model.User) e
 
 func (s *userService) DeleteUser(ctx context.Context, userID int64) error {
 	return s.userStore.DeleteUser(ctx, userID)
+}
+
+func (s *userService) AuthInterceptor(publicMethods ...string) grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+		log.Println("AuthInterceptor called for method:", info.FullMethod)
+		// 检查是否在白名单中
+		if slices.Contains(publicMethods, info.FullMethod) {
+			// 白名单路径，跳过认证
+			return handler(ctx, req)
+		}
+
+		md, ok := metadata.FromIncomingContext(ctx)
+		if !ok {
+			return nil, status.Errorf(codes.Unauthenticated, "缺少认证信息 (metadata)")
+		}
+
+		authHeaders := md.Get("authorization")
+		if len(authHeaders) == 0 {
+			return nil, status.Errorf(codes.Unauthenticated, "请求未包含授权标头")
+		}
+
+		authHeader := authHeaders[0]
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+		if tokenString == authHeader { // 如果没有 "Bearer " 前缀，TrimPrefix 不会改变字符串
+			return nil, status.Errorf(codes.Unauthenticated, "授权标头格式不正确，需要 'Bearer ' 前缀")
+		}
+
+		// 调用 user-service 的 ValidateToken 方法验证 token
+		validateResp, err := s.ValidateToken(ctx, tokenString)
+		if err != nil {
+			return nil, status.Errorf(codes.Unauthenticated, "token 验证失败: %v", err)
+		}
+
+		// 验证成功，将用户信息注入到 context 中
+		newCtx := auth.WithIdentity(ctx, validateResp)
+
+		// 继续处理请求
+		return handler(newCtx, req)
+	}
 }

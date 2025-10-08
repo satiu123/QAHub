@@ -5,6 +5,7 @@ import (
 	"errors"
 	"qahub/pkg/auth"
 	"qahub/pkg/messaging"
+	"qahub/pkg/pagination"
 	"qahub/qa-service/internal/dto"
 	"qahub/qa-service/internal/model"
 )
@@ -104,9 +105,9 @@ func (s *qaService) buildQuestionResponses(ctx context.Context, questions []*mod
 	return responses, nil
 }
 
-func (s *qaService) ListQuestions(ctx context.Context, page, pageSize int) ([]*dto.QuestionResponse, int64, error) {
-	offset := (page - 1) * pageSize
-	questions, err := s.store.ListQuestions(ctx, offset, pageSize)
+func (s *qaService) ListQuestions(ctx context.Context, page int64, pageSize int32) ([]*dto.QuestionResponse, int64, error) {
+	limit, offset := pagination.CalculateOffset(page, pageSize)
+	questions, err := s.store.ListQuestions(ctx, offset, limit)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -121,9 +122,9 @@ func (s *qaService) ListQuestions(ctx context.Context, page, pageSize int) ([]*d
 	return responses, count, nil
 }
 
-func (s *qaService) ListQuestionsByUserID(ctx context.Context, userID int64, page, pageSize int) ([]*dto.QuestionResponse, int64, error) {
-	offset := (page - 1) * pageSize
-	questions, err := s.store.ListQuestionsByUserID(ctx, userID, offset, pageSize)
+func (s *qaService) ListQuestionsByUserID(ctx context.Context, userID int64, page int64, pageSize int32) ([]*dto.QuestionResponse, int64, error) {
+	limit, offset := pagination.CalculateOffset(page, pageSize)
+	questions, err := s.store.ListQuestionsByUserID(ctx, userID, offset, limit)
 	if err != nil {
 		return nil, 0, err
 	}

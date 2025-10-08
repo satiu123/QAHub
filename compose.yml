@@ -1,16 +1,32 @@
 services:
-  # API Gateway
-  nginx:
-    build:
-      context: ./nginx
-    container_name: qahub-nginx-gateway
-    restart: always
-    ports:
-      - "8080:80" # 外部通过8080访问，Nginx容器内部监听80
-    depends_on:
-      - user-service
-      - qa-service
-      - search-service
+  # gRPC Gateway (HTTP to gRPC)
+  # gateway:
+  #   build:
+  #     context: .
+  #     dockerfile: cmd/gateway/Dockerfile
+  #   container_name: qahub-grpc-gateway
+  #   restart: always
+  #   ports:
+  #     - "8080:8080"
+  #   command: ["/app/gateway"]
+  #   depends_on:
+  #     - user-service
+  #     - qa-service
+  #     - search-service
+
+  # API Gateway (Nginx)
+  # nginx:
+  #   build:
+  #     context: ./nginx
+  #   container_name: qahub-nginx-gateway
+  #   restart: always
+  #   ports:
+  #     - "80:80" # Nginx 监听 80 端口
+  #   depends_on:
+  #     - gateway
+  #     - user-service
+  #     - qa-service
+  #     - search-service
 
   # 数据库迁移服务 (新添加)
   db-migrator:
@@ -36,6 +52,8 @@ services:
       dockerfile: cmd/user-service/Dockerfile
     container_name: qahub-user-service
     restart: always
+    ports:
+      - "50051:50051"  # gRPC 端口（用于测试）
     environment:
       - GIN_MODE=release
     depends_on:
@@ -51,6 +69,8 @@ services:
       dockerfile: cmd/qa-service/Dockerfile
     container_name: qahub-qa-service
     restart: always
+    ports:
+      - "50052:50052"  # gRPC 端口（用于测试）
     environment:
       - GIN_MODE=release
     depends_on:
@@ -67,6 +87,8 @@ services:
       dockerfile: cmd/search-service/Dockerfile
     container_name: qahub-search-service
     restart: always
+    ports:
+      - "50053:50053"  # gRPC 端口（用于测试）
     environment:
       - GIN_MODE=release
     depends_on:
@@ -81,6 +103,8 @@ services:
       dockerfile: cmd/notification-service/Dockerfile
     container_name: qahub-notification-service
     restart: always
+    ports:
+      - "50054:50054"  # gRPC 端口（用于测试）
     environment:
       - GIN_MODE=release
     depends_on:

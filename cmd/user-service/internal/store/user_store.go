@@ -50,7 +50,7 @@ func (s *mySQLUserStore) CreateUser(ctx context.Context, user *model.User) (int6
 func (s *mySQLUserStore) GetUserByID(ctx context.Context, id int64) (*model.User, error) {
 	var user model.User
 
-	query := "SELECT id, username, email,bio, password FROM users WHERE id = ?"
+	query := "SELECT id, username, email, bio, password, created_at, updated_at FROM users WHERE id = ?"
 	err := s.db.GetContext(ctx, &user, query, id)
 	if err != nil {
 		return nil, err
@@ -61,7 +61,7 @@ func (s *mySQLUserStore) GetUserByID(ctx context.Context, id int64) (*model.User
 func (s *mySQLUserStore) GetUserByUsername(ctx context.Context, username string) (*model.User, error) {
 	var user model.User
 
-	query := "SELECT id, username, email,bio, password FROM users WHERE username = ?"
+	query := "SELECT id, username, email, bio, password, created_at, updated_at FROM users WHERE username = ?"
 	err := s.db.GetContext(ctx, &user, query, username)
 	if err != nil {
 		return nil, err

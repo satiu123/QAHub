@@ -27,8 +27,12 @@ protoc --go_out=. --go_opt=paths=source_relative \
 #### 1. 生成用户服务 (User Service) 代码
 
 ```bash
-protoc --go_out=. --go_opt=paths=source_relative \
+protoc -I . \
+       -I third_party/googleapis \
+       --go_out=. --go_opt=paths=source_relative \
        --go-grpc_out=. --go-grpc_opt=paths=source_relative \
+       --grpc-gateway_out=. --grpc-gateway_opt=paths=source_relative \
+       --grpc-gateway_opt=generate_unbound_methods=true \
        api/proto/user/user.proto
 ```
 
@@ -37,7 +41,35 @@ protoc --go_out=. --go_opt=paths=source_relative \
 当 `api/proto/qa/qa.proto` 文件创建后，使用以下命令生成代码：
 
 ```bash
-protoc --go_out=. --go_opt=paths=source_relative \
+protoc -I . \
+       -I third_party/googleapis \
+       --go_out=. --go_opt=paths=source_relative \
        --go-grpc_out=. --go-grpc_opt=paths=source_relative \
+       --grpc-gateway_out=. --grpc-gateway_opt=paths=source_relative \
+       --grpc-gateway_opt=generate_unbound_methods=true \
        api/proto/qa/qa.proto
+```
+
+### 3. 生成搜索服务 (Search Service) 代码
+
+```bash
+protoc -I . \
+       -I third_party/googleapis \
+       --go_out=. --go_opt=paths=source_relative \
+       --go-grpc_out=. --go-grpc_opt=paths=source_relative \
+       --grpc-gateway_out=. --grpc-gateway_opt=paths=source_relative \
+       --grpc-gateway_opt=generate_unbound_methods=true \
+       api/proto/search/search.proto
+```
+
+### 4. 生成通知服务 (Notification Service) 代码
+
+```bash
+protoc -I . \
+       -I third_party/googleapis \
+       --go_out=. --go_opt=paths=source_relative \
+       --go-grpc_out=. --go-grpc_opt=paths=source_relative \
+       --grpc-gateway_out=. --grpc-gateway_opt=paths=source_relative \
+       --grpc-gateway_opt=generate_unbound_methods=true \
+       api/proto/notification/notification.proto
 ```

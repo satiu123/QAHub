@@ -17,10 +17,12 @@ const (
 
 type NotificationStore interface {
 	Create(ctx context.Context, notification *model.Notification) error
-	GetByRecipientID(ctx context.Context, userID int64, limit, offset int) ([]*model.Notification, error)
+	GetByRecipientID(ctx context.Context, userID int64, limit int32, offset int64) ([]*model.Notification, error)
 	MarkAsRead(ctx context.Context, notificationID string, userID int64) error
 	MarkManyAsRead(ctx context.Context, notificationIDs []string, userID int64) (int64, error)
 	Delete(ctx context.Context, notificationID string, userID int64) error
+	DeleteMany(ctx context.Context, notificationIDs []string, userID int64) (int64, error)
+	CountUnread(ctx context.Context, userID int64) (int64, error)
 }
 
 type MongoNotificationStore struct {
@@ -39,13 +41,13 @@ func (m *MongoNotificationStore) Create(ctx context.Context, notification *model
 }
 
 // GetByRecipientID 分页查询某个用户的通知列表，按时间倒序排列
-func (m *MongoNotificationStore) GetByRecipientID(ctx context.Context, userID int64, limit, offset int) ([]*model.Notification, error) {
+func (m *MongoNotificationStore) GetByRecipientID(ctx context.Context, userID int64, limit int32, offset int64) ([]*model.Notification, error) {
 	var notifications []*model.Notification
 
 	opts := options.Find()
 	opts.SetSort(bson.D{{Key: "created_at", Value: -1}}) // 按创建时间降序
 	opts.SetLimit(int64(limit))
-	opts.SetSkip(int64(offset))
+	opts.SetSkip(offset)
 
 	filter := bson.M{"recipient_id": userID}
 
@@ -138,4 +140,41 @@ func (m *MongoNotificationStore) Delete(ctx context.Context, notificationID stri
 	}
 
 	return nil
+}
+
+func (m *MongoNotificationStore) DeleteMany(ctx context.Context, notificationIDs []string, userID int64) (int64, error) {
+	objIDs := make([]primitive.ObjectID, len(notificationIDs))
+	for i, idStr := range notificationIDs {
+		objID, err := primitive.ObjectIDFromHex(idStr)
+		if err != nil {
+			return 0, errors.New("invalid notification id format: " + idStr)
+		}
+		objIDs[i] = objID
+	}
+
+	filter := bson.M{
+		"_id":          bson.M{"$in": objIDs},
+		"recipient_id": userID,
+	}
+
+	result, err := m.db.Collection(notificationCollection).DeleteMany(ctx, filter)
+	if err != nil {
+		return 0, err
+	}
+
+	return result.DeletedCount, nil
+}
+
+func (m *MongoNotificationStore) CountUnread(ctx context.Context, userID int64) (int64, error) {
+	filter := bson.M{
+		"recipient_id": userID,
+		"is_read":      false,
+	}
+
+	count, err := m.db.Collection(notificationCollection).CountDocuments(ctx, filter)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }

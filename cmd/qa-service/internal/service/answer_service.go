@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"qahub/pkg/auth"
 	"qahub/pkg/messaging"
+	"qahub/pkg/pagination"
 	"qahub/qa-service/internal/dto"
 	"qahub/qa-service/internal/model"
 	"qahub/qa-service/internal/store"
@@ -63,9 +64,9 @@ func (s *qaService) GetAnswer(ctx context.Context, answerID int64) (*model.Answe
 	return s.store.GetAnswerByID(ctx, answerID)
 }
 
-func (s *qaService) ListAnswers(ctx context.Context, questionID int64, page, pageSize int, userID int64) ([]*dto.AnswerResponse, int64, error) {
-	offset := (page - 1) * pageSize
-	answers, err := s.store.ListAnswersByQuestionID(ctx, questionID, offset, pageSize)
+func (s *qaService) ListAnswers(ctx context.Context, questionID int64, page int64, pageSize int32, userID int64) ([]*dto.AnswerResponse, int64, error) {
+	limit, offset := pagination.CalculateOffset(page, pageSize)
+	answers, err := s.store.ListAnswersByQuestionID(ctx, questionID, offset, limit)
 	if err != nil {
 		return nil, 0, err
 	}

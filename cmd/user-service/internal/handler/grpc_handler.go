@@ -2,15 +2,22 @@ package handler
 
 import (
 	"context"
+	"log"
+	"net"
 
 	pb "qahub/api/proto/user"
 	"qahub/pkg/auth"
+	"qahub/pkg/config"
 	"qahub/user-service/internal/model"
 	"qahub/user-service/internal/service"
 
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // UserGrpcServer 实现了 user_grpc.pb.go 中定义的 UserServiceServer 接口
@@ -50,6 +57,41 @@ func (s *UserGrpcServer) Login(ctx context.Context, req *pb.LoginRequest) (*pb.L
 	return &pb.LoginResponse{Token: token}, nil
 }
 
+func (s *UserGrpcServer) Logout(ctx context.Context, req *emptypb.Empty) (*emptypb.Empty, error) {
+	// 从 context 中获取认证用户ID
+	identity, ok := auth.FromContext(ctx)
+	if !ok || identity.UserID == 0 {
+		return nil, status.Errorf(codes.Internal, "无法从context获取用户信息")
+	}
+
+	err := s.userService.Logout(ctx, identity.Token, identity.Claims)
+	if err != nil {
+		return nil, err
+	}
+	return &emptypb.Empty{}, nil
+}
+
+func (s *UserGrpcServer) ValidateToken(ctx context.Context, req *pb.ValidateTokenRequest) (*pb.ValidateTokenResponse, error) {
+	identity, err := s.userService.ValidateToken(ctx, req.JwtToken)
+	if err != nil {
+		return &pb.ValidateTokenResponse{}, nil
+	}
+
+	// 将 jwt.MapClaims 转换为 map[string]string
+	claimsMap := make(map[string]*structpb.Value)
+	if identity.Claims != nil {
+		for key, value := range identity.Claims {
+			claimsMap[key], _ = structpb.NewValue(value)
+		}
+	}
+
+	return &pb.ValidateTokenResponse{
+		UserId:   identity.UserID,
+		Username: identity.Username,
+		Claims:   claimsMap,
+	}, nil
+}
+
 func (s *UserGrpcServer) GetUserProfile(ctx context.Context, req *pb.GetUserProfileRequest) (*pb.GetUserProfileResponse, error) {
 	userResponse, err := s.userService.GetUserProfile(ctx, req.UserId)
 	if err != nil {
@@ -58,10 +100,11 @@ func (s *UserGrpcServer) GetUserProfile(ctx context.Context, req *pb.GetUserProf
 
 	return &pb.GetUserProfileResponse{
 		User: &pb.User{
-			Id:       userResponse.ID,
-			Username: userResponse.Username,
-			Email:    userResponse.Email,
-			Bio:      userResponse.Bio,
+			Id:        userResponse.ID,
+			Username:  userResponse.Username,
+			Email:     userResponse.Email,
+			Bio:       userResponse.Bio,
+			CreatedAt: timestamppb.New(userResponse.CreatedAt),
 		},
 	}, nil
 }
@@ -111,4 +154,33 @@ func (s *UserGrpcServer) DeleteUser(ctx context.Context, req *pb.DeleteUserReque
 	}
 
 	return &emptypb.Empty{}, nil
+}
+
+func (s *UserGrpcServer) Run(ctx context.Context, config config.UserService) error {
+	serverAddr := ":" + config.GrpcPort
+	lis, err := net.Listen("tcp", serverAddr)
+	if err != nil {
+		log.Fatalln("failed to listen:", err)
+	}
+	server := grpc.NewServer(
+		grpc.UnaryInterceptor(s.userService.AuthInterceptor(config.PublicMethods...)),
+	)
+	log.Println("Public gRPC methods:", config.PublicMethods)
+	pb.RegisterUserServiceServer(server, s)
+
+	// 注册 reflection 服务，使 grpcurl 等工具可以动态发现服务
+	reflection.Register(server)
+
+	log.Printf("gRPC server listening at %v", lis.Addr())
+	go func() {
+		if err := server.Serve(lis); err != nil {
+			log.Fatalf("failed to serve: %v", err)
+		}
+	}()
+
+	<-ctx.Done()
+	log.Println("Shutting down gRPC server...")
+	server.GracefulStop()
+	log.Println("gRPC server stopped.")
+	return nil
 }

@@ -9,10 +9,7 @@ import (
 	"qahub/search-service/internal/service"
 
 	"qahub/pkg/config"
-	"qahub/pkg/middleware"
 	"qahub/search-service/internal/store"
-
-	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -24,46 +21,22 @@ func main() {
 		log.Fatalf("初始化配置失败: %v", err)
 	}
 
-	// 2. 初始化 Elasticsearch Store
-	esStore, err := store.New(config.Conf.Elasticsearch)
+	// 2. 初始化 Elasticsearch Store，传入 QA Service 地址
+	qaServiceAddr := config.Conf.Services.Gateway.QaServiceEndpoint
+	esStore, err := store.New(config.Conf.Elasticsearch, qaServiceAddr)
 	if err != nil {
 		log.Fatalf("初始化 Elasticsearch store 失败: %v", err)
 	}
+	defer esStore.Close()
 
 	// 3. 初始化 Service，并启动 Kafka 消费者
 	searchService := service.New(esStore, config.Conf.Kafka)
 	go searchService.StartConsumer(context.Background())
 
-	// 4. 初始化 Handler
-	searchHandler := handler.New(searchService)
+	// 4.初始化 Grpc
+	grpcServer := handler.NewSearchServer(searchService)
 
-	r := gin.Default()
-
-	// 添加CORS中间件
-	r.Use(middleware.CORSMiddleware())
-
-	// 从配置中读取服务地址和端口
-	port := config.Conf.Services.SearchService.HttpPort
-	if port == "" {
-		port = "8083" // 如果配置为空，提供一个默认值
-	}
-
-	// 健康检查
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"status": "UP",
-		})
-	})
-
-	// 注册搜索 API 路由
-	apiV1 := r.Group("/api/v1")
-	// apiV1.Use(middleware.NginxAuthMiddleware())
-	{
-		apiV1.GET("/search", searchHandler.Search)
-	}
-
-	fmt.Printf("Search Service is running on port %s\n", port)
-	if err := r.Run(":" + port); err != nil {
-		log.Fatalf("Failed to run Search Service: %v", err)
+	if err := grpcServer.Run(context.Background(), config.Conf); err != nil {
+		log.Fatalf("启动 gRPC 服务器失败: %v", err)
 	}
 }
