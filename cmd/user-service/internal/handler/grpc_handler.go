@@ -24,6 +24,7 @@ import (
 type UserGrpcServer struct {
 	pb.UnimplementedUserServiceServer // 必须嵌入，以实现向前兼容
 	userService                       service.UserService
+	grpcServer                        *grpc.Server
 }
 
 // NewUserGrpcServer 创建一个新的 gRPC 服务端处理器
@@ -162,25 +163,29 @@ func (s *UserGrpcServer) Run(ctx context.Context, config config.UserService) err
 	if err != nil {
 		log.Fatalln("failed to listen:", err)
 	}
-	server := grpc.NewServer(
+	s.grpcServer = grpc.NewServer(
 		grpc.UnaryInterceptor(s.userService.AuthInterceptor(config.PublicMethods...)),
 	)
 	log.Println("Public gRPC methods:", config.PublicMethods)
-	pb.RegisterUserServiceServer(server, s)
+	pb.RegisterUserServiceServer(s.grpcServer, s)
 
 	// 注册 reflection 服务，使 grpcurl 等工具可以动态发现服务
-	reflection.Register(server)
+	reflection.Register(s.grpcServer)
 
 	log.Printf("gRPC server listening at %v", lis.Addr())
 	go func() {
-		if err := server.Serve(lis); err != nil {
+		if err := s.grpcServer.Serve(lis); err != nil {
 			log.Fatalf("failed to serve: %v", err)
 		}
 	}()
-
-	<-ctx.Done()
-	log.Println("Shutting down gRPC server...")
-	server.GracefulStop()
-	log.Println("gRPC server stopped.")
 	return nil
+}
+
+// Stop 方法负责优雅关闭
+func (s *UserGrpcServer) Stop() {
+	if s.grpcServer != nil {
+		log.Println("正在优雅停止 gRPC 服务...")
+		s.grpcServer.GracefulStop()
+		log.Println("gRPC 服务已停止.")
+	}
 }

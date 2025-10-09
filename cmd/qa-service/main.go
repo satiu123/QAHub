@@ -4,11 +4,13 @@ import (
 	"context"
 	"log"
 	"os"
+	"os/signal"
 	"qahub/pkg/config"
 	"qahub/pkg/database"
 	"qahub/qa-service/internal/handler"
 	"qahub/qa-service/internal/service"
 	"qahub/qa-service/internal/store"
+	"syscall"
 )
 
 func main() {
@@ -26,12 +28,18 @@ func main() {
 	// 3. 依赖注入：初始化 store, service, handler
 	qaStore := store.NewQAStore(db)
 	qaService := service.NewQAService(qaStore, config.Conf.Kafka)
-	qaGrpcHandler := handler.NewQAGrpcServer(qaService)
 
 	// 启动 gRPC 服务器
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	if err := qaGrpcHandler.Run(ctx, config.Conf); err != nil {
-		log.Fatalf("failed to run gRPC server: %v", err)
+	grpcServer := handler.NewQAGrpcServer(qaService)
+
+	stopCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+	if err := grpcServer.Run(stopCtx, config.Conf); err != nil {
+		log.Fatalf("Failed to run gRPC server: %v", err)
 	}
+
+	<-stopCtx.Done()
+
+	grpcServer.Stop()
+	log.Println("QA service shut down gracefully")
 }

@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	"log"
+	"os/signal"
 	"qahub/notification-service/internal/handler"
 	"qahub/notification-service/internal/service"
 	"qahub/notification-service/internal/store"
 	"qahub/pkg/config"
 	"qahub/pkg/database"
+	"syscall"
 )
 
 func main() {
@@ -36,13 +38,17 @@ func main() {
 	// 4.启动Kafka消费者
 	go ntService.StartConsumer(ctx)
 
-	//5. 初始化GrpcServer
-	ntServer := handler.NewNotificationGrpcServer(ntService)
-
 	// 启动 gRPC 服务器
-	gctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	if err := ntServer.Run(gctx, config.Conf); err != nil {
-		log.Fatalf("failed to run gRPC server: %v", err)
+	grpcServer := handler.NewNotificationGrpcServer(ntService)
+
+	stopCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+	if err := grpcServer.Run(stopCtx, config.Conf); err != nil {
+		log.Fatalf("Failed to run gRPC server: %v", err)
 	}
+
+	<-stopCtx.Done()
+
+	grpcServer.Stop()
+	log.Println("Notification service shut down gracefully")
 }

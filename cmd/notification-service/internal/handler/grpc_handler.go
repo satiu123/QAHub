@@ -19,6 +19,7 @@ import (
 type NotificationGrpcServer struct {
 	pb.UnimplementedNotificationServiceServer
 	notificationService service.NotificationService
+	grpcServer          *grpc.Server
 }
 
 func NewNotificationGrpcServer(notificationService service.NotificationService) *NotificationGrpcServer {
@@ -124,24 +125,29 @@ func (s *NotificationGrpcServer) Run(ctx context.Context, config config.Config) 
 		log.Fatalf("无法连接到 user-service: %v", err)
 	}
 	// 创建 gRPC 服务器实例，注册服务，并启动监听
-	server := grpc.NewServer(
+	s.grpcServer = grpc.NewServer(
 		grpc.UnaryInterceptor(middleware.GrpcAuthInterceptor(userClient, config.Services.QAService.PublicMethods...)),
 	)
-	pb.RegisterNotificationServiceServer(server, s)
+	pb.RegisterNotificationServiceServer(s.grpcServer, s)
 
 	// 注册 reflection 服务，使 grpcurl 等工具可以动态发现服务
-	reflection.Register(server)
+	reflection.Register(s.grpcServer)
 
 	log.Printf("gRPC 服务正在监听: %v", lis.Addr())
 	go func() {
-		if err := server.Serve(lis); err != nil {
+		if err := s.grpcServer.Serve(lis); err != nil {
 			log.Fatalf("启动 gRPC 服务失败: %v", err)
 		}
 	}()
 
-	<-ctx.Done()
-	log.Println("正在关闭服务...")
-	server.GracefulStop()
-	log.Println("服务已关闭")
 	return nil
+}
+
+// Stop 方法负责优雅关闭
+func (s *NotificationGrpcServer) Stop() {
+	if s.grpcServer != nil {
+		log.Println("正在优雅停止 gRPC 服务...")
+		s.grpcServer.GracefulStop()
+		log.Println("gRPC 服务已停止.")
+	}
 }

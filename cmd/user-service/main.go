@@ -3,12 +3,14 @@ package main
 import (
 	"context"
 	"log"
+	"os/signal"
 	"qahub/pkg/config"
 	"qahub/pkg/database"
 	"qahub/pkg/redis"
 	"qahub/user-service/internal/handler"
 	"qahub/user-service/internal/service"
 	"qahub/user-service/internal/store"
+	"syscall"
 )
 
 func main() {
@@ -34,9 +36,14 @@ func main() {
 	userGrpcHandler := handler.NewUserGrpcServer(userService)
 
 	// 4. 启动 gRPC 服务器
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	if err := userGrpcHandler.Run(ctx, config.Conf.Services.UserService); err != nil {
+	stopCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+	if err := userGrpcHandler.Run(stopCtx, config.Conf.Services.UserService); err != nil {
 		log.Fatalf("Failed to run gRPC server: %v", err)
 	}
+
+	<-stopCtx.Done()
+
+	userGrpcHandler.Stop()
+	log.Println("User service shut down gracefully")
 }

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os/signal"
+	"syscall"
 
 	"qahub/search-service/internal/handler"
 	"qahub/search-service/internal/service"
@@ -36,7 +38,14 @@ func main() {
 	// 4.初始化 Grpc
 	grpcServer := handler.NewSearchServer(searchService)
 
-	if err := grpcServer.Run(context.Background(), config.Conf); err != nil {
-		log.Fatalf("启动 gRPC 服务器失败: %v", err)
+	stopCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+	if err := grpcServer.Run(stopCtx, config.Conf); err != nil {
+		log.Fatalf("Failed to run gRPC server: %v", err)
 	}
+
+	<-stopCtx.Done()
+
+	grpcServer.Stop()
+	log.Println("Search service shut down gracefully")
 }
