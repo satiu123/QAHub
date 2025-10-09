@@ -150,7 +150,7 @@ services:
 
   # Kafka 服务 
   kafka:
-    image: apache/kafka:latest # 建议：固定版本号，避免 latest 带来的不确定性
+    image: apache/kafka:4.1.0
     container_name: qahub-kafka
     restart: always
     ports:

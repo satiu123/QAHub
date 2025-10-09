@@ -41,6 +41,7 @@ WORKDIR /app
 COPY --from=builder /workspace/bin/user-service /app/user-service
 COPY --from=builder /workspace/configs/config.docker.yaml /app/configs/config.yaml
 
-EXPOSE 8081
+# 暴露 gRPC 端口
+EXPOSE 50051
 
 ENTRYPOINT ["/app/user-service"]

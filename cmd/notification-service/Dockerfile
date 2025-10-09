@@ -41,6 +41,7 @@ WORKDIR /app
 COPY --from=builder /workspace/bin/notification-service /app/notification-service
 COPY --from=builder /workspace/configs/config.docker.yaml /app/configs/config.yaml
 
-EXPOSE 8084
+# 暴露 gRPC 端口
+EXPOSE 50054
 
 ENTRYPOINT ["/app/notification-service"]

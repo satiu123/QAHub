@@ -41,6 +41,7 @@ WORKDIR /app
 COPY --from=builder /workspace/bin/qa-service /app/qa-service
 COPY --from=builder /workspace/configs/config.docker.yaml /app/configs/config.yaml
 
-EXPOSE 8082
+# 暴露 gRPC 端口
+EXPOSE 50052
 
 ENTRYPOINT ["/app/qa-service"]
