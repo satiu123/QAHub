@@ -13,8 +13,8 @@ import (
 
 // TokenBlacklister 定义了 JWT 黑名单所需的方法
 type TokenBlacklister interface {
-	AddToBlacklist(token string, expiration time.Duration) error
-	IsBlacklisted(token string) (bool, error)
+	AddToBlacklist(ctx context.Context, token string, expiration time.Duration) error
+	IsBlacklisted(ctx context.Context, token string) (bool, error)
 }
 
 type UserStore interface {

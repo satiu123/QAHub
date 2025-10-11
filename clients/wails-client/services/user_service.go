@@ -6,6 +6,8 @@ import (
 	"log"
 
 	userpb "qahub/api/proto/user"
+
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 // UserService 用户服务的业务逻辑层
@@ -147,6 +149,18 @@ func (s *UserService) GetCurrentUser(ctx context.Context) (*UserProfile, error) 
 
 // Logout 用户登出
 func (s *UserService) Logout() {
+	if !s.client.IsAuthenticated() {
+		log.Println("用户未登录，无需登出")
+		return
+	}
+
+	authCtx := s.client.NewAuthContext(context.Background())
+	_, err := s.client.UserClient.Logout(authCtx, &emptypb.Empty{})
+	if err != nil {
+		log.Printf("登出失败: %v", err)
+	} else {
+		log.Println("登出成功")
+	}
 	s.client.ClearAuth()
 }
 
@@ -158,4 +172,12 @@ func (s *UserService) IsLoggedIn() bool {
 // GetUsername 获取当前用户名
 func (s *UserService) GetUsername() string {
 	return s.client.GetUsername()
+}
+
+func (s *UserService) SetAuth() {
+	s.client.SetAuth(
+		"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjAyNDIxMzIsImlhdCI6MTc2MDE1NTczMiwidXNlcl9pZCI6MywidXNlcm5hbWUiOiJzYW9jb25nIn0.Q5VnlVrhoshVFblwr-Nht4708o5TCek5EiasMEV2tHk",
+		3,
+		"saocong",
+	)
 }

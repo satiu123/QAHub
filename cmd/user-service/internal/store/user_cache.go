@@ -160,15 +160,13 @@ func jwtBlacklistKey(token string) string {
 }
 
 // AddToBlacklist 将 JWT 加入黑名单，并设置其过期时间
-func (s *userCacheStore) AddToBlacklist(token string, expiration time.Duration) error {
-	ctx := context.Background()
+func (s *userCacheStore) AddToBlacklist(ctx context.Context, token string, expiration time.Duration) error {
 	key := jwtBlacklistKey(token)
 	return s.redisClient.Set(ctx, key, "true", expiration).Err()
 }
 
 // IsBlacklisted 检查 JWT 是否存在于黑名单中
-func (s *userCacheStore) IsBlacklisted(token string) (bool, error) {
-	ctx := context.Background()
+func (s *userCacheStore) IsBlacklisted(ctx context.Context, token string) (bool, error) {
 	key := jwtBlacklistKey(token)
 	val, err := s.redisClient.Get(ctx, key).Result()
 	if err == redis.Nil {

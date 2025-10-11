@@ -108,9 +108,9 @@ func (s *userService) Login(ctx context.Context, username, password string) (str
 func (s *userService) Logout(ctx context.Context, tokenString string, claims jwt.MapClaims) error {
 	blacklister, ok := s.userStore.(store.TokenBlacklister)
 	if !ok {
+		log.Println("userStore does not support token blacklisting")
 		return nil
 	}
-
 	exp, ok := claims["exp"].(float64)
 	if !ok {
 		return errors.New("invalid token expiration")
@@ -121,13 +121,13 @@ func (s *userService) Logout(ctx context.Context, tokenString string, claims jwt
 		return nil
 	}
 
-	return blacklister.AddToBlacklist(tokenString, remaining)
+	return blacklister.AddToBlacklist(ctx, tokenString, remaining)
 }
 
 func (s *userService) ValidateToken(ctx context.Context, tokenString string) (auth.Identity, error) {
 	blacklister, hasBlacklist := s.userStore.(store.TokenBlacklister)
 	if hasBlacklist {
-		isBlacklisted, err := blacklister.IsBlacklisted(tokenString)
+		isBlacklisted, err := blacklister.IsBlacklisted(ctx, tokenString)
 		if err != nil {
 			return auth.Identity{}, fmt.Errorf("failed to check blacklist: %w", err)
 		}
@@ -135,7 +135,6 @@ func (s *userService) ValidateToken(ctx context.Context, tokenString string) (au
 			return auth.Identity{}, errors.New("token is blacklisted")
 		}
 	}
-
 	identity, err := auth.ParseToken(tokenString, []byte(config.Conf.Services.UserService.JWTSecret))
 	if err != nil {
 		return auth.Identity{}, fmt.Errorf("token parsing error: %w", err)
