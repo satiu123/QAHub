@@ -57,11 +57,27 @@ jobs:
           version: v2.5.0
           working-directory: cmd/notification-service
 
+      # 构建 wails-client 前端 (linter 需要 frontend/dist 目录)
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24.9.0'
+          cache: 'npm'
+          cache-dependency-path: clients/wails-client/frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: clients/wails-client/frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: clients/wails-client/frontend
+        run: npm run build
+
       - name: Run linter on wails-client
         uses: golangci/golangci-lint-action@v8
         with:
           version: v2.5.0
-          working-directory: cmd/wails-client
+          working-directory: clients/wails-client
 
       - name: Run unit tests
         run: go test -v -cover work
