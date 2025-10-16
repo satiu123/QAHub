@@ -1,19 +1,4 @@
 services:
-  # gRPC Gateway (HTTP to gRPC)
-  # gateway:
-  #   build:
-  #     context: .
-  #     dockerfile: cmd/gateway/Dockerfile
-  #   container_name: qahub-grpc-gateway
-  #   restart: always
-  #   ports:
-  #     - "8080:8080"
-  #   command: ["/app/gateway"]
-  #   depends_on:
-  #     - user-service
-  #     - qa-service
-  #     - search-service
-
   # API Gateway (Nginx)
   # nginx:
   #   build:
