@@ -2,7 +2,6 @@ go 1.25.1
 
 use (
 	./api
-	./cmd/gateway
 	./cmd/notification-service
 	./cmd/qa-service
 	./cmd/search-service

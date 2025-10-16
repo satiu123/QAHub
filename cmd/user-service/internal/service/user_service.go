@@ -1,3 +1,4 @@
+//go:generate mockgen -source=../store/user_store.go -destination=user_store_mock.go -package=service
 package service
 
 import (
@@ -24,7 +25,7 @@ import (
 )
 
 type UserService interface {
-	Register(ctx context.Context, username, email, bio, password string) (*dto.UserResponse, error)
+	Register(ctx context.Context, req dto.RegisterRequest) (*dto.UserResponse, error)
 	Login(ctx context.Context, username, password string) (string, error)
 	Logout(ctx context.Context, tokenString string, claims jwt.MapClaims) error
 	ValidateToken(ctx context.Context, tokenString string) (auth.Identity, error)
@@ -42,38 +43,31 @@ func NewUserService(store store.UserStore) UserService {
 	return &userService{userStore: store}
 }
 
-func (s *userService) Register(ctx context.Context, username, email, bio, password string) (*dto.UserResponse, error) {
+func (s *userService) Register(ctx context.Context, req dto.RegisterRequest) (*dto.UserResponse, error) {
 	// 检查邮箱是否已存在
-	if existingUser, _ := s.userStore.GetUserByEmail(ctx, email); existingUser != nil {
+	if existingUser, _ := s.userStore.GetUserByEmail(ctx, req.Email); existingUser != nil {
 		return nil, errors.New("该邮箱已被注册")
 	}
+
 	// 验证密码
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
 	}
 
-	newUser := &model.User{
-		Username: username,
-		Email:    email,
-		Password: string(hashedPassword),
-		Bio:      bio,
-	}
+	// 使用 ToUser 方法转换
+	newUser := req.ToUser(string(hashedPassword))
 
 	newID, err := s.userStore.CreateUser(ctx, newUser)
 	if err != nil {
 		return nil, err
 	}
 
-	// 转换为DTO
-	response := &dto.UserResponse{
-		ID:       newID,
-		Username: username,
-		Email:    email,
-		Bio:      bio,
-	}
+	// 设置新创建的ID
+	newUser.ID = newID
 
-	return response, nil
+	// 使用 NewUserResponse 方法转换
+	return dto.NewUserResponse(newUser), nil
 }
 
 func (s *userService) Login(ctx context.Context, username, password string) (string, error) {
@@ -149,16 +143,9 @@ func (s *userService) GetUserProfile(ctx context.Context, userID int64) (*dto.Us
 	if err != nil {
 		return nil, err
 	}
-	// 转换为DTO
-	response := &dto.UserResponse{
-		ID:        user.ID,
-		Username:  user.Username,
-		Email:     user.Email,
-		Bio:       user.Bio,
-		CreatedAt: user.CreatedAt,
-	}
 
-	return response, nil
+	// 使用 NewUserResponse 方法转换
+	return dto.NewUserResponse(user), nil
 }
 
 func (s *userService) UpdateUserProfile(ctx context.Context, user *model.User) error {

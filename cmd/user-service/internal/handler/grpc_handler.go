@@ -8,6 +8,7 @@ import (
 	pb "qahub/api/proto/user"
 	"qahub/pkg/auth"
 	"qahub/pkg/config"
+	"qahub/user-service/internal/dto"
 	"qahub/user-service/internal/model"
 	"qahub/user-service/internal/service"
 
@@ -35,7 +36,12 @@ func NewUserGrpcServer(svc service.UserService) *UserGrpcServer {
 }
 
 func (s *UserGrpcServer) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
-	userResponse, err := s.userService.Register(ctx, req.Username, req.Email, req.Bio, req.Password)
+	userResponse, err := s.userService.Register(ctx, dto.RegisterRequest{
+		Username: req.Username,
+		Email:    req.Email,
+		Bio:      req.Bio,
+		Password: req.Password,
+	})
 	if err != nil {
 		return nil, err
 	}
