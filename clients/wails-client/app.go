@@ -24,7 +24,7 @@ type App struct {
 	NotificationStream  *services.NotificationStream
 
 	// 前端通知回调
-	onNotificationReceived func(notification *services.Notification)
+	// onNotificationReceived func(notification *services.Notification)
 }
 
 // NewApp creates a new App application struct
@@ -80,7 +80,7 @@ func (a *App) startup(ctx context.Context) {
 	})
 
 	log.Println("✅ QAHub Wails Client started successfully")
-	// _, _ = a.Login("saocong", "12345678") // 自动登录测试账号
+	_, _ = a.Login("saocong", "12345678") // 自动登录测试账号
 }
 
 // shutdown is called at application termination

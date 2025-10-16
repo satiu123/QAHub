@@ -20,10 +20,48 @@ jobs:
           go-version: '1.25'
           cache: true
 
-      - name: Run linter
-        uses: golangci/golangci-lint-action@v6
+      # 为每个模块运行 linter
+      - name: Run linter on api
+        uses: golangci/golangci-lint-action@v8
         with:
-          version: v1.57
+          version: v2.5.0
+          working-directory: api
+
+      - name: Run linter on pkg
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.5.0
+          working-directory: pkg
+
+      - name: Run linter on user-service
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.5.0
+          working-directory: cmd/user-service
+
+      - name: Run linter on qa-service
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.5.0
+          working-directory: cmd/qa-service
+
+      - name: Run linter on search-service
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.5.0
+          working-directory: cmd/search-service
+
+      - name: Run linter on notification-service
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.5.0
+          working-directory: cmd/notification-service
+
+      - name: Run linter on wails-client
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.5.0
+          working-directory: cmd/wails-client
 
       - name: Run unit tests
         run: go test -v -cover work
