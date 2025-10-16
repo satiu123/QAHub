@@ -2,12 +2,16 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/metadata"
 
 	ntpb "qahub/api/proto/notification"
@@ -40,68 +44,105 @@ func NewGRPCClient(userAddr, qaAddr, searchAddr, notificationAddr string) (*GRPC
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	}
 
-	// 连接 User Service
-	userConn, err := grpc.NewClient(userAddr, opts...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to user service: %w", err)
+	client := &GRPCClient{}
+	// 为健康检查设置一个超时
+	checkTimeout := 5 * time.Second
+
+	// 使用一个 map 来定义所有需要连接的目标，代码更具扩展性
+	targets := []struct {
+		name string
+		addr string
+		conn **grpc.ClientConn // 使用指向连接字段的指针，以便在循环中赋值
+	}{
+		{"User", userAddr, &client.userConn},
+		{"QA", qaAddr, &client.qaConn},
+		{"Search", searchAddr, &client.searchConn},
+		{"Notification", notificationAddr, &client.notificationConn},
 	}
 
-	// 连接 QA Service
-	qaConn, err := grpc.NewClient(qaAddr, opts...)
-	if err != nil {
-		userConn.Close()
-		return nil, fmt.Errorf("failed to connect to qa service: %w", err)
+	// 循环创建连接
+	for _, target := range targets {
+		log.Printf("Connecting to %s Service at %s...", target.name, target.addr)
+		conn, err := grpc.NewClient(target.addr, opts...)
+		if err != nil {
+			return nil, fmt.Errorf("gRPC dial setup failed for %s service: %w", target.name, err)
+		}
+		*target.conn = conn
+
+		// 检查服务健康状况
+		// TODO:后端服务需要实现健康检查接口，当前都未实现，会导致连接失败
+		ctx, cancel := context.WithTimeout(context.Background(), checkTimeout)
+		defer cancel()
+		if err := checkServiceHealth(ctx, conn, target.name); err != nil {
+			_ = client.Close()
+			return nil, fmt.Errorf("health check failed for %s service: %w", target.name, err)
+		}
+		log.Printf("Connected to %s Service successfully.", target.name)
 	}
 
-	// 连接 Search Service
-	searchConn, err := grpc.NewClient(searchAddr, opts...)
-	if err != nil {
-		userConn.Close()
-		qaConn.Close()
-		return nil, fmt.Errorf("failed to connect to search service: %w", err)
-	}
+	// 初始化所有 gRPC 客户端
+	client.UserClient = userpb.NewUserServiceClient(client.userConn)
+	client.QAClient = qapb.NewQAServiceClient(client.qaConn)
+	client.SearchClient = searchpb.NewSearchServiceClient(client.searchConn)
+	client.NotificationClient = ntpb.NewNotificationServiceClient(client.notificationConn)
 
-	// 连接 Notification Service
-	notificationConn, err := grpc.NewClient(notificationAddr, opts...)
-	if err != nil {
-		userConn.Close()
-		qaConn.Close()
-		searchConn.Close()
-		return nil, fmt.Errorf("failed to connect to notification service: %w", err)
-	}
-	client := &GRPCClient{
-		userConn:           userConn,
-		qaConn:             qaConn,
-		searchConn:         searchConn,
-		notificationConn:   notificationConn,
-		UserClient:         userpb.NewUserServiceClient(userConn),
-		QAClient:           qapb.NewQAServiceClient(qaConn),
-		SearchClient:       searchpb.NewSearchServiceClient(searchConn),
-		NotificationClient: ntpb.NewNotificationServiceClient(notificationConn),
-	}
-
-	log.Println("✅ gRPC clients connected successfully")
-	log.Printf("  - User Service: %s", userAddr)
-	log.Printf("  - QA Service: %s", qaAddr)
-	log.Printf("  - Search Service: %s", searchAddr)
-	log.Printf("  - Notification Service: %s", notificationAddr)
+	log.Println("✅ All gRPC clients connected successfully.")
 	return client, nil
+}
+
+func checkServiceHealth(ctx context.Context, conn *grpc.ClientConn, serviceName string) error {
+	//创建一个健康检查客户端
+	healthClient := grpc_health_v1.NewHealthClient(conn)
+
+	//发送健康检查请求
+	req := &grpc_health_v1.HealthCheckRequest{
+		Service: "", // 空字符串表示检查整个服务的健康状况
+	}
+	resp, err := healthClient.Check(ctx, req)
+	if err != nil {
+		return fmt.Errorf("failed to check health of %s service: %w", serviceName, err)
+	}
+
+	if resp.Status != grpc_health_v1.HealthCheckResponse_SERVING {
+		return fmt.Errorf("%s service is not healthy: %s", serviceName, resp.Status.String())
+	}
+
+	log.Printf("%s service is healthy.", serviceName)
+	return nil
 }
 
 // Close 关闭所有连接
 func (c *GRPCClient) Close() error {
-	if c.userConn != nil {
-		c.userConn.Close()
+	var errs []string
+
+	// 定义一个辅助结构，方便循环处理
+	conns := []struct {
+		name string
+		conn *grpc.ClientConn
+	}{
+		{"User", c.userConn},
+		{"QA", c.qaConn},
+		{"Search", c.searchConn},
+		{"Notification", c.notificationConn},
 	}
-	if c.qaConn != nil {
-		c.qaConn.Close()
+
+	for _, item := range conns {
+		if item.conn != nil {
+			// 收集错误信息，以便向上层返回一个总的错误状态
+			err := item.conn.Close()
+			if err != nil {
+				msg := fmt.Sprintf("failed to close %s gRPC client: %v", item.name, err)
+				log.Printf("ERROR: %s", msg)
+				errs = append(errs, msg)
+			}
+		}
 	}
-	if c.searchConn != nil {
-		c.searchConn.Close()
+
+	// 如果在关闭过程中收集到了任何错误，就返回一个聚合的错误
+	if len(errs) > 0 {
+		return errors.New(strings.Join(errs, "; "))
 	}
-	if c.notificationConn != nil {
-		c.notificationConn.Close()
-	}
+
 	return nil
 }
 

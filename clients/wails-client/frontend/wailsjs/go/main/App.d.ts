@@ -27,6 +27,8 @@ export function GetNotifications(arg1:number,arg2:number,arg3:boolean):Promise<m
 
 export function GetQuestion(arg1:number):Promise<services.Question>;
 
+export function GetServiceStatus():Promise<Record<string, any>>;
+
 export function GetUnreadCount():Promise<number>;
 
 export function GetUsername():Promise<string>;
@@ -36,6 +38,8 @@ export function IndexAllQuestions():Promise<string>;
 export function IsLoggedIn():Promise<boolean>;
 
 export function IsNotificationStreamConnected():Promise<boolean>;
+
+export function IsServiceConnected():Promise<boolean>;
 
 export function ListAnswers(arg1:number,arg2:number,arg3:number):Promise<Array<services.Answer>>;
 

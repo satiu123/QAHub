@@ -21,8 +21,8 @@ type contextKey string
 const (
 	identityContextKey contextKey = "auth.identity"
 	// ContextUserIDKey 与历史字符串键保持一致，方便旧代码读取。
-	ContextUserIDKey   = "userID"
-	ContextUsernameKey = "username"
+	ContextUserIDKey   contextKey = "userID"
+	ContextUsernameKey contextKey = "username"
 )
 
 // WithIdentity 将身份信息写入 Context。

@@ -11,6 +11,7 @@ import (
 	"qahub/search-service/internal/service"
 
 	"qahub/pkg/config"
+	"qahub/pkg/util"
 	"qahub/search-service/internal/store"
 )
 
@@ -29,7 +30,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("初始化 Elasticsearch store 失败: %v", err)
 	}
-	defer esStore.Close()
+	defer util.Cleanup("Elasticsearch client", esStore.Close)
 
 	// 3. 初始化 Service，并启动 Kafka 消费者
 	searchService := service.New(esStore, config.Conf.Kafka)

@@ -43,6 +43,7 @@ func TestContextIdentity(t *testing.T) {
 	}
 
 	// 场景3: nil context
+	//nolint:staticcheck
 	_, ok = FromContext(nil)
 	if ok {
 		t.Fatalf("期望在 nil context 中找不到 identity，但找到了")
