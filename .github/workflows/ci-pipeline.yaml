@@ -1,0 +1,20 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ "chore/setup-ci-cd" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  # 调用其他 workflow
+  lint:
+    uses: ./.github/workflows/lint.yaml
+  
+  test:
+    uses: ./.github/workflows/test.yaml
+  
+  build-and-push:
+    needs: [lint, test]
+    uses: ./.github/workflows/build-and-push.yaml
+    secrets: inherit
