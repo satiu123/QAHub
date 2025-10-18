@@ -1,0 +1,49 @@
+name: Build Desktop Client
+
+on:
+  workflow_dispatch:  # 手动触发
+  push:
+    # tags:
+    #   - 'v*'  # 当推送版本标签时触发
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        platform:
+          - { os: ubuntu-latest, name: linux }
+          - { os: macos-latest, name: darwin }
+          - { os: windows-latest, name: windows }
+    
+    runs-on: ${{ matrix.platform.os }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24.9.0'
+
+      - name: Install Wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+      - name: Install frontend dependencies
+        working-directory: clients/wails-client/frontend
+        run: npm ci
+
+      - name: Build Wails app
+        working-directory: clients/wails-client
+        run: wails build
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wails-client-${{ matrix.platform.name }}
+          path: clients/wails-client/build/bin/*
