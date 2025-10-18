@@ -1,0 +1,76 @@
+name: Lint
+
+on:
+  workflow_call:  # 允许被其他 workflow 调用
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  golangci-lint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        module:
+          - { name: "api", path: "api" }
+          - { name: "pkg", path: "pkg" }
+          - { name: "user-service", path: "cmd/user-service" }
+          - { name: "qa-service", path: "cmd/qa-service" }
+          - { name: "search-service", path: "cmd/search-service" }
+          - { name: "notification-service", path: "cmd/notification-service" }
+    
+    name: Lint ${{ matrix.module.name }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache: true
+          cache-dependency-path: |
+            go.work.sum
+            ${{ matrix.module.path }}/go.sum
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.5.0
+          working-directory: ${{ matrix.module.path }}
+
+  lint-wails-client:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache: true
+          cache-dependency-path: |
+            go.work.sum
+            clients/wails-client/go.sum
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24.9.0'
+          cache: 'npm'
+          cache-dependency-path: clients/wails-client/frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: clients/wails-client/frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: clients/wails-client/frontend
+        run: npm run build
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.5.0
+          working-directory: clients/wails-client

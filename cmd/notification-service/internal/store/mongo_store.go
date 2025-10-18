@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"qahub/notification-service/internal/model"
+	"qahub/pkg/util"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -55,7 +56,7 @@ func (m *MongoNotificationStore) GetByRecipientID(ctx context.Context, userID in
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
+	defer util.Cleanup("MongoDB cursor", func() error { return cursor.Close(ctx) })
 
 	if err = cursor.All(ctx, &notifications); err != nil {
 		return nil, err

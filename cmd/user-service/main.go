@@ -7,6 +7,7 @@ import (
 	"qahub/pkg/config"
 	"qahub/pkg/database"
 	"qahub/pkg/redis"
+	"qahub/pkg/util"
 	"qahub/user-service/internal/handler"
 	"qahub/user-service/internal/service"
 	"qahub/user-service/internal/store"
@@ -24,12 +25,14 @@ func main() {
 	if err != nil {
 		log.Fatalf("Database connection failed: %v", err)
 	}
-	defer db.Close()
+	defer util.Cleanup("MySQL connection", db.Close)
+
 	redisClient, err := redis.NewClient(config.Conf.Redis)
 	if err != nil {
 		log.Fatalf("Redis connection failed: %v", err)
 	}
-	defer redisClient.Close()
+	defer util.Cleanup("Redis client", redisClient.Close)
+
 	// 3. 依赖注入
 	userStoreWithBlacklist := store.NewUserCacheStore(redisClient, store.NewMySQLUserStore(db))
 	userService := service.NewUserService(userStoreWithBlacklist)

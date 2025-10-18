@@ -9,6 +9,7 @@ import (
 	"qahub/notification-service/internal/store"
 	"qahub/pkg/config"
 	"qahub/pkg/database"
+	"qahub/pkg/util"
 	"syscall"
 )
 
@@ -26,14 +27,14 @@ func main() {
 	if err != nil {
 		log.Fatalf("连接数据库失败: %v", err)
 	}
-	defer client.Disconnect(ctx)
+	defer util.Cleanup("MongoDB client", func() error { return client.Disconnect(ctx) })
 
 	// 3.初始化store, streamHub, service
 	ntStore := store.NewMongoNotificationStore(client.Database(config.Conf.MongoDB.Database))
 	streamHub := service.NewStreamHub()
 	go streamHub.Run()
 	ntService := service.NewNotificationService(ntStore, streamHub, config.Conf.Kafka)
-	defer ntService.Close()
+	defer util.Cleanup("Notification service", ntService.Close)
 
 	// 4.启动Kafka消费者
 	go ntService.StartConsumer(ctx)

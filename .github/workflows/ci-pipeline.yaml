@@ -1,0 +1,20 @@
+name: CI Pipeline
+
+on:
+  push:  
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  # 调用其他 workflow
+  lint:
+    uses: ./.github/workflows/lint.yaml
+  
+  test:
+    uses: ./.github/workflows/test.yaml
+  
+  build-and-push:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [lint, test]
+    uses: ./.github/workflows/build-and-push.yaml
+    secrets: inherit

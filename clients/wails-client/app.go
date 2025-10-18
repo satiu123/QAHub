@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"qahub/pkg/util"
 
 	"changeme/services"
 
@@ -23,7 +24,7 @@ type App struct {
 	NotificationStream  *services.NotificationStream
 
 	// 前端通知回调
-	onNotificationReceived func(notification *services.Notification)
+	// onNotificationReceived func(notification *services.Notification)
 }
 
 // NewApp creates a new App application struct
@@ -37,7 +38,7 @@ func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 
 	// 初始化 gRPC 客户端 (连接到本地服务)
-	// 注意：确保服务在对应端口运行
+	// 注意:确保服务在对应端口运行
 	client, err := services.NewGRPCClient(
 		"localhost:50051", // user-service
 		"localhost:50052", // qa-service
@@ -51,7 +52,15 @@ func (a *App) startup(ctx context.Context) {
 		log.Println("  - QA Service: localhost:50052")
 		log.Println("  - Search Service: localhost:50053")
 		log.Println("  - Notification Service: localhost:50054")
-		// 不要 fatal，允许应用启动，只是功能不可用
+		log.Println("⚠️  应用将以离线模式启动")
+
+		// 显示错误对话框通知用户
+		_, _ = runtime.MessageDialog(ctx, runtime.MessageDialogOptions{
+			Type:    runtime.ErrorDialog,
+			Title:   "服务连接失败",
+			Message: "无法连接到后端服务。\n请确保所有服务正在运行,或稍后重试。",
+		})
+		return
 	}
 
 	a.grpcClient = client
@@ -63,7 +72,7 @@ func (a *App) startup(ctx context.Context) {
 	// 初始化通知流
 	a.NotificationStream = services.NewNotificationStream(client)
 
-	// 添加通知处理器：收到通知时发送到前端
+	// 添加通知处理器:收到通知时发送到前端
 	a.NotificationStream.AddHandler(func(notification *services.Notification) {
 		log.Printf("📨 Received notification in app: %s", notification.Content)
 		// 发送事件到前端
@@ -80,7 +89,27 @@ func (a *App) shutdown(ctx context.Context) {
 		a.NotificationStream.Stop()
 	}
 	if a.grpcClient != nil {
-		a.grpcClient.Close()
+		util.Cleanup("gRPC client", a.grpcClient.Close)
+	}
+}
+
+// ===== 系统相关方法 =====
+
+// IsServiceConnected 检查服务是否已连接
+func (a *App) IsServiceConnected() bool {
+	return a.grpcClient != nil
+}
+
+// GetServiceStatus 获取服务连接状态
+func (a *App) GetServiceStatus() map[string]interface{} {
+	return map[string]interface{}{
+		"connected": a.grpcClient != nil,
+		"message": func() string {
+			if a.grpcClient != nil {
+				return "已连接到后端服务"
+			}
+			return "未连接到后端服务,请确保服务正在运行"
+		}(),
 	}
 }
 
@@ -88,6 +117,9 @@ func (a *App) shutdown(ctx context.Context) {
 
 // Login 用户登录
 func (a *App) Login(username, password string) (*services.LoginResponse, error) {
+	if a.UserService == nil {
+		return nil, fmt.Errorf("服务未连接,请先启动后端服务")
+	}
 	return a.UserService.Login(a.ctx, services.LoginRequest{
 		Username: username,
 		Password: password,
@@ -96,6 +128,9 @@ func (a *App) Login(username, password string) (*services.LoginResponse, error) 
 
 // Register 用户注册
 func (a *App) Register(username, email, password string) (*services.RegisterResponse, error) {
+	if a.UserService == nil {
+		return nil, fmt.Errorf("服务未连接,请先启动后端服务")
+	}
 	return a.UserService.Register(a.ctx, services.RegisterRequest{
 		Username: username,
 		Email:    email,
@@ -105,21 +140,32 @@ func (a *App) Register(username, email, password string) (*services.RegisterResp
 
 // Logout 用户登出
 func (a *App) Logout() {
-	a.UserService.Logout()
+	if a.UserService != nil {
+		a.UserService.Logout()
+	}
 }
 
 // GetCurrentUser 获取当前登录用户信息
 func (a *App) GetCurrentUser() (*services.UserProfile, error) {
+	if a.UserService == nil {
+		return nil, fmt.Errorf("服务未连接,请先启动后端服务")
+	}
 	return a.UserService.GetCurrentUser(a.ctx)
 }
 
 // IsLoggedIn 检查是否已登录
 func (a *App) IsLoggedIn() bool {
+	if a.UserService == nil {
+		return false
+	}
 	return a.UserService.IsLoggedIn()
 }
 
 // GetUsername 获取当前用户名
 func (a *App) GetUsername() string {
+	if a.UserService == nil {
+		return ""
+	}
 	return a.UserService.GetUsername()
 }
 
@@ -127,17 +173,26 @@ func (a *App) GetUsername() string {
 
 // ListQuestions 获取问题列表
 func (a *App) ListQuestions(page, pageSize int32) ([]services.Question, error) {
+	if a.QAService == nil {
+		return nil, fmt.Errorf("服务未连接,请先启动后端服务")
+	}
 	questions, _, err := a.QAService.ListQuestions(a.ctx, page, pageSize)
 	return questions, err
 }
 
 // GetQuestion 获取问题详情
 func (a *App) GetQuestion(id int64) (*services.Question, error) {
+	if a.QAService == nil {
+		return nil, fmt.Errorf("服务未连接,请先启动后端服务")
+	}
 	return a.QAService.GetQuestion(a.ctx, id)
 }
 
 // CreateQuestion 创建问题
 func (a *App) CreateQuestion(title, content string) (*services.Question, error) {
+	if a.QAService == nil {
+		return nil, fmt.Errorf("服务未连接,请先启动后端服务")
+	}
 	return a.QAService.CreateQuestion(a.ctx, title, content)
 }
 

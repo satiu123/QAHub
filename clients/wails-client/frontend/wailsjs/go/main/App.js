@@ -50,6 +50,10 @@ export function GetQuestion(arg1) {
   return window['go']['main']['App']['GetQuestion'](arg1);
 }
 
+export function GetServiceStatus() {
+  return window['go']['main']['App']['GetServiceStatus']();
+}
+
 export function GetUnreadCount() {
   return window['go']['main']['App']['GetUnreadCount']();
 }
@@ -68,6 +72,10 @@ export function IsLoggedIn() {
 
 export function IsNotificationStreamConnected() {
   return window['go']['main']['App']['IsNotificationStreamConnected']();
+}
+
+export function IsServiceConnected() {
+  return window['go']['main']['App']['IsServiceConnected']();
 }
 
 export function ListAnswers(arg1, arg2, arg3) {

@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"qahub/pkg/config"
 	"qahub/pkg/database"
+	"qahub/pkg/util"
 	"qahub/qa-service/internal/handler"
 	"qahub/qa-service/internal/service"
 	"qahub/qa-service/internal/store"
@@ -24,7 +25,7 @@ func main() {
 	if err != nil {
 		os.Exit(1)
 	}
-	defer db.Close()
+	defer util.Cleanup("MySQL connection", db.Close)
 	// 3. 依赖注入：初始化 store, service, handler
 	qaStore := store.NewQAStore(db)
 	qaService := service.NewQAService(qaStore, config.Conf.Kafka)

@@ -11,6 +11,7 @@ import (
 	"qahub/pkg/clients"
 	"qahub/pkg/config"
 	"qahub/pkg/messaging"
+	"qahub/pkg/util"
 
 	"github.com/elastic/go-elasticsearch/v8"
 )
@@ -44,10 +45,10 @@ func New(cfg config.Elasticsearch, qaServiceAddr string) (*Store, error) {
 	if err != nil {
 		return nil, fmt.Errorf("无法 Ping通 Elasticsearch: %w", err)
 	}
-	defer res.Body.Close()
+	defer util.Cleanup("Elasticsearch Ping", res.Body.Close)
 
 	if res.IsError() {
-		return nil, fmt.Errorf("Elasticsearch Ping 响应错误: %s", res.String())
+		return nil, fmt.Errorf("elasticsearch Ping 响应错误: %s", res.String())
 	}
 
 	fmt.Println("成功连接到 Elasticsearch")
@@ -83,7 +84,7 @@ func (s *Store) IndexQuestion(ctx context.Context, question messaging.QuestionPa
 	if err != nil {
 		return fmt.Errorf("索引文档失败: %w", err)
 	}
-	defer res.Body.Close()
+	defer util.Cleanup("Elasticsearch document indexing", res.Body.Close)
 
 	// 检查响应中是否有错误
 	if res.IsError() {
@@ -120,7 +121,7 @@ func (s *Store) SearchQuestions(ctx context.Context, query string) ([]messaging.
 	if err != nil {
 		return nil, fmt.Errorf("执行搜索失败: %w", err)
 	}
-	defer res.Body.Close()
+	defer util.Cleanup("Elasticsearch search", res.Body.Close)
 
 	if res.IsError() {
 		return nil, fmt.Errorf("搜索响应错误: %s", res.String())
@@ -174,7 +175,7 @@ func (s *Store) DeleteQuestion(ctx context.Context, questionID int64) error {
 	if err != nil {
 		return fmt.Errorf("删除文档失败: %w", err)
 	}
-	defer res.Body.Close()
+	defer util.Cleanup("Elasticsearch document deletion", res.Body.Close)
 
 	// 检查响应中是否有错误
 	if res.IsError() {
@@ -190,7 +191,7 @@ func (s *Store) ClearIndex(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("删除索引失败: %w", err)
 	}
-	defer res.Body.Close()
+	defer util.Cleanup("Elasticsearch index deletion", res.Body.Close)
 
 	if res.IsError() {
 		return fmt.Errorf("删除索引响应错误: %s", res.String())
@@ -201,7 +202,7 @@ func (s *Store) ClearIndex(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("创建索引失败: %w", err)
 	}
-	defer res.Body.Close()
+	defer util.Cleanup("Elasticsearch index creation", res.Body.Close)
 
 	if res.IsError() {
 		return fmt.Errorf("创建索引响应错误: %s", res.String())
@@ -273,7 +274,7 @@ func (s *Store) DeleteIndexAllQuestions(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("检查索引是否存在失败: %w", err)
 	}
-	defer res.Body.Close()
+	defer util.Cleanup("Elasticsearch index existence check", res.Body.Close)
 
 	// 如果索引存在，先删除
 	if res.StatusCode == 200 {
@@ -281,7 +282,7 @@ func (s *Store) DeleteIndexAllQuestions(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("删除索引失败: %w", err)
 		}
-		defer res.Body.Close()
+		defer util.Cleanup("Elasticsearch index deletion", res.Body.Close)
 
 		if res.IsError() {
 			return fmt.Errorf("删除索引响应错误: %s", res.String())
@@ -294,7 +295,7 @@ func (s *Store) DeleteIndexAllQuestions(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("创建索引失败: %w", err)
 	}
-	defer res.Body.Close()
+	defer util.Cleanup("Elasticsearch index creation", res.Body.Close)
 
 	if res.IsError() {
 		return fmt.Errorf("创建索引响应错误: %s", res.String())
