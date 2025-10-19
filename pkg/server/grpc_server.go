@@ -83,3 +83,8 @@ func (s *GrpcServer) Run(registerBusinessServer func(srv *grpc.Server)) {
 	s.grpcSrv.GracefulStop()
 	log.Printf("Server '%s' shut down gracefully.", s.serviceName)
 }
+
+// HealthServer 返回健康检查服务器实例
+func (s *GrpcServer) HealthServer() *health.Server {
+	return s.healthSrv
+}

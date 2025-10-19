@@ -5,6 +5,7 @@ import (
 	"log"
 	"qahub/pkg/config"
 	"qahub/pkg/database"
+	"qahub/pkg/health"
 	"qahub/pkg/redis"
 	"qahub/pkg/server"
 	"qahub/pkg/util"
@@ -16,13 +17,15 @@ import (
 )
 
 func main() {
-	// 1. 加载配置
+	// 加载配置
 	if err := config.Init("configs"); err != nil {
 		log.Fatalf("Failed to initialize config: %v", err)
 	}
 	cfg := config.Conf.Services.UserService
 
-	// 2. 初始化业务依赖 (DB, Redis, Store, Service, Handler)
+	// 初始化业务依赖 (DB, Redis, Store, Service, Handler)
+	serviceName := "user.UserService"
+
 	db, err := database.NewMySQLConnection(config.Conf.MySQL)
 	if err != nil {
 		log.Fatalf("Database connection failed: %v", err)
@@ -39,14 +42,19 @@ func main() {
 	userService := service.NewUserService(userStore)
 	userHandler := handler.NewUserGrpcServer(userService)
 
-	// 3. 创建并运行服务器
+	// 创建服务器
 	serverOpts := []grpc.ServerOption{
 		grpc.UnaryInterceptor(userService.AuthInterceptor(cfg.PublicMethods...)),
 	}
 
 	// 创建通用服务器实例
-	grpcSrv := server.NewGrpcServer("user.UserService", cfg.GrpcPort, serverOpts...)
+	grpcSrv := server.NewGrpcServer(serviceName, cfg.GrpcPort, serverOpts...)
 
+	// 设置健康检查
+	healthUpdater := grpcSrv.HealthServer()
+	if awareStore, ok := userStore.(health.HealthAware); ok {
+		awareStore.SetHealthUpdater(healthUpdater, serviceName)
+	}
 	// 运行服务器，并传入业务注册的逻辑
 	grpcSrv.Run(func(s *grpc.Server) {
 		userHandler.RegisterServer(s)

@@ -8,14 +8,9 @@ import (
 
 	_ "github.com/go-sql-driver/mysql" // MySQL driver
 
+	"qahub/pkg/health"
 	"qahub/user-service/internal/model"
 )
-
-// TokenBlacklister 定义了 JWT 黑名单所需的方法
-type TokenBlacklister interface {
-	AddToBlacklist(ctx context.Context, token string, expiration time.Duration) error
-	IsBlacklisted(ctx context.Context, token string) (bool, error)
-}
 
 type UserStore interface {
 	CreateUser(ctx context.Context, user *model.User) (int64, error)
@@ -27,7 +22,8 @@ type UserStore interface {
 }
 
 type mySQLUserStore struct {
-	db *sqlx.DB // 存储数据库连接
+	db            *sqlx.DB // 存储数据库连接
+	healthChecker *health.Checker
 }
 
 func NewMySQLUserStore(db *sqlx.DB) UserStore {
@@ -98,4 +94,17 @@ func (s *mySQLUserStore) DeleteUser(ctx context.Context, id int64) error {
 		return err
 	}
 	return nil
+}
+
+func (s *mySQLUserStore) SetHealthUpdater(updater health.StatusUpdater, serviceName string) {
+	s.healthChecker = health.NewChecker(updater, serviceName)
+	go s.startHealthCheck()
+}
+func (s *mySQLUserStore) startHealthCheck() {
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		s.healthChecker.CheckAndSetStatus(s.db.PingContext, "MySQL")
+	}
 }
