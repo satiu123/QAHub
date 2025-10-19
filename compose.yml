@@ -161,6 +161,11 @@ services:
       # KRaft 控制器监听器
       - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
       
+      # 单节点配置
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
+      
       # 指定日志目录在容器内的位置，与下方 volumes 挂载点对应
       - KAFKA_LOG_DIRS=/var/kafka-logs 
       # 限制JVM堆内存，防止占用过多宿主机内存
