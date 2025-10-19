@@ -27,7 +27,7 @@ type userCacheStore struct {
 }
 
 // NewUserCacheStore 创建一个带有缓存装饰的 UserStore 新实例。
-func NewUserCacheStore(redisClient *redis.Client, next UserStore) UserStore {
+func NewUserCacheStore(redisClient *redis.Client, next UserStore) *userCacheStore {
 	return &userCacheStore{
 		redisClient: redisClient,
 		next:        next,

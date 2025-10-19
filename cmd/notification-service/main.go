@@ -9,6 +9,7 @@ import (
 	"qahub/pkg/clients"
 	"qahub/pkg/config"
 	"qahub/pkg/database"
+	"qahub/pkg/messaging"
 	"qahub/pkg/middleware"
 	"qahub/pkg/server"
 	"qahub/pkg/util"
@@ -36,7 +37,9 @@ func main() {
 	ntStore := store.NewMongoNotificationStore(client.Database(config.Conf.MongoDB.Database))
 	streamHub := service.NewStreamHub()
 	go streamHub.Run()
-	ntService := service.NewNotificationService(ntStore, streamHub, config.Conf.Kafka)
+
+	consumer := messaging.NewKafkaConsumer(config.Conf.Kafka, service.TopicNotifications, service.GroupID, nil)
+	ntService := service.NewNotificationService(ntStore, streamHub, consumer)
 	defer util.Cleanup("Notification service", ntService.Close)
 	ntHandler := handler.NewNotificationGrpcServer(ntService)
 	// 启动Kafka消费者
@@ -52,6 +55,10 @@ func main() {
 		grpc.UnaryInterceptor(middleware.GrpcAuthInterceptor(userClient, config.Conf.Services.NotificationService.PublicMethods...)),
 	}
 	grpcSrv := server.NewGrpcServer("notification.NotificationService", config.Conf.Services.NotificationService.GrpcPort, serverOpts...)
+
+	// 设置健康检查
+	healthUpdater := grpcSrv.HealthServer()
+	util.SetHealthChecks(healthUpdater, "notification.NotificationService", consumer, ntStore)
 	grpcSrv.Run(func(s *grpc.Server) {
 		ntHandler.RegisterServer(s)
 	})

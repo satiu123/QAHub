@@ -26,7 +26,7 @@ type mySQLUserStore struct {
 	healthChecker *health.Checker
 }
 
-func NewMySQLUserStore(db *sqlx.DB) UserStore {
+func NewMySQLUserStore(db *sqlx.DB) *mySQLUserStore {
 	return &mySQLUserStore{db: db}
 }
 

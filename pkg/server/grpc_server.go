@@ -51,8 +51,7 @@ func (s *GrpcServer) Run(registerBusinessServer func(srv *grpc.Server)) {
 	log.Printf("Business service '%s' has been registered.", s.serviceName)
 
 	// 2. 设置初始健康状态
-	s.healthSrv.SetServingStatus(s.serviceName, healthv1.HealthCheckResponse_SERVING)
-	log.Printf("Service '%s' is healthy and serving.", s.serviceName)
+	s.healthSrv.SetServingStatus(s.serviceName, healthv1.HealthCheckResponse_UNKNOWN)
 
 	// 3. 启动监听
 	serverAddr := ":" + s.port

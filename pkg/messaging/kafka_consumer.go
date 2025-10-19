@@ -4,8 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"time"
 
 	"qahub/pkg/config"
+	"qahub/pkg/health"
+	"qahub/pkg/util"
 
 	"github.com/segmentio/kafka-go"
 )
@@ -13,10 +16,17 @@ import (
 // EventHandler 是一个函数类型，用于处理特定类型的事件
 type EventHandler func(ctx context.Context, eventType string, payload []byte) error
 
+type Consumer interface {
+	Start(ctx context.Context)
+	Close() error
+}
+
 // KafkaConsumer 封装了 Kafka 消费者的通用逻辑
 type KafkaConsumer struct {
-	reader   *kafka.Reader
-	handlers map[EventType]EventHandler
+	reader        *kafka.Reader
+	handlers      map[EventType]EventHandler
+	brokers       []string
+	healthChecker *health.Checker
 }
 
 // NewKafkaConsumer 创建一个新的 KafkaConsumer 实例
@@ -32,7 +42,42 @@ func NewKafkaConsumer(cfg config.Kafka, topic string, groupID string, handlers m
 	return &KafkaConsumer{
 		reader:   reader,
 		handlers: handlers,
+		brokers:  cfg.Brokers,
 	}
+}
+
+func (c *KafkaConsumer) SetHealthUpdater(updater health.StatusUpdater, serviceName string) {
+	c.healthChecker = health.NewChecker(updater, serviceName)
+	go c.startHealthCheck()
+}
+
+func (c *KafkaConsumer) startHealthCheck() {
+	{
+		ticker := time.NewTicker(10 * time.Second)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			c.healthChecker.CheckAndSetStatus(func(ctx context.Context) error {
+				return c.CheckConnection()
+			}, "KafkaProducer")
+		}
+	}
+}
+
+func (c *KafkaConsumer) CheckConnection() error {
+	if len(c.brokers) == 0 {
+		return nil
+	}
+
+	// 尝试连接到第一个 broker
+	conn, err := kafka.Dial("tcp", c.brokers[0])
+	if err != nil {
+		log.Printf("连接到 Kafka broker 失败: %v", err)
+		return err
+	}
+	// 成功连接后立即关闭
+	defer util.Cleanup("Kafka broker connection", func() error { return conn.Close() })
+	return nil
 }
 
 // SetHandlers 设置事件处理器映射

@@ -7,7 +7,6 @@ import (
 	pb "qahub/api/proto/notification"
 	"qahub/notification-service/internal/model"
 	"qahub/notification-service/internal/store"
-	"qahub/pkg/config"
 	"qahub/pkg/messaging"
 	"time"
 
@@ -33,21 +32,18 @@ type NotificationService interface {
 
 // notificationService 是 NotificationService 接口的具体实现
 type notificationService struct {
-	store         store.NotificationStore
-	streamHub     *StreamHub
-	kafkaConsumer *messaging.KafkaConsumer
+	store     store.NotificationStore
+	streamHub *StreamHub
+	consumer  messaging.Consumer
 }
 
 // NewNotificationService 创建一个新的 NotificationService 实例
-func NewNotificationService(store store.NotificationStore, streamHub *StreamHub, cfg config.Kafka) NotificationService {
-	s := &notificationService{
+func NewNotificationService(store store.NotificationStore, streamHub *StreamHub, c messaging.Consumer) *notificationService {
+	return &notificationService{
 		store:     store,
 		streamHub: streamHub,
+		consumer:  c,
 	}
-	// 必须在service实例化后设置consumer，因为handler需要引用service
-	consumer := messaging.NewKafkaConsumer(cfg, TopicNotifications, GroupID, s.getEventHandlers())
-	s.kafkaConsumer = consumer
-	return s
 }
 
 // GetStreamHub 返回 StreamHub 实例
@@ -144,12 +140,12 @@ func (s *notificationService) handleNotificationTriggered(ctx context.Context, e
 
 // StartConsumer 启动 Kafka 消费者，在一个无限循环中读取消息
 func (s *notificationService) StartConsumer(ctx context.Context) {
-	s.kafkaConsumer.Start(ctx)
+	s.consumer.Start(ctx)
 }
 
 // Close 方法用于优雅地关闭服务资源，例如 Kafka reader
 func (s *notificationService) Close() error {
-	return s.kafkaConsumer.Close()
+	return s.consumer.Close()
 }
 
 // convertModelToProto 将 model.Notification 转换为 pb.Notification

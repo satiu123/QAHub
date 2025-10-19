@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"time"
 
 	"qahub/pkg/clients"
 	"qahub/pkg/config"
+	"qahub/pkg/health"
 	"qahub/pkg/messaging"
 	"qahub/pkg/util"
 
@@ -20,14 +22,25 @@ const (
 	IndexQuestions = "questions" // 问题索引的名称
 )
 
-// Store 结构体封装了与 Elasticsearch 的所有交互
-type Store struct {
-	client   *elasticsearch.Client
-	qaClient *clients.QAServiceClient
+type SearchStore interface {
+	IndexQuestion(ctx context.Context, question messaging.QuestionPayload) error
+	SearchQuestions(ctx context.Context, query string) ([]messaging.QuestionPayload, error)
+	DeleteQuestion(ctx context.Context, questionID int64) error
+	ClearIndex(ctx context.Context) error
+	IndexAllQuestions(ctx context.Context) error
+	DeleteIndexAllQuestions(ctx context.Context) error
+	Close() error
+}
+
+// esStore 结构体封装了与 Elasticsearch 的所有交互
+type esStore struct {
+	client        *elasticsearch.Client
+	qaClient      *clients.QAServiceClient
+	healthChecker *health.Checker
 }
 
 // New 函数创建一个新的 Store 实例
-func New(cfg config.Elasticsearch, qaServiceAddr string) (*Store, error) {
+func NewEsStore(cfg config.Elasticsearch, qaServiceAddr string) (*esStore, error) {
 	// 创建 Elasticsearch 客户端配置
 	esCfg := elasticsearch.Config{
 		Addresses: cfg.URLs,
@@ -59,14 +72,38 @@ func New(cfg config.Elasticsearch, qaServiceAddr string) (*Store, error) {
 		return nil, fmt.Errorf("创建 QA Service 客户端失败: %w", err)
 	}
 
-	return &Store{
+	return &esStore{
 		client:   client,
 		qaClient: qaClient,
 	}, nil
 }
 
+func (s *esStore) SetHealthUpdater(updater health.StatusUpdater, serviceName string) {
+	s.healthChecker = health.NewChecker(updater, serviceName)
+	go s.startHealthCheck()
+}
+
+func (s *esStore) startHealthCheck() {
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+	for range ticker.C {
+		s.healthChecker.CheckAndSetStatus(func(ctx context.Context) error {
+			res, err := s.client.Ping()
+			if err != nil {
+				return fmt.Errorf("无法 Ping通 Elasticsearch: %w", err)
+			}
+			defer util.Cleanup("Elasticsearch Ping", res.Body.Close)
+
+			if res.IsError() {
+				return fmt.Errorf("elasticsearch Ping 响应错误: %s", res.String())
+			}
+			return nil
+		}, "Elasticsearch")
+	}
+}
+
 // IndexQuestion 将一个问题文档索引到 Elasticsearch 中
-func (s *Store) IndexQuestion(ctx context.Context, question messaging.QuestionPayload) error {
+func (s *esStore) IndexQuestion(ctx context.Context, question messaging.QuestionPayload) error {
 	// 将 question 对象序列化为 JSON
 	body, err := json.Marshal(question)
 	if err != nil {
@@ -95,7 +132,7 @@ func (s *Store) IndexQuestion(ctx context.Context, question messaging.QuestionPa
 }
 
 // SearchQuestions 在 Elasticsearch 中搜索问题
-func (s *Store) SearchQuestions(ctx context.Context, query string) ([]messaging.QuestionPayload, error) {
+func (s *esStore) SearchQuestions(ctx context.Context, query string) ([]messaging.QuestionPayload, error) {
 	var buf bytes.Buffer
 	// 定义 Elasticsearch 查询体
 	searchQuery := map[string]any{
@@ -164,7 +201,7 @@ func (s *Store) SearchQuestions(ctx context.Context, query string) ([]messaging.
 }
 
 // DeleteQuestion 从 Elasticsearch 中删除一个问题文档
-func (s *Store) DeleteQuestion(ctx context.Context, questionID int64) error {
+func (s *esStore) DeleteQuestion(ctx context.Context, questionID int64) error {
 	// 使用 client.Delete 方法发送删除请求
 	res, err := s.client.Delete(
 		IndexQuestions,                      // 索引名称
@@ -185,7 +222,7 @@ func (s *Store) DeleteQuestion(ctx context.Context, questionID int64) error {
 	return nil
 }
 
-func (s *Store) ClearIndex(ctx context.Context) error {
+func (s *esStore) ClearIndex(ctx context.Context) error {
 	// 删除索引
 	res, err := s.client.Indices.Delete([]string{IndexQuestions}, s.client.Indices.Delete.WithContext(ctx))
 	if err != nil {
@@ -212,7 +249,7 @@ func (s *Store) ClearIndex(ctx context.Context) error {
 }
 
 // IndexAllQuestions 从 QA Service 获取所有问题并建立索引
-func (s *Store) IndexAllQuestions(ctx context.Context) error {
+func (s *esStore) IndexAllQuestions(ctx context.Context) error {
 	log.Println("开始索引所有问题...")
 
 	const pageSize = 100
@@ -266,7 +303,7 @@ func (s *Store) IndexAllQuestions(ctx context.Context) error {
 }
 
 // DeleteIndexAllQuestions 删除所有问题索引并重新创建空索引
-func (s *Store) DeleteIndexAllQuestions(ctx context.Context) error {
+func (s *esStore) DeleteIndexAllQuestions(ctx context.Context) error {
 	log.Println("开始删除所有问题索引...")
 
 	// 检查索引是否存在
@@ -306,7 +343,7 @@ func (s *Store) DeleteIndexAllQuestions(ctx context.Context) error {
 }
 
 // Close 关闭客户端连接
-func (s *Store) Close() error {
+func (s *esStore) Close() error {
 	if s.qaClient != nil {
 		return s.qaClient.Close()
 	}

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"qahub/pkg/config"
+	"qahub/pkg/messaging"
 	"qahub/qa-service/internal/model"
 	"qahub/qa-service/internal/service"
 
@@ -21,7 +22,8 @@ func TestCreateQuestion(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockStore := service.NewMockQAStore(ctrl)
-	qaService := service.NewQAService(mockStore, config.Kafka{})
+	producer := messaging.NewKafkaProducer(config.Conf.Kafka)
+	qaService := service.NewQAService(mockStore, producer, &config.Conf)
 	ctx := context.Background()
 
 	t.Run("成功创建问题", func(t *testing.T) {
@@ -79,7 +81,8 @@ func TestGetQuestion(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockStore := service.NewMockQAStore(ctrl)
-	qaService := service.NewQAService(mockStore, config.Kafka{})
+	producer := messaging.NewKafkaProducer(config.Conf.Kafka)
+	qaService := service.NewQAService(mockStore, producer, &config.Conf)
 	ctx := context.Background()
 
 	t.Run("成功获取问题详情", func(t *testing.T) {
@@ -163,7 +166,8 @@ func TestListQuestions(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockStore := service.NewMockQAStore(ctrl)
-	qaService := service.NewQAService(mockStore, config.Kafka{})
+	producer := messaging.NewKafkaProducer(config.Conf.Kafka)
+	qaService := service.NewQAService(mockStore, producer, &config.Conf)
 	ctx := context.Background()
 
 	t.Run("成功获取问题列表", func(t *testing.T) {
@@ -241,7 +245,8 @@ func TestUpdateQuestion(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockStore := service.NewMockQAStore(ctrl)
-	qaService := service.NewQAService(mockStore, config.Kafka{})
+	producer := messaging.NewKafkaProducer(config.Conf.Kafka)
+	qaService := service.NewQAService(mockStore, producer, &config.Conf)
 	ctx := context.Background()
 
 	t.Run("成功更新问题", func(t *testing.T) {
@@ -335,7 +340,8 @@ func TestDeleteQuestion(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockStore := service.NewMockQAStore(ctrl)
-	qaService := service.NewQAService(mockStore, config.Kafka{})
+	producer := messaging.NewKafkaProducer(config.Conf.Kafka)
+	qaService := service.NewQAService(mockStore, producer, &config.Conf)
 	ctx := context.Background()
 
 	t.Run("成功删除问题", func(t *testing.T) {

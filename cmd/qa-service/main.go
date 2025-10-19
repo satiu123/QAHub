@@ -6,6 +6,7 @@ import (
 	"qahub/pkg/clients"
 	"qahub/pkg/config"
 	"qahub/pkg/database"
+	"qahub/pkg/messaging"
 	"qahub/pkg/middleware"
 	"qahub/pkg/server"
 	"qahub/pkg/util"
@@ -28,9 +29,14 @@ func main() {
 		os.Exit(1)
 	}
 	defer util.Cleanup("MySQL connection", db.Close)
+
+	// 初始化 Kafka 生产者
+	kafkaProducer := messaging.NewKafkaProducer(config.Conf.Kafka)
+	defer util.Cleanup("Kafka producer", kafkaProducer.Close)
+
 	// 依赖注入：初始化 store, service, handler
 	qaStore := store.NewQAStore(db)
-	qaService := service.NewQAService(qaStore, config.Conf.Kafka)
+	qaService := service.NewQAService(qaStore, kafkaProducer, &config.Conf)
 	qaHandler := handler.NewQAGrpcServer(qaService)
 	// 初始化 user-service 的客户端连接
 	userClient, err := clients.NewUserServiceClient(config.Conf.Services.Gateway.UserServiceEndpoint)
@@ -42,6 +48,12 @@ func main() {
 		grpc.UnaryInterceptor(middleware.GrpcAuthInterceptor(userClient, config.Conf.Services.QAService.PublicMethods...)),
 	}
 	grpcSrv := server.NewGrpcServer("qa.QAService", config.Conf.Services.QAService.GrpcPort, serverOpts...)
+
+	// 设置健康检查
+	healthUpdater := grpcSrv.HealthServer()
+	util.SetHealthChecks(healthUpdater, "qa.QAService",
+		kafkaProducer, qaStore)
+
 	grpcSrv.Run(func(s *grpc.Server) {
 		qaHandler.RegisterServer(s)
 	})

@@ -33,8 +33,9 @@ func (s *qaService) publishQuestionEvent(ctx context.Context, eventType messagin
 			// Tags: question.Tags, // 如果有Tags字段的话
 		},
 	}
-
-	err := s.kafkaProducer.SendMessage(ctx, s.cfg.Topics.QAEvents, event)
+	destination := s.topicProvider.QuestionCreatedDestination()
+	log.Printf("Publishing event %s to destination %s for question ID %d", eventType, destination, question.ID)
+	err := s.producer.SendMessage(ctx, destination, event)
 	if err != nil {
 		log.Printf("Failed to publish event %s for question ID %d: %v", eventType, question.ID, err)
 	} else {
@@ -54,7 +55,8 @@ func (s *qaService) publishNotificationEvent(ctx context.Context, payload messag
 		Payload: payload,
 	}
 
-	err := s.kafkaProducer.SendMessage(ctx, s.cfg.Topics.NotificationEvents, event)
+	destination := s.topicProvider.NotificationDestination()
+	err := s.producer.SendMessage(ctx, destination, event)
 	if err != nil {
 		log.Printf("Failed to publish event %s for recipient ID %d: %v", messaging.EventNotificationTriggered, payload.RecipientID, err)
 	} else {

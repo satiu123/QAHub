@@ -3,7 +3,9 @@ package store
 import (
 	"context"
 	"database/sql"
+	"qahub/pkg/health"
 	"qahub/qa-service/internal/model"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -55,13 +57,28 @@ type querier interface {
 type sqlxQAStore struct {
 	db querier
 	// 保存一个对 *sqlx.DB 的引用，用于开启新事务
-	dbConn *sqlx.DB
+	dbConn        *sqlx.DB
+	healthChecker *health.Checker
 }
 
-func NewQAStore(db *sqlx.DB) QAStore {
+func NewQAStore(db *sqlx.DB) *sqlxQAStore {
 	return &sqlxQAStore{
 		db:     db,
 		dbConn: db, // 确保 dbConn 被正确初始化
+	}
+}
+
+func (s *sqlxQAStore) SetHealthUpdater(updater health.StatusUpdater, serviceName string) {
+	s.healthChecker = health.NewChecker(updater, serviceName)
+	go s.startCheckHealth()
+}
+
+func (s *sqlxQAStore) startCheckHealth() {
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		s.healthChecker.CheckAndSetStatus(s.dbConn.PingContext, "MySQL")
 	}
 }
 
