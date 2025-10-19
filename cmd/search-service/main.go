@@ -4,27 +4,29 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os/signal"
-	"syscall"
 
 	"qahub/search-service/internal/handler"
 	"qahub/search-service/internal/service"
 
+	"qahub/pkg/clients"
 	"qahub/pkg/config"
+	"qahub/pkg/middleware"
+	"qahub/pkg/server"
 	"qahub/pkg/util"
 	"qahub/search-service/internal/store"
+
+	"google.golang.org/grpc"
 )
 
 func main() {
 	fmt.Println("Starting Search Service...")
 
-	// 1. 初始化配置
-	// Dockerfile 中将配置文件复制到了 /app/configs/ 目录下
+	// 初始化配置
 	if err := config.Init("configs"); err != nil {
 		log.Fatalf("初始化配置失败: %v", err)
 	}
 
-	// 2. 初始化 Elasticsearch Store，传入 QA Service 地址
+	// 初始化依赖并注入
 	qaServiceAddr := config.Conf.Services.Gateway.QaServiceEndpoint
 	esStore, err := store.New(config.Conf.Elasticsearch, qaServiceAddr)
 	if err != nil {
@@ -32,21 +34,25 @@ func main() {
 	}
 	defer util.Cleanup("Elasticsearch client", esStore.Close)
 
-	// 3. 初始化 Service，并启动 Kafka 消费者
 	searchService := service.New(esStore, config.Conf.Kafka)
 	go searchService.StartConsumer(context.Background())
 
-	// 4.初始化 Grpc
-	grpcServer := handler.NewSearchServer(searchService)
+	searchHandler := handler.NewSearchServer(searchService)
 
-	stopCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
-	if err := grpcServer.Run(stopCtx, config.Conf); err != nil {
-		log.Fatalf("Failed to run gRPC server: %v", err)
+	// 初始化 user-service 的客户端连接
+	userClient, err := clients.NewUserServiceClient(config.Conf.Services.Gateway.UserServiceEndpoint)
+	if err != nil {
+		log.Fatalf("无法连接到 user-service: %v", err)
 	}
 
-	<-stopCtx.Done()
+	// 创建并运行 gRPC 服务器
+	serverOpts := []grpc.ServerOption{
+		grpc.UnaryInterceptor(middleware.GrpcAuthInterceptor(userClient, config.Conf.Services.SearchService.PublicMethods...)),
+	}
+	grpcSrv := server.NewGrpcServer("search.SearchService", config.Conf.Services.SearchService.GrpcPort, serverOpts...)
+	grpcSrv.Run(func(s *grpc.Server) {
+		searchHandler.RegisterServer(s)
+	})
 
-	grpcServer.Stop()
-	log.Println("Search service shut down gracefully")
+	defer util.Cleanup("user-service gRPC client", userClient.Close)
 }

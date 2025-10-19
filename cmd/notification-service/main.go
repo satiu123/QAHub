@@ -3,14 +3,17 @@ package main
 import (
 	"context"
 	"log"
-	"os/signal"
 	"qahub/notification-service/internal/handler"
 	"qahub/notification-service/internal/service"
 	"qahub/notification-service/internal/store"
+	"qahub/pkg/clients"
 	"qahub/pkg/config"
 	"qahub/pkg/database"
+	"qahub/pkg/middleware"
+	"qahub/pkg/server"
 	"qahub/pkg/util"
-	"syscall"
+
+	"google.golang.org/grpc"
 )
 
 func main() {
@@ -29,27 +32,29 @@ func main() {
 	}
 	defer util.Cleanup("MongoDB client", func() error { return client.Disconnect(ctx) })
 
-	// 3.初始化store, streamHub, service
+	// 3.初始化store, streamHub, service, handler
 	ntStore := store.NewMongoNotificationStore(client.Database(config.Conf.MongoDB.Database))
 	streamHub := service.NewStreamHub()
 	go streamHub.Run()
 	ntService := service.NewNotificationService(ntStore, streamHub, config.Conf.Kafka)
 	defer util.Cleanup("Notification service", ntService.Close)
-
-	// 4.启动Kafka消费者
+	ntHandler := handler.NewNotificationGrpcServer(ntService)
+	// 启动Kafka消费者
 	go ntService.StartConsumer(ctx)
 
-	// 启动 gRPC 服务器
-	grpcServer := handler.NewNotificationGrpcServer(ntService)
-
-	stopCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
-	if err := grpcServer.Run(stopCtx, config.Conf); err != nil {
-		log.Fatalf("Failed to run gRPC server: %v", err)
+	// 初始化 user-service 的客户端连接
+	userClient, err := clients.NewUserServiceClient(config.Conf.Services.Gateway.UserServiceEndpoint)
+	if err != nil {
+		log.Fatalf("无法连接到 user-service: %v", err)
 	}
+	// 启动 gRPC 服务器
+	serverOpts := []grpc.ServerOption{
+		grpc.UnaryInterceptor(middleware.GrpcAuthInterceptor(userClient, config.Conf.Services.NotificationService.PublicMethods...)),
+	}
+	grpcSrv := server.NewGrpcServer("notification.NotificationService", config.Conf.Services.NotificationService.GrpcPort, serverOpts...)
+	grpcSrv.Run(func(s *grpc.Server) {
+		ntHandler.RegisterServer(s)
+	})
 
-	<-stopCtx.Done()
-
-	grpcServer.Stop()
-	log.Println("Notification service shut down gracefully")
+	defer util.Cleanup("user-service gRPC client", userClient.Close)
 }

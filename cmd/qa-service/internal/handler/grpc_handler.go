@@ -3,18 +3,13 @@ package handler
 import (
 	"context"
 	"log"
-	"net"
 	pb "qahub/api/proto/qa"
 	"qahub/pkg/auth"
-	"qahub/pkg/clients"
-	"qahub/pkg/config"
-	"qahub/pkg/middleware"
 	"qahub/pkg/pagination"
 	"qahub/qa-service/internal/service"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -23,8 +18,7 @@ import (
 // QAGrpcServer 实现了 pb.QAServiceServer 接口，处理 gRPC 请求
 type QAGrpcServer struct {
 	pb.UnimplementedQAServiceServer
-	qaService  service.QAService
-	grpcServer *grpc.Server
+	qaService service.QAService
 }
 
 func NewQAGrpcServer(svc service.QAService) *QAGrpcServer {
@@ -322,41 +316,6 @@ func (s *QAGrpcServer) DeleteComment(ctx context.Context, req *pb.DeleteCommentR
 	return &emptypb.Empty{}, nil
 }
 
-func (s *QAGrpcServer) Run(ctx context.Context, config config.Config) error {
-	serverAddr := ":" + config.Services.QAService.GrpcPort
-	lis, err := net.Listen("tcp", serverAddr)
-	if err != nil {
-		log.Fatalf("无法监听 gRPC 端口: %v", err)
-	}
-	// 初始化 user-service 的客户端连接
-	userClient, err := clients.NewUserServiceClient(config.Services.Gateway.UserServiceEndpoint)
-	if err != nil {
-		log.Fatalf("无法连接到 user-service: %v", err)
-	}
-	// 创建 gRPC 服务器实例，注册服务，并启动监听
-	s.grpcServer = grpc.NewServer(
-		grpc.UnaryInterceptor(middleware.GrpcAuthInterceptor(userClient, config.Services.QAService.PublicMethods...)),
-	)
-	pb.RegisterQAServiceServer(s.grpcServer, s)
-
-	// 注册 reflection 服务，使 grpcurl 等工具可以动态发现服务
-	reflection.Register(s.grpcServer)
-
-	log.Printf("gRPC 服务正在监听: %v", lis.Addr())
-	go func() {
-		if err := s.grpcServer.Serve(lis); err != nil {
-			log.Fatalf("启动 gRPC 服务失败: %v", err)
-		}
-	}()
-
-	return nil
-}
-
-// Stop 方法负责优雅关闭
-func (s *QAGrpcServer) Stop() {
-	if s.grpcServer != nil {
-		log.Println("正在优雅停止 gRPC 服务...")
-		s.grpcServer.GracefulStop()
-		log.Println("gRPC 服务已停止.")
-	}
+func (s *QAGrpcServer) RegisterServer(grpcServer *grpc.Server) {
+	pb.RegisterQAServiceServer(grpcServer, s)
 }
