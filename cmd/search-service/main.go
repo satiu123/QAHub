@@ -27,6 +27,7 @@ func main() {
 		log.Fatalf("初始化配置失败: %v", err)
 	}
 
+	serviceName := "search.SearchService"
 	// 初始化依赖并注入
 	qaServiceAddr := config.Conf.Services.Gateway.QaServiceEndpoint
 	esStore, err := store.NewEsStore(config.Conf.Elasticsearch, qaServiceAddr)
@@ -35,8 +36,10 @@ func main() {
 	}
 	defer util.Cleanup("Elasticsearch client", esStore.Close)
 	consumer := messaging.NewKafkaConsumer(config.Conf.Kafka, service.TopicQuestions, service.GroupID, nil)
-	searchService := service.NewSearchService(esStore, consumer)
-	searchService.StartConsumer(context.Background())
+	searchService := service.NewSearchService(esStore)
+
+	// 注册事件处理器
+	consumer.SetHandlers(searchService.RegisterHandlers())
 
 	searchHandler := handler.NewSearchServer(searchService)
 
@@ -50,12 +53,17 @@ func main() {
 	serverOpts := []grpc.ServerOption{
 		grpc.UnaryInterceptor(middleware.GrpcAuthInterceptor(userClient, config.Conf.Services.SearchService.PublicMethods...)),
 	}
-	grpcSrv := server.NewGrpcServer("search.SearchService", config.Conf.Services.SearchService.GrpcPort, serverOpts...)
+	grpcSrv := server.NewGrpcServer(serviceName, config.Conf.Services.SearchService.GrpcPort, serverOpts...)
 
 	// 设置健康检查
 	healthUpdater := grpcSrv.HealthServer()
-	util.SetHealthChecks(healthUpdater, "search.SearchService", consumer, esStore)
+	util.SetHealthChecks(
+		healthUpdater,
+		serviceName,
+		consumer, esStore)
 
+	// 启动后台任务
+	go consumer.Start(context.Background())
 	grpcSrv.Run(func(s *grpc.Server) {
 		searchHandler.RegisterServer(s)
 	})

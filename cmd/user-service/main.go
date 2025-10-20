@@ -51,7 +51,10 @@ func main() {
 
 	// 设置健康检查
 	healthUpdater := grpcSrv.HealthServer()
-	util.SetHealthChecks(healthUpdater, serviceName, userStore)
+	util.SetHealthChecks(
+		healthUpdater,
+		serviceName,
+		userStore)
 	// 运行服务器，并传入业务注册的逻辑
 	grpcSrv.Run(func(s *grpc.Server) {
 		userHandler.RegisterServer(s)

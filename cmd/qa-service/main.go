@@ -23,6 +23,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	serviceName := "qa.QAService"
 	// 初始化数据库连接
 	db, err := database.NewMySQLConnection(config.Conf.MySQL)
 	if err != nil {
@@ -47,11 +48,11 @@ func main() {
 	serverOpts := []grpc.ServerOption{
 		grpc.UnaryInterceptor(middleware.GrpcAuthInterceptor(userClient, config.Conf.Services.QAService.PublicMethods...)),
 	}
-	grpcSrv := server.NewGrpcServer("qa.QAService", config.Conf.Services.QAService.GrpcPort, serverOpts...)
+	grpcSrv := server.NewGrpcServer(serviceName, config.Conf.Services.QAService.GrpcPort, serverOpts...)
 
 	// 设置健康检查
 	healthUpdater := grpcSrv.HealthServer()
-	util.SetHealthChecks(healthUpdater, "qa.QAService",
+	util.SetHealthChecks(healthUpdater, serviceName,
 		kafkaProducer, qaStore)
 
 	grpcSrv.Run(func(s *grpc.Server) {

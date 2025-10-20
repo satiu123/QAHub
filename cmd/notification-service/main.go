@@ -23,6 +23,7 @@ func main() {
 		log.Fatalf("加载配置失败: %v", err)
 	}
 
+	serviceName := "notification.NotificationService"
 	// 2.连接数据库
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -36,14 +37,13 @@ func main() {
 	// 3.初始化store, streamHub, service, handler
 	ntStore := store.NewMongoNotificationStore(client.Database(config.Conf.MongoDB.Database))
 	streamHub := service.NewStreamHub()
-	go streamHub.Run()
 
 	consumer := messaging.NewKafkaConsumer(config.Conf.Kafka, service.TopicNotifications, service.GroupID, nil)
-	ntService := service.NewNotificationService(ntStore, streamHub, consumer)
-	defer util.Cleanup("Notification service", ntService.Close)
+	ntService := service.NewNotificationService(ntStore, streamHub)
 	ntHandler := handler.NewNotificationGrpcServer(ntService)
-	// 启动Kafka消费者
-	go ntService.StartConsumer(ctx)
+
+	// 注册事件处理器
+	consumer.SetHandlers(ntService.RegisterHandlers())
 
 	// 初始化 user-service 的客户端连接
 	userClient, err := clients.NewUserServiceClient(config.Conf.Services.Gateway.UserServiceEndpoint)
@@ -54,11 +54,20 @@ func main() {
 	serverOpts := []grpc.ServerOption{
 		grpc.UnaryInterceptor(middleware.GrpcAuthInterceptor(userClient, config.Conf.Services.NotificationService.PublicMethods...)),
 	}
-	grpcSrv := server.NewGrpcServer("notification.NotificationService", config.Conf.Services.NotificationService.GrpcPort, serverOpts...)
+	grpcSrv := server.NewGrpcServer(serviceName, config.Conf.Services.NotificationService.GrpcPort, serverOpts...)
 
 	// 设置健康检查
 	healthUpdater := grpcSrv.HealthServer()
-	util.SetHealthChecks(healthUpdater, "notification.NotificationService", consumer, ntStore)
+	util.SetHealthChecks(
+		healthUpdater,
+		serviceName,
+		consumer, ntStore)
+
+	// 启动后台任务
+	go streamHub.Run()
+	go consumer.Start(context.Background())
+
+	// 启动 gRPC 服务
 	grpcSrv.Run(func(s *grpc.Server) {
 		ntHandler.RegisterServer(s)
 	})
