@@ -2,19 +2,15 @@ package handler
 
 import (
 	"context"
-	"log"
-	"net"
 
 	pb "qahub/api/proto/user"
 	"qahub/pkg/auth"
-	"qahub/pkg/config"
 	"qahub/user-service/internal/dto"
 	"qahub/user-service/internal/model"
 	"qahub/user-service/internal/service"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -25,7 +21,6 @@ import (
 type UserGrpcServer struct {
 	pb.UnimplementedUserServiceServer // 必须嵌入，以实现向前兼容
 	userService                       service.UserService
-	grpcServer                        *grpc.Server
 }
 
 // NewUserGrpcServer 创建一个新的 gRPC 服务端处理器
@@ -163,35 +158,7 @@ func (s *UserGrpcServer) DeleteUser(ctx context.Context, req *pb.DeleteUserReque
 	return &emptypb.Empty{}, nil
 }
 
-func (s *UserGrpcServer) Run(ctx context.Context, config config.UserService) error {
-	serverAddr := ":" + config.GrpcPort
-	lis, err := net.Listen("tcp", serverAddr)
-	if err != nil {
-		log.Fatalln("failed to listen:", err)
-	}
-	s.grpcServer = grpc.NewServer(
-		grpc.UnaryInterceptor(s.userService.AuthInterceptor(config.PublicMethods...)),
-	)
-	log.Println("Public gRPC methods:", config.PublicMethods)
-	pb.RegisterUserServiceServer(s.grpcServer, s)
-
-	// 注册 reflection 服务，使 grpcurl 等工具可以动态发现服务
-	reflection.Register(s.grpcServer)
-
-	log.Printf("gRPC server listening at %v", lis.Addr())
-	go func() {
-		if err := s.grpcServer.Serve(lis); err != nil {
-			log.Fatalf("failed to serve: %v", err)
-		}
-	}()
-	return nil
-}
-
-// Stop 方法负责优雅关闭
-func (s *UserGrpcServer) Stop() {
-	if s.grpcServer != nil {
-		log.Println("正在优雅停止 gRPC 服务...")
-		s.grpcServer.GracefulStop()
-		log.Println("gRPC 服务已停止.")
-	}
+// RegisterServer 将此 handler 注册到给定的 gRPC 服务器上
+func (s *UserGrpcServer) RegisterServer(grpcServer *grpc.Server) {
+	pb.RegisterUserServiceServer(grpcServer, s)
 }

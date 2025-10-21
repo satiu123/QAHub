@@ -54,9 +54,13 @@ services:
     public_methods: # 不需要身份验证的公共API路径
       - "/user.UserService/Register"
       - "/user.UserService/Login"
+      - "/grpc.health.v1.Health/Check"
   qa_service:
     grpc_port: "50052"
     http_port: "8082"
+    public_methods:
+      - "/qa.QAService/ListQuestions"
+      - "/qa.QAService/GetQuestion"
   search_service:
     grpc_port: "50053"
     http_port: "8083"

@@ -2,12 +2,16 @@ package service
 
 import (
 	"context"
-	"qahub/pkg/config"
 	"qahub/pkg/messaging"
 	"qahub/qa-service/internal/dto"
 	"qahub/qa-service/internal/model"
 	"qahub/qa-service/internal/store"
 )
+
+type EventDestinationProvider interface {
+	QuestionCreatedDestination() string
+	NotificationDestination() string
+}
 
 // QAService 定义了问答服务的业务逻辑接口
 type QAService interface {
@@ -45,16 +49,15 @@ type QAService interface {
 // qaService 是 QAService 接口的实现
 type qaService struct {
 	store         store.QAStore
-	kafkaProducer *messaging.KafkaProducer
-	cfg           config.Kafka
+	producer      messaging.Producer
+	topicProvider EventDestinationProvider
 }
 
 // NewQAService 创建一个新的 QAService
-func NewQAService(s store.QAStore, cfg config.Kafka) QAService {
-	producer := messaging.NewKafkaProducer(cfg)
+func NewQAService(s store.QAStore, p messaging.Producer, tp EventDestinationProvider) *qaService {
 	return &qaService{
 		store:         s,
-		kafkaProducer: producer,
-		cfg:           cfg,
+		producer:      p,
+		topicProvider: tp,
 	}
 }

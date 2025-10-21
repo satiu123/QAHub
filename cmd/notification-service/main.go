@@ -3,14 +3,18 @@ package main
 import (
 	"context"
 	"log"
-	"os/signal"
 	"qahub/notification-service/internal/handler"
 	"qahub/notification-service/internal/service"
 	"qahub/notification-service/internal/store"
+	"qahub/pkg/clients"
 	"qahub/pkg/config"
 	"qahub/pkg/database"
+	"qahub/pkg/messaging"
+	"qahub/pkg/middleware"
+	"qahub/pkg/server"
 	"qahub/pkg/util"
-	"syscall"
+
+	"google.golang.org/grpc"
 )
 
 func main() {
@@ -19,6 +23,7 @@ func main() {
 		log.Fatalf("加载配置失败: %v", err)
 	}
 
+	serviceName := "notification.NotificationService"
 	// 2.连接数据库
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -29,27 +34,43 @@ func main() {
 	}
 	defer util.Cleanup("MongoDB client", func() error { return client.Disconnect(ctx) })
 
-	// 3.初始化store, streamHub, service
+	// 3.初始化store, streamHub, service, handler
 	ntStore := store.NewMongoNotificationStore(client.Database(config.Conf.MongoDB.Database))
 	streamHub := service.NewStreamHub()
-	go streamHub.Run()
-	ntService := service.NewNotificationService(ntStore, streamHub, config.Conf.Kafka)
-	defer util.Cleanup("Notification service", ntService.Close)
 
-	// 4.启动Kafka消费者
-	go ntService.StartConsumer(ctx)
+	consumer := messaging.NewKafkaConsumer(config.Conf.Kafka, service.TopicNotifications, service.GroupID, nil)
+	ntService := service.NewNotificationService(ntStore, streamHub)
+	ntHandler := handler.NewNotificationGrpcServer(ntService)
 
-	// 启动 gRPC 服务器
-	grpcServer := handler.NewNotificationGrpcServer(ntService)
+	// 注册事件处理器
+	consumer.SetHandlers(ntService.RegisterHandlers())
 
-	stopCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
-	if err := grpcServer.Run(stopCtx, config.Conf); err != nil {
-		log.Fatalf("Failed to run gRPC server: %v", err)
+	// 初始化 user-service 的客户端连接
+	userClient, err := clients.NewUserServiceClient(config.Conf.Services.Gateway.UserServiceEndpoint)
+	if err != nil {
+		log.Fatalf("无法连接到 user-service: %v", err)
 	}
+	// 启动 gRPC 服务器
+	serverOpts := []grpc.ServerOption{
+		grpc.UnaryInterceptor(middleware.GrpcAuthInterceptor(userClient, config.Conf.Services.NotificationService.PublicMethods...)),
+	}
+	grpcSrv := server.NewGrpcServer(serviceName, config.Conf.Services.NotificationService.GrpcPort, serverOpts...)
 
-	<-stopCtx.Done()
+	// 设置健康检查
+	healthUpdater := grpcSrv.HealthServer()
+	util.SetHealthChecks(
+		healthUpdater,
+		serviceName,
+		consumer, ntStore)
 
-	grpcServer.Stop()
-	log.Println("Notification service shut down gracefully")
+	// 启动后台任务
+	go streamHub.Run()
+	go consumer.Start(context.Background())
+
+	// 启动 gRPC 服务
+	grpcSrv.Run(func(s *grpc.Server) {
+		ntHandler.RegisterServer(s)
+	})
+
+	defer util.Cleanup("user-service gRPC client", userClient.Close)
 }

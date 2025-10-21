@@ -7,6 +7,7 @@ import (
 
 	"qahub/pkg/auth"
 	"qahub/pkg/config"
+	"qahub/pkg/messaging"
 	"qahub/qa-service/internal/model"
 	"qahub/qa-service/internal/service"
 
@@ -19,7 +20,8 @@ func TestCreateComment(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockStore := service.NewMockQAStore(ctrl)
-	qaService := service.NewQAService(mockStore, config.Kafka{})
+	producer := messaging.NewKafkaProducer(config.Conf.Kafka)
+	qaService := service.NewQAService(mockStore, producer, &config.Conf)
 
 	t.Run("成功创建评论", func(t *testing.T) {
 		answerID := int64(200)
@@ -111,7 +113,8 @@ func TestGetComment(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockStore := service.NewMockQAStore(ctrl)
-	qaService := service.NewQAService(mockStore, config.Kafka{})
+	producer := messaging.NewKafkaProducer(config.Conf.Kafka)
+	qaService := service.NewQAService(mockStore, producer, &config.Conf)
 	ctx := context.Background()
 
 	t.Run("成功获取评论", func(t *testing.T) {
@@ -162,7 +165,8 @@ func TestListComments(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockStore := service.NewMockQAStore(ctrl)
-	qaService := service.NewQAService(mockStore, config.Kafka{})
+	producer := messaging.NewKafkaProducer(config.Conf.Kafka)
+	qaService := service.NewQAService(mockStore, producer, &config.Conf)
 	ctx := context.Background()
 
 	t.Run("成功获取评论列表", func(t *testing.T) {
@@ -256,7 +260,8 @@ func TestUpdateComment(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockStore := service.NewMockQAStore(ctrl)
-	qaService := service.NewQAService(mockStore, config.Kafka{})
+	producer := messaging.NewKafkaProducer(config.Conf.Kafka)
+	qaService := service.NewQAService(mockStore, producer, &config.Conf)
 	ctx := context.Background()
 
 	t.Run("成功更新评论", func(t *testing.T) {
@@ -347,7 +352,8 @@ func TestDeleteComment(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockStore := service.NewMockQAStore(ctrl)
-	qaService := service.NewQAService(mockStore, config.Kafka{})
+	producer := messaging.NewKafkaProducer(config.Conf.Kafka)
+	qaService := service.NewQAService(mockStore, producer, &config.Conf)
 	ctx := context.Background()
 
 	t.Run("成功删除评论", func(t *testing.T) {

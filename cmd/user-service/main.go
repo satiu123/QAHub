@@ -1,26 +1,30 @@
+// qahub/user-service/main.go
 package main
 
 import (
-	"context"
 	"log"
-	"os/signal"
 	"qahub/pkg/config"
 	"qahub/pkg/database"
 	"qahub/pkg/redis"
+	"qahub/pkg/server"
 	"qahub/pkg/util"
 	"qahub/user-service/internal/handler"
 	"qahub/user-service/internal/service"
 	"qahub/user-service/internal/store"
-	"syscall"
+
+	"google.golang.org/grpc"
 )
 
 func main() {
-	// 1. 加载配置
+	// 加载配置
 	if err := config.Init("configs"); err != nil {
 		log.Fatalf("Failed to initialize config: %v", err)
 	}
+	cfg := config.Conf.Services.UserService
 
-	// 2. 初始化数据库和 Redis
+	// 初始化业务依赖 (DB, Redis, Store, Service, Handler)
+	serviceName := "user.UserService"
+
 	db, err := database.NewMySQLConnection(config.Conf.MySQL)
 	if err != nil {
 		log.Fatalf("Database connection failed: %v", err)
@@ -33,20 +37,26 @@ func main() {
 	}
 	defer util.Cleanup("Redis client", redisClient.Close)
 
-	// 3. 依赖注入
-	userStoreWithBlacklist := store.NewUserCacheStore(redisClient, store.NewMySQLUserStore(db))
-	userService := service.NewUserService(userStoreWithBlacklist)
-	userGrpcHandler := handler.NewUserGrpcServer(userService)
+	userStore := store.NewUserCacheStore(redisClient, store.NewMySQLUserStore(db))
+	userService := service.NewUserService(userStore)
+	userHandler := handler.NewUserGrpcServer(userService)
 
-	// 4. 启动 gRPC 服务器
-	stopCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
-	if err := userGrpcHandler.Run(stopCtx, config.Conf.Services.UserService); err != nil {
-		log.Fatalf("Failed to run gRPC server: %v", err)
+	// 创建服务器
+	serverOpts := []grpc.ServerOption{
+		grpc.UnaryInterceptor(userService.AuthInterceptor(cfg.PublicMethods...)),
 	}
 
-	<-stopCtx.Done()
+	// 创建通用服务器实例
+	grpcSrv := server.NewGrpcServer(serviceName, cfg.GrpcPort, serverOpts...)
 
-	userGrpcHandler.Stop()
-	log.Println("User service shut down gracefully")
+	// 设置健康检查
+	healthUpdater := grpcSrv.HealthServer()
+	util.SetHealthChecks(
+		healthUpdater,
+		serviceName,
+		userStore)
+	// 运行服务器，并传入业务注册的逻辑
+	grpcSrv.Run(func(s *grpc.Server) {
+		userHandler.RegisterServer(s)
+	})
 }

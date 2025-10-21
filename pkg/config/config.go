@@ -161,3 +161,11 @@ func Init(configPath string) error {
 	// 将配置解析到 Conf 变量中
 	return viper.Unmarshal(&Conf)
 }
+
+func (c *Config) QuestionCreatedDestination() string {
+	return c.Kafka.Topics.QAEvents
+}
+
+func (c *Config) NotificationDestination() string {
+	return c.Kafka.Topics.NotificationEvents
+}

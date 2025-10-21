@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"qahub/notification-service/internal/model"
+	"qahub/pkg/health"
 	"qahub/pkg/util"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -26,23 +28,40 @@ type NotificationStore interface {
 	CountUnread(ctx context.Context, userID int64) (int64, error)
 }
 
-type MongoNotificationStore struct {
+type mongoNotificationStore struct {
 	// MongoDB 连接和集合等字段
-	db *mongo.Database
+	db          *mongo.Database
+	healthCheck *health.Checker
 }
 
-func NewMongoNotificationStore(db *mongo.Database) NotificationStore {
-	return &MongoNotificationStore{db: db}
+func NewMongoNotificationStore(db *mongo.Database) *mongoNotificationStore {
+	return &mongoNotificationStore{db: db}
+}
+
+func (m *mongoNotificationStore) SetHealthUpdater(checker health.StatusUpdater, serviceName string) {
+	m.healthCheck = health.NewChecker(checker, serviceName)
+	go m.startHealthCheck()
+}
+
+func (m *mongoNotificationStore) startHealthCheck() {
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		m.healthCheck.CheckAndSetStatus(func(ctx context.Context) error {
+			return m.db.Client().Ping(ctx, nil)
+		}, "MongoDB")
+	}
 }
 
 // Create 插入一条新的通知记录
-func (m *MongoNotificationStore) Create(ctx context.Context, notification *model.Notification) error {
+func (m *mongoNotificationStore) Create(ctx context.Context, notification *model.Notification) error {
 	_, err := m.db.Collection(notificationCollection).InsertOne(ctx, notification)
 	return err
 }
 
 // GetByRecipientID 分页查询某个用户的通知列表，按时间倒序排列
-func (m *MongoNotificationStore) GetByRecipientID(ctx context.Context, userID int64, limit int32, offset int64) ([]*model.Notification, error) {
+func (m *mongoNotificationStore) GetByRecipientID(ctx context.Context, userID int64, limit int32, offset int64) ([]*model.Notification, error) {
 	var notifications []*model.Notification
 
 	opts := options.Find()
@@ -66,7 +85,7 @@ func (m *MongoNotificationStore) GetByRecipientID(ctx context.Context, userID in
 
 // MarkAsRead 将指定的通知标记为已读
 // 它会校验通知ID和用户ID，确保用户只能修改自己的通知
-func (m *MongoNotificationStore) MarkAsRead(ctx context.Context, notificationID string, userID int64) error {
+func (m *mongoNotificationStore) MarkAsRead(ctx context.Context, notificationID string, userID int64) error {
 	objID, err := primitive.ObjectIDFromHex(notificationID)
 	if err != nil {
 		return errors.New("invalid notification id format")
@@ -93,7 +112,7 @@ func (m *MongoNotificationStore) MarkAsRead(ctx context.Context, notificationID 
 }
 
 // MarkManyAsRead 批量将通知标记为已读
-func (m *MongoNotificationStore) MarkManyAsRead(ctx context.Context, notificationIDs []string, userID int64) (int64, error) {
+func (m *mongoNotificationStore) MarkManyAsRead(ctx context.Context, notificationIDs []string, userID int64) (int64, error) {
 	objIDs := make([]primitive.ObjectID, len(notificationIDs))
 	for i, idStr := range notificationIDs {
 		objID, err := primitive.ObjectIDFromHex(idStr)
@@ -120,7 +139,7 @@ func (m *MongoNotificationStore) MarkManyAsRead(ctx context.Context, notificatio
 }
 
 // Delete 删除一条通知
-func (m *MongoNotificationStore) Delete(ctx context.Context, notificationID string, userID int64) error {
+func (m *mongoNotificationStore) Delete(ctx context.Context, notificationID string, userID int64) error {
 	objID, err := primitive.ObjectIDFromHex(notificationID)
 	if err != nil {
 		return errors.New("invalid notification id format")
@@ -143,7 +162,7 @@ func (m *MongoNotificationStore) Delete(ctx context.Context, notificationID stri
 	return nil
 }
 
-func (m *MongoNotificationStore) DeleteMany(ctx context.Context, notificationIDs []string, userID int64) (int64, error) {
+func (m *mongoNotificationStore) DeleteMany(ctx context.Context, notificationIDs []string, userID int64) (int64, error) {
 	objIDs := make([]primitive.ObjectID, len(notificationIDs))
 	for i, idStr := range notificationIDs {
 		objID, err := primitive.ObjectIDFromHex(idStr)
@@ -166,7 +185,7 @@ func (m *MongoNotificationStore) DeleteMany(ctx context.Context, notificationIDs
 	return result.DeletedCount, nil
 }
 
-func (m *MongoNotificationStore) CountUnread(ctx context.Context, userID int64) (int64, error) {
+func (m *mongoNotificationStore) CountUnread(ctx context.Context, userID int64) (int64, error) {
 	filter := bson.M{
 		"recipient_id": userID,
 		"is_read":      false,

@@ -7,7 +7,6 @@ import (
 	pb "qahub/api/proto/notification"
 	"qahub/notification-service/internal/model"
 	"qahub/notification-service/internal/store"
-	"qahub/pkg/config"
 	"qahub/pkg/messaging"
 	"time"
 
@@ -21,8 +20,6 @@ const (
 
 // NotificationService 是通知服务的接口
 type NotificationService interface {
-	StartConsumer(ctx context.Context)
-	Close() error
 	GetNotifications(ctx context.Context, userID int64, limit int32, offset int64) ([]*model.Notification, error)
 	MarkNotificationsAsRead(ctx context.Context, userID int64, notificationIDs []string, markAll bool) (int64, error)
 	DeleteNotification(ctx context.Context, userID int64, notificationID string) error
@@ -33,21 +30,17 @@ type NotificationService interface {
 
 // notificationService 是 NotificationService 接口的具体实现
 type notificationService struct {
-	store         store.NotificationStore
-	streamHub     *StreamHub
-	kafkaConsumer *messaging.KafkaConsumer
+	store     store.NotificationStore
+	streamHub *StreamHub
 }
 
 // NewNotificationService 创建一个新的 NotificationService 实例
-func NewNotificationService(store store.NotificationStore, streamHub *StreamHub, cfg config.Kafka) NotificationService {
-	s := &notificationService{
+func NewNotificationService(store store.NotificationStore, streamHub *StreamHub) *notificationService {
+	service := &notificationService{
 		store:     store,
 		streamHub: streamHub,
 	}
-	// 必须在service实例化后设置consumer，因为handler需要引用service
-	consumer := messaging.NewKafkaConsumer(cfg, TopicNotifications, GroupID, s.getEventHandlers())
-	s.kafkaConsumer = consumer
-	return s
+	return service
 }
 
 // GetStreamHub 返回 StreamHub 实例
@@ -99,8 +92,8 @@ func (s *notificationService) GetUnreadCount(ctx context.Context, userID int64) 
 	return s.store.CountUnread(ctx, userID)
 }
 
-// getEventHandlers 返回此服务处理的事件及其对应的处理函数
-func (s *notificationService) getEventHandlers() map[messaging.EventType]messaging.EventHandler {
+// RegisterHandlers 返回此服务处理的事件及其对应的处理函数
+func (s *notificationService) RegisterHandlers() map[messaging.EventType]messaging.EventHandler {
 	return map[messaging.EventType]messaging.EventHandler{
 		messaging.EventNotificationTriggered: s.handleNotificationTriggered,
 	}
@@ -140,16 +133,6 @@ func (s *notificationService) handleNotificationTriggered(ctx context.Context, e
 	}
 
 	return nil
-}
-
-// StartConsumer 启动 Kafka 消费者，在一个无限循环中读取消息
-func (s *notificationService) StartConsumer(ctx context.Context) {
-	s.kafkaConsumer.Start(ctx)
-}
-
-// Close 方法用于优雅地关闭服务资源，例如 Kafka reader
-func (s *notificationService) Close() error {
-	return s.kafkaConsumer.Close()
 }
 
 // convertModelToProto 将 model.Notification 转换为 pb.Notification

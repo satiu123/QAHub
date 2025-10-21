@@ -6,24 +6,54 @@ import (
 	"fmt"
 	"time"
 
+	"qahub/pkg/health"
 	"qahub/user-service/internal/model"
 
 	"github.com/redis/go-redis/v9"
 )
 
+// TokenBlacklister 定义了 JWT 黑名单所需的方法
+type TokenBlacklister interface {
+	AddToBlacklist(ctx context.Context, token string, expiration time.Duration) error
+	IsBlacklisted(ctx context.Context, token string) (bool, error)
+}
+
 // userCacheStore 是一个为 UserStore 实现的装饰器，它使用 Redis 增加了缓存层。
 type userCacheStore struct {
-	redisClient *redis.Client // Redis 客户端
-	next        UserStore     // 链中的下一个 store (例如，数据库 store)
-	expiration  time.Duration // 缓存过期时间
+	redisClient   *redis.Client // Redis 客户端
+	next          UserStore     // 链中的下一个 store (例如，数据库 store)
+	expiration    time.Duration // 缓存过期时间
+	healthChecker *health.Checker
 }
 
 // NewUserCacheStore 创建一个带有缓存装饰的 UserStore 新实例。
-func NewUserCacheStore(redisClient *redis.Client, next UserStore) UserStore {
+func NewUserCacheStore(redisClient *redis.Client, next UserStore) *userCacheStore {
 	return &userCacheStore{
 		redisClient: redisClient,
 		next:        next,
 		expiration:  time.Hour, // 默认缓存过期时间设置为1小时
+	}
+}
+
+func (s *userCacheStore) SetHealthUpdater(updater health.StatusUpdater, serviceName string) {
+	s.healthChecker = health.NewChecker(updater, serviceName)
+	go s.startHealthCheck()
+
+	// 传递给下一层 store
+	if awareStore, ok := s.next.(health.HealthAware); ok {
+		awareStore.SetHealthUpdater(updater, serviceName)
+	}
+}
+
+func (s *userCacheStore) startHealthCheck() {
+	// 定期检查 Redis 连接健康状况
+	ticker := time.NewTicker(15 * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		s.healthChecker.CheckAndSetStatus(func(ctx context.Context) error {
+			return s.redisClient.Ping(ctx).Err()
+		}, "Redis Connection")
 	}
 }
 

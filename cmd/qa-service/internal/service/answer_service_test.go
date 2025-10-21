@@ -7,6 +7,7 @@ import (
 
 	"qahub/pkg/auth"
 	"qahub/pkg/config"
+	"qahub/pkg/messaging"
 	"qahub/qa-service/internal/model"
 	"qahub/qa-service/internal/service"
 	"qahub/qa-service/internal/store"
@@ -20,7 +21,8 @@ func TestCreateAnswer(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockStore := service.NewMockQAStore(ctrl)
-	qaService := service.NewQAService(mockStore, config.Kafka{})
+	producer := messaging.NewKafkaProducer(config.Conf.Kafka)
+	qaService := service.NewQAService(mockStore, producer, &config.Conf)
 
 	t.Run("成功创建回答", func(t *testing.T) {
 		questionID := int64(1)
@@ -111,7 +113,8 @@ func TestGetAnswer(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockStore := service.NewMockQAStore(ctrl)
-	qaService := service.NewQAService(mockStore, config.Kafka{})
+	producer := messaging.NewKafkaProducer(config.Conf.Kafka)
+	qaService := service.NewQAService(mockStore, producer, &config.Conf)
 	ctx := context.Background()
 
 	t.Run("成功获取回答", func(t *testing.T) {
@@ -162,7 +165,8 @@ func TestListAnswers(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockStore := service.NewMockQAStore(ctrl)
-	qaService := service.NewQAService(mockStore, config.Kafka{})
+	producer := messaging.NewKafkaProducer(config.Conf.Kafka)
+	qaService := service.NewQAService(mockStore, producer, &config.Conf)
 	ctx := context.Background()
 
 	t.Run("成功获取回答列表", func(t *testing.T) {
@@ -244,7 +248,8 @@ func TestUpvoteAnswer(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockStore := service.NewMockQAStore(ctrl)
-	qaService := service.NewQAService(mockStore, config.Kafka{})
+	producer := messaging.NewKafkaProducer(config.Conf.Kafka)
+	qaService := service.NewQAService(mockStore, producer, &config.Conf)
 	ctx := context.Background()
 
 	t.Run("成功点赞回答", func(t *testing.T) {
@@ -303,7 +308,8 @@ func TestDownvoteAnswer(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockStore := service.NewMockQAStore(ctrl)
-	qaService := service.NewQAService(mockStore, config.Kafka{})
+	producer := messaging.NewKafkaProducer(config.Conf.Kafka)
+	qaService := service.NewQAService(mockStore, producer, &config.Conf)
 	ctx := context.Background()
 
 	t.Run("成功取消点赞", func(t *testing.T) {
@@ -343,7 +349,8 @@ func TestUpdateAnswer(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockStore := service.NewMockQAStore(ctrl)
-	qaService := service.NewQAService(mockStore, config.Kafka{})
+	producer := messaging.NewKafkaProducer(config.Conf.Kafka)
+	qaService := service.NewQAService(mockStore, producer, &config.Conf)
 	ctx := context.Background()
 
 	t.Run("成功更新回答", func(t *testing.T) {
@@ -416,7 +423,8 @@ func TestDeleteAnswer(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockStore := service.NewMockQAStore(ctrl)
-	qaService := service.NewQAService(mockStore, config.Kafka{})
+	producer := messaging.NewKafkaProducer(config.Conf.Kafka)
+	qaService := service.NewQAService(mockStore, producer, &config.Conf)
 	ctx := context.Background()
 
 	t.Run("成功删除回答", func(t *testing.T) {

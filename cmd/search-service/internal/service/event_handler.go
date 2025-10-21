@@ -8,7 +8,7 @@ import (
 	"qahub/pkg/messaging"
 )
 
-func (s *searchService) registerHandlers() map[messaging.EventType]messaging.EventHandler {
+func (s *searchService) RegisterHandlers() map[messaging.EventType]messaging.EventHandler {
 	return map[messaging.EventType]messaging.EventHandler{
 		messaging.EventQuestionCreated: s.handleQuestionCreated,
 		messaging.EventQuestionUpdated: s.handleQuestionUpdated,
