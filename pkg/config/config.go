@@ -143,19 +143,23 @@ type Gateway struct {
 // 它会读取指定路径下的配置文件，并将其解析到全局的 Conf 变量中
 // 也支持环境变量覆盖，例如 SERVER_PORT 将会覆盖 server.port 的值
 func Init(configPath string) error {
-	// 设置配置文件路径
-	viper.AddConfigPath(configPath)
-	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
+	// 设置配置文件路径，如果 configPath 不为空
+	if configPath != "" {
+		viper.AddConfigPath(configPath)
+		viper.SetConfigName("config")
+		viper.SetConfigType("yaml")
+	}
 
 	// 启用环境变量覆盖
-	// 例如，要覆盖数据库DSN，可以设置环境变量 MYSQL_DSN
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.AutomaticEnv()
 
 	// 读取配置文件
 	if err := viper.ReadInConfig(); err != nil {
-		return err
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+		} else {
+			return err
+		}
 	}
 
 	// 将配置解析到 Conf 变量中
