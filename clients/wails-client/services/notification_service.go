@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	ntpb "qahub/api/proto/notification"
+	ntpb "wails-client/api/proto/notification"
 )
 
 type NotificationService struct {

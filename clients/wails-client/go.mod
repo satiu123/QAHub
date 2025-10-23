@@ -1,11 +1,13 @@
-module changeme
+module wails-client
 
 go 1.25.1
 
 require (
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.3
 	github.com/wailsapp/wails/v2 v2.10.2
+	google.golang.org/genproto/googleapis/api v0.0.0-20250929231259-57b25ae835d4
 	google.golang.org/grpc v1.75.1
-	google.golang.org/protobuf v1.36.9
+	google.golang.org/protobuf v1.36.10
 )
 
 require (
@@ -35,8 +37,8 @@ require (
 	golang.org/x/crypto v0.39.0 // indirect
 	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
-	golang.org/x/text v0.26.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250707201910-8d1bb00bc6a7 // indirect
+	golang.org/x/text v0.29.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250929231259-57b25ae835d4 // indirect
 )
 
 // replace github.com/wailsapp/wails/v2 v2.10.2 => /home/satiu/code/QAHub/clients

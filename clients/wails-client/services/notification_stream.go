@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	ntpb "qahub/api/proto/notification"
+	ntpb "wails-client/api/proto/notification"
 )
 
 // NotificationHandler 是处理接收到的通知的回调函数类型

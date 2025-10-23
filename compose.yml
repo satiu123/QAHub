@@ -23,7 +23,7 @@ services:
     # 启动命令：执行向上迁移
     # 注意：数据库连接字符串使用了服务名 `mariadb`
     # -verbose 参数可以打印详细日志
-    command: ["-path", "/migrations", "-database", "mysql://qahub_user:12345678@tcp(mariadb:3306)/qahub?charset=utf8mb4&parseTime=True&loc=Local", "up"]
+    command: [ "-path", "/migrations", "-database", "mysql://qahub_user:12345678@tcp(mariadb:3306)/qahub?charset=utf8mb4&parseTime=True&loc=Local", "up" ]
     # 依赖 mariadb 服务，等待其健康检查通过后再启动
     depends_on:
       mariadb:
@@ -34,11 +34,14 @@ services:
   user-service:
     build:
       context: .
-      dockerfile: cmd/user-service/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: user-service
+        PORT: 50051
     container_name: qahub-user-service
     restart: always
     ports:
-      - "50051:50051"  # gRPC 端口（用于测试）
+      - "50051:50051"
     environment:
       - GIN_MODE=release
     depends_on:
@@ -51,15 +54,17 @@ services:
   qa-service:
     build:
       context: .
-      dockerfile: cmd/qa-service/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: qa-service
+        PORT: 50052
     container_name: qahub-qa-service
     restart: always
     ports:
-      - "50052:50052"  # gRPC 端口（用于测试）
+      - "50052:50052"
     environment:
       - GIN_MODE=release
     depends_on:
-      # 修改：不再直接依赖 mariadb，而是依赖 db-migrator 的成功退出
       db-migrator:
         condition: service_completed_successfully
       kafka:
@@ -69,11 +74,14 @@ services:
   search-service:
     build:
       context: .
-      dockerfile: cmd/search-service/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: search-service
+        PORT: 50053
     container_name: qahub-search-service
     restart: always
     ports:
-      - "50053:50053"  # gRPC 端口（用于测试）
+      - "50053:50053"
     environment:
       - GIN_MODE=release
     depends_on:
@@ -85,11 +93,14 @@ services:
   notification-service:
     build:
       context: .
-      dockerfile: cmd/notification-service/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: notification-service
+        PORT: 50054
     container_name: qahub-notification-service
     restart: always
     ports:
-      - "50054:50054"  # gRPC 端口（用于测试）
+      - "50054:50054"
     environment:
       - GIN_MODE=release
     depends_on:
@@ -112,10 +123,10 @@ services:
     volumes:
       - mariadb_data:/var/lib/mysql # 将数据库文件持久化到名为 mariadb_data 的数据卷中
     healthcheck:
-      test: ["CMD-SHELL", "mariadb-admin ping -h localhost -u root -p${MYSQL_ROOT_PASSWORD}"]
-      interval: 10s     # 减少检查间隔从20s到10s
-      timeout: 5s       # 减少超时时间从10s到5s  
-      retries: 5        # 减少重试次数从10到5
+      test: [ "CMD-SHELL", "mariadb-admin ping -h localhost -u root -p${MYSQL_ROOT_PASSWORD}" ]
+      interval: 10s # 减少检查间隔从20s到10s
+      timeout: 5s # 减少超时时间从10s到5s  
+      retries: 5 # 减少重试次数从10到5
       start_period: 30s # 给容器30秒的启动时间，在此期间健康检查失败不计入重试次数
 
   # Redis 服务
@@ -128,7 +139,7 @@ services:
     volumes:
       - redis_data:/data # 将 Redis 数据持久化到名为 redis_data 的数据卷中
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -139,7 +150,7 @@ services:
     container_name: qahub-kafka
     restart: always
     ports:
-      - "9092:9092"   # 内部通信端口
+      - "9092:9092" # 内部通信端口
       - "29092:29092" # 外部通信端口
     environment:
       # ----------- KRaft 模式核心配置 -----------
@@ -160,19 +171,19 @@ services:
       - KAFKA_INTER_BROKER_LISTENER_NAME=INTERNAL
       # KRaft 控制器监听器
       - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      
+
       # 单节点配置
       - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
       - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
       - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
-      
+
       # 指定日志目录在容器内的位置，与下方 volumes 挂载点对应
-      - KAFKA_LOG_DIRS=/var/kafka-logs 
+      - KAFKA_LOG_DIRS=/var/kafka-logs
       # 限制JVM堆内存，防止占用过多宿主机内存
       - KAFKA_HEAP_OPTS=-Xms512m -Xmx512m
     volumes:
       - kafka_data:/var/kafka-logs
-    user: "0:0"  # 使用root权限来避免权限问题
+    user: "0:0" # 使用root权限来避免权限问题
 
   # Elasticsearch 服务
   elasticsearch:
@@ -189,10 +200,10 @@ services:
     volumes:
       - es_data:/usr/share/elasticsearch/data
     healthcheck:
-      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -vq '\"status\":\"red\"'"]
+      test: [ "CMD", "curl", "-f", "http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=2s" ]
       interval: 10s
       timeout: 5s
-      retries: 5        # 减少重试次数从10到5
+      retries: 5 # 减少重试次数从10到5
       start_period: 60s # Elasticsearch启动较慢，给它60秒启动时间
 
   # MongoDB 服务 (为通知服务准备)
@@ -208,7 +219,7 @@ services:
     volumes:
       - mongo_data:/data/db # 持久化数据
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.runCommand({ ping: 1 })"]
+      test: [ "CMD", "mongosh", "--eval", "db.runCommand({ ping: 1 })" ]
       interval: 10s
       timeout: 5s
       retries: 5

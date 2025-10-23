@@ -14,10 +14,10 @@ import (
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/metadata"
 
-	ntpb "qahub/api/proto/notification"
-	qapb "qahub/api/proto/qa"
-	searchpb "qahub/api/proto/search"
-	userpb "qahub/api/proto/user"
+	ntpb "wails-client/api/proto/notification"
+	qapb "wails-client/api/proto/qa"
+	searchpb "wails-client/api/proto/search"
+	userpb "wails-client/api/proto/user"
 )
 
 // GRPCClient 封装 gRPC 服务客户端

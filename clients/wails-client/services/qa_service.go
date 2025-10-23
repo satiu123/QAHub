@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	qapb "qahub/api/proto/qa"
+	qapb "wails-client/api/proto/qa"
 )
 
 type QAService struct {

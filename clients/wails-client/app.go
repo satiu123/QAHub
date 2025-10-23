@@ -4,9 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"qahub/pkg/util"
 
-	"changeme/services"
+	"wails-client/services"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -89,7 +88,12 @@ func (a *App) shutdown(ctx context.Context) {
 		a.NotificationStream.Stop()
 	}
 	if a.grpcClient != nil {
-		util.Cleanup("gRPC client", a.grpcClient.Close)
+		err := a.grpcClient.Close()
+		if err != nil {
+			log.Printf("⚠️  Failed to close gRPC client: %v", err)
+		} else {
+			log.Println("✅ gRPC client closed successfully.")
+		}
 	}
 }
 

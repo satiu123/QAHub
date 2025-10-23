@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	searchpb "qahub/api/proto/search"
+	searchpb "wails-client/api/proto/search"
 )
 
 type SearchService struct {

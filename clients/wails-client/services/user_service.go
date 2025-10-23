@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	userpb "qahub/api/proto/user"
+	userpb "wails-client/api/proto/user"
 
 	"google.golang.org/protobuf/types/known/emptypb"
 )

@@ -6,6 +6,5 @@ use (
 	./cmd/qa-service
 	./cmd/search-service
 	./cmd/user-service
-	./clients/wails-client
 	./pkg
 )
