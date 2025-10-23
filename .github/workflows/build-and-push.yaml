@@ -10,10 +10,10 @@ jobs:
     strategy:
       matrix:
         service:
-          - { name: "user-service", path: "./cmd/user-service/Dockerfile" }
-          - { name: "qa-service", path: "./cmd/qa-service/Dockerfile" }
-          - { name: "search-service", path: "./cmd/search-service/Dockerfile" }
-          - { name: "notification-service", path: "./cmd/notification-service/Dockerfile" }
+          - { name: "user-service", port: "50051" }
+          - { name: "qa-service", port: "50052" }
+          - { name: "search-service", port: "50053" }
+          - { name: "notification-service", port: "50054" }
     
     name: Build and push ${{ matrix.service.name }}
     
@@ -34,8 +34,11 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ${{ matrix.service.path }}
+          file: ./Dockerfile
           push: true
+          build-args: |
+            SERVICE_NAME=${{ matrix.service.name }}
+            PORT=${{ matrix.service.port }}
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/qahub-${{ matrix.service.name }}:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/qahub-${{ matrix.service.name }}:${{ github.sha }}

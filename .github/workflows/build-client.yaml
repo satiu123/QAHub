@@ -71,11 +71,16 @@ jobs:
         if: matrix.platform.os == 'ubuntu-latest'
         working-directory: clients/wails-client
         run: wails build -tags webkit2_41
+        env:
+          GOWORK: off
 
       - name: Build Wails app (macOS/Windows)
         if: matrix.platform.os != 'ubuntu-latest'
         working-directory: clients/wails-client
         run: wails build
+        env:
+          GOWORK: off
+        
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
