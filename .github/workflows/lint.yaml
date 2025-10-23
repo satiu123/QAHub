@@ -74,3 +74,5 @@ jobs:
         with:
           version: v2.5.0
           working-directory: clients/wails-client
+        env:
+          GOWORK: off
