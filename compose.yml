@@ -1,26 +1,11 @@
 services:
-  # API Gateway (Nginx)
-  # nginx:
-  #   build:
-  #     context: ./nginx
-  #   container_name: qahub-nginx-gateway
-  #   restart: always
-  #   ports:
-  #     - "80:80" # Nginx 监听 80 端口
-  #   depends_on:
-  #     - gateway
-  #     - user-service
-  #     - qa-service
-  #     - search-service
 
-  # 数据库迁移服务 (新添加)
+  # 数据库迁移服务
   db-migrator:
-    image: migrate/migrate
+    build:
+      context: .
+      dockerfile: cmd/db-migrator/Dockerfile
     container_name: qahub-db-migrator
-    # 将迁移脚本挂载到容器中
-    volumes:
-      - ./scripts/migrations/all:/migrations
-    # 启动命令：执行向上迁移
     # 注意：数据库连接字符串使用了服务名 `mariadb`
     # -verbose 参数可以打印详细日志
     command: [ "-path", "/migrations", "-database", "mysql://qahub_user:12345678@tcp(mariadb:3306)/qahub?charset=utf8mb4&parseTime=True&loc=Local", "up" ]

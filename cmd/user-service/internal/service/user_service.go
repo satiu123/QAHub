@@ -158,12 +158,12 @@ func (s *userService) DeleteUser(ctx context.Context, userID int64) error {
 
 func (s *userService) AuthInterceptor(publicMethods ...string) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-		log.Println("AuthInterceptor called for method:", info.FullMethod)
 		// 检查是否在白名单中
 		if slices.Contains(publicMethods, info.FullMethod) {
 			// 白名单路径，跳过认证
 			return handler(ctx, req)
 		}
+		log.Println("AuthInterceptor called for method:", info.FullMethod)
 
 		md, ok := metadata.FromIncomingContext(ctx)
 		if !ok {

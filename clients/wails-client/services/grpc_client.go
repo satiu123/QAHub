@@ -40,10 +40,19 @@ type GRPCClient struct {
 
 // NewGRPCClient 创建新的 gRPC 客户端连接
 func NewGRPCClient(userAddr, qaAddr, searchAddr, notificationAddr string) (*GRPCClient, error) {
+	// credis := credentials.NewTLS(&tls.Config{
+	// 	InsecureSkipVerify: true,
+	// })
+	// opts := []grpc.DialOption{
+	// 	grpc.WithTransportCredentials(credis),
+	// }
+
 	opts := []grpc.DialOption{
+		// grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
+		// 	InsecureSkipVerify: true,
+		// })),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	}
-
 	client := &GRPCClient{}
 	// 为健康检查设置一个超时
 	checkTimeout := 5 * time.Second
@@ -70,7 +79,6 @@ func NewGRPCClient(userAddr, qaAddr, searchAddr, notificationAddr string) (*GRPC
 		*target.conn = conn
 
 		// 检查服务健康状况
-		// TODO:后端服务需要实现健康检查接口，当前都未实现，会导致连接失败
 		ctx, cancel := context.WithTimeout(context.Background(), checkTimeout)
 		defer cancel()
 		if err := checkServiceHealth(ctx, conn, target.name); err != nil {

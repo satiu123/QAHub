@@ -38,7 +38,7 @@ type Log struct {
 type MySQL struct {
 	Host      string `mapstructure:"host"`
 	Port      int    `mapstructure:"port"`
-	User      string `mapstructure:"user"`
+	Username  string `mapstructure:"username"`
 	Password  string `mapstructure:"password"`
 	DBName    string `mapstructure:"dbname"`
 	Charset   string `mapstructure:"charset"`
@@ -50,7 +50,7 @@ type MySQL struct {
 func (m *MySQL) DSN() string {
 	// "user:password@tcp(host:port)/dbname?charset=utf8mb4&parseTime=True&loc=Local"
 	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=%s&loc=%s",
-		m.User,
+		m.Username,
 		m.Password,
 		m.Host,
 		m.Port,
@@ -82,13 +82,32 @@ type Topics struct {
 
 // Elasticsearch 对应于 [elasticsearch] 配置部分
 type Elasticsearch struct {
-	URLs []string `mapstructure:"urls"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+}
+
+func (e *Elasticsearch) URLs() []string {
+	return []string{fmt.Sprintf("http://%s:%d", e.Host, e.Port)}
 }
 
 // MongoDB 对应于 [mongodb] 配置部分
 type MongoDB struct {
-	URI      string `mapstructure:"uri"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
 	Database string `mapstructure:"database"`
+}
+
+func (m *MongoDB) URI() string {
+	return fmt.Sprintf("mongodb://%s:%s@%s:%d",
+		m.Username,
+		m.Password,
+		m.Host,
+		m.Port,
+	)
 }
 
 // Services 对应于 [services] 配置部分

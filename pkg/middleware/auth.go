@@ -23,12 +23,12 @@ import (
 // 这个拦截器将 token 从 metadata 中提取出来，并调用 user-service 进行验证。
 func GrpcAuthInterceptor(userClient *clients.UserServiceClient, publicMethods ...string) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-		log.Println("gRPC method:", info.FullMethod)
 		// 检查是否在白名单中
 		if slices.Contains(publicMethods, info.FullMethod) {
 			// 白名单路径，跳过认证
 			return handler(ctx, req)
 		}
+		log.Println("AuthInterceptor called for method:", info.FullMethod)
 
 		md, ok := metadata.FromIncomingContext(ctx)
 		if !ok {

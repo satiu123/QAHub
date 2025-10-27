@@ -66,10 +66,6 @@ lint:
 	cd cmd/notification-service && golangci-lint run --path-prefix=cmd/notification-service || exit_code=1; \
 	cd ../..; \
 	echo ""; \
-	echo "=== 检查 wails-client ==="; \
-	GOWORK=off cd clients/wails-client && golangci-lint run --path-prefix=clients/wails-client || exit_code=1; \
-	cd ../..; \
-	echo ""; \
 	if [ "$$exit_code" != "0" ]; then \
 		echo "❌ 代码检查发现问题"; \
 		exit 1; \

@@ -11,7 +11,7 @@ import (
 )
 
 func NewMongoConection(ctx context.Context, cfg config.MongoDB) (*mongo.Client, error) {
-	clientOpts := options.Client().ApplyURI(cfg.URI)
+	clientOpts := options.Client().ApplyURI(cfg.URI())
 	clientOpts.SetMaxPoolSize(100)
 	clientOpts.SetMinPoolSize(10)
 

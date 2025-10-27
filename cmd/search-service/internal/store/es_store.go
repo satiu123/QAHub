@@ -43,7 +43,9 @@ type esStore struct {
 func NewEsStore(cfg config.Elasticsearch, qaServiceAddr string) (*esStore, error) {
 	// 创建 Elasticsearch 客户端配置
 	esCfg := elasticsearch.Config{
-		Addresses: cfg.URLs,
+		Addresses: cfg.URLs(),
+		Username:  cfg.Username,
+		Password:  cfg.Password,
 		// 在这里可以添加其他配置，例如用户名、密码、证书等
 	}
 

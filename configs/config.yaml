@@ -13,7 +13,7 @@ log:
 mysql:
   host: "mariadb"  # 使用Docker Compose服务名
   port: 3306       # 容器内部端口
-  user: "qahub_user"
+  username: "qahub_user"
   password: "12345678"
   dbname: "qahub"
   charset: "utf8mb4"
@@ -36,12 +36,17 @@ kafka:
 
 # Elasticsearch 配置 (供搜索服务使用)
 elasticsearch:
-  urls:
-    - "http://elasticsearch:9200"
+  username: "qahub_user"
+  password: "12345678"
+  host: "elasticsearch"
+  port: 9200
 
 # MongoDB 配置 (供通知服务使用)
 mongodb:
-  uri: "mongodb://qahub_admin:12345678@mongodb:27017"
+  username: "qahub_admin"
+  password: "12345678"
+  host: "mongodb"
+  port: 27017
   database: "notification_db"
 
 # 服务特有配置

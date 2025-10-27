@@ -6,5 +6,4 @@ clients/wails-client/frontend/
 .vscode/
 *.md
 docs/
-scripts/
 third_party/

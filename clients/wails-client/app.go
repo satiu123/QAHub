@@ -10,6 +10,8 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
+const HTTPS_URL = "api.qahub.com:443"
+
 // App struct
 type App struct {
 	ctx        context.Context
@@ -38,6 +40,12 @@ func (a *App) startup(ctx context.Context) {
 
 	// 初始化 gRPC 客户端 (连接到本地服务)
 	// 注意:确保服务在对应端口运行
+	// client, err := services.NewGRPCClient(
+	// 	HTTPS_URL, // user-service
+	// 	HTTPS_URL, // qa-service
+	// 	HTTPS_URL, // search-service
+	// 	HTTPS_URL, // notification-service
+	// )
 	client, err := services.NewGRPCClient(
 		"localhost:50051", // user-service
 		"localhost:50052", // qa-service
