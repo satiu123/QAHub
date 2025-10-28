@@ -102,11 +102,13 @@ type MongoDB struct {
 }
 
 func (m *MongoDB) URI() string {
-	return fmt.Sprintf("mongodb://%s:%s@%s:%d",
-		m.Username,
-		m.Password,
-		m.Host,
-		m.Port,
+	return fmt.Sprintf("mongodb://%s:%s@%s:%d/%s?authSource=%s",
+		m.Username, // 用户名
+		m.Password, // 密码
+		m.Host,     // 主机
+		m.Port,     // 端口
+		m.Database, // 默认数据库
+		m.Database, // 认证数据库 (authSource)
 	)
 }
 
