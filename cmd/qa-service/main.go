@@ -6,6 +6,7 @@ import (
 	"qahub/pkg/clients"
 	"qahub/pkg/config"
 	"qahub/pkg/database"
+	"qahub/pkg/health"
 	"qahub/pkg/messaging"
 	"qahub/pkg/middleware"
 	"qahub/pkg/server"
@@ -52,7 +53,7 @@ func main() {
 
 	// 设置健康检查
 	healthUpdater := grpcSrv.HealthServer()
-	util.SetHealthChecks(healthUpdater, serviceName,
+	health.SetHealthChecks(healthUpdater, serviceName,
 		kafkaProducer, qaStore)
 
 	grpcSrv.Run(func(s *grpc.Server) {

@@ -5,6 +5,7 @@ import (
 	"log"
 	"qahub/pkg/config"
 	"qahub/pkg/database"
+	"qahub/pkg/health"
 	"qahub/pkg/redis"
 	"qahub/pkg/server"
 	"qahub/pkg/util"
@@ -51,7 +52,7 @@ func main() {
 
 	// 设置健康检查
 	healthUpdater := grpcSrv.HealthServer()
-	util.SetHealthChecks(
+	health.SetHealthChecks(
 		healthUpdater,
 		serviceName,
 		userStore)

@@ -52,3 +52,12 @@ func (c *Checker) CheckAndSetStatus(checkFunc func(ctx context.Context) error, c
 		log.Printf("HEALTH CHECK (%s): Service '%s' status changed to %s", checkName, c.serviceName, newStatus.String())
 	}
 }
+
+func SetHealthChecks(updater StatusUpdater, serviceName string, components ...HealthAware) {
+	configureCounter := 0
+	for _, component := range components {
+		component.SetHealthUpdater(updater, serviceName)
+		configureCounter++
+	}
+	log.Printf("Health checks configured for %d components in service '%s'", configureCounter, serviceName)
+}
