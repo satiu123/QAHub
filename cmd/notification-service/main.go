@@ -10,8 +10,9 @@ import (
 	"qahub/pkg/config"
 	"qahub/pkg/database"
 	"qahub/pkg/health"
+	"qahub/pkg/interceptor"
+	logpkg "qahub/pkg/log"
 	"qahub/pkg/messaging"
-	"qahub/pkg/middleware"
 	"qahub/pkg/server"
 	"qahub/pkg/util"
 
@@ -23,6 +24,9 @@ func main() {
 	if err := config.Init("configs"); err != nil {
 		log.Fatalf("加载配置失败: %v", err)
 	}
+
+	// 初始化日志
+	logpkg.InitLogger(&config.Conf.Log)
 
 	serviceName := "notification.NotificationService"
 	// 2.连接数据库
@@ -53,7 +57,14 @@ func main() {
 	}
 	// 启动 gRPC 服务器
 	serverOpts := []grpc.ServerOption{
-		grpc.UnaryInterceptor(middleware.GrpcAuthInterceptor(userClient, config.Conf.Services.NotificationService.PublicMethods...)),
+		grpc.ChainUnaryInterceptor(
+			interceptor.LogUnaryServerInterceptor(),
+			interceptor.AuthUnaryServerInterceptor(userClient, config.Conf.Services.NotificationService.PublicMethods...),
+		),
+		grpc.ChainStreamInterceptor(
+			interceptor.LogStreamServerInterceptor(),
+			interceptor.AuthStreamServerInterceptor(userClient, config.Conf.Services.NotificationService.PublicMethods...),
+		),
 	}
 	grpcSrv := server.NewGrpcServer(serviceName, config.Conf.Services.NotificationService.GrpcPort, serverOpts...)
 

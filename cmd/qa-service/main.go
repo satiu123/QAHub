@@ -7,8 +7,9 @@ import (
 	"qahub/pkg/config"
 	"qahub/pkg/database"
 	"qahub/pkg/health"
+	"qahub/pkg/interceptor"
+	logpkg "qahub/pkg/log"
 	"qahub/pkg/messaging"
-	"qahub/pkg/middleware"
 	"qahub/pkg/server"
 	"qahub/pkg/util"
 	"qahub/qa-service/internal/handler"
@@ -23,6 +24,9 @@ func main() {
 	if err := config.Init("configs"); err != nil {
 		os.Exit(1)
 	}
+
+	// 初始化日志
+	logpkg.InitLogger(&config.Conf.Log)
 
 	serviceName := "qa.QAService"
 	// 初始化数据库连接
@@ -47,7 +51,10 @@ func main() {
 	}
 	// 启动 gRPC 服务器
 	serverOpts := []grpc.ServerOption{
-		grpc.UnaryInterceptor(middleware.GrpcAuthInterceptor(userClient, config.Conf.Services.QAService.PublicMethods...)),
+		grpc.ChainUnaryInterceptor(
+			interceptor.LogUnaryServerInterceptor(),
+			interceptor.AuthUnaryServerInterceptor(userClient, config.Conf.Services.QAService.PublicMethods...),
+		),
 	}
 	grpcSrv := server.NewGrpcServer(serviceName, config.Conf.Services.QAService.GrpcPort, serverOpts...)
 
