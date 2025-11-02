@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/spf13/viper"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 // Conf 是一个全局变量，用于存储所有应用程序的配置
@@ -13,7 +14,7 @@ var Conf Config
 // Config 对应于 config.yaml 文件的顶层结构
 type Config struct {
 	Server        Server        `mapstructure:"server"`
-	Log           Log           `mapstructure:"log"`
+	Log           LogConfig     `mapstructure:"log"`
 	MySQL         MySQL         `mapstructure:"mysql"`
 	Redis         Redis         `mapstructure:"redis"`
 	Kafka         Kafka         `mapstructure:"kafka"`
@@ -28,10 +29,14 @@ type Server struct {
 	Mode string `mapstructure:"mode"`
 }
 
-// Log 对应于 [log] 配置部分
-type Log struct {
-	Level  string `mapstructure:"level"`
-	Format string `mapstructure:"format"`
+// LogConfig 对应于 [log] 配置部分
+type LogConfig struct {
+	Level         string            `mapstructure:"level"`          // 日志级别: debug, info, warn, error
+	Format        string            `mapstructure:"format"`         // 日志格式: json, text
+	AddSource     bool              `mapstructure:"add_source"`     // 是否在日志中添加源码位置
+	Output        string            `mapstructure:"output"`         // 日志输出位置: stdout, stderr, file
+	File          lumberjack.Logger `mapstructure:"file"`           // 当 output 为 file 时，文件的归档配置
+	InitialFields map[string]any    `mapstructure:"initial_fields"` // 添加到所有日志的初始字段 (如 service_name)
 }
 
 // MySQL 对应于 [mysql] 配置部分
