@@ -29,7 +29,7 @@ type UserService interface {
 	Login(ctx context.Context, username, password string) (string, error)
 	Logout(ctx context.Context, tokenString string, claims jwt.MapClaims) error
 	ValidateToken(ctx context.Context, tokenString string) (auth.Identity, error)
-	AuthInterceptor(publicMethods ...string) grpc.UnaryServerInterceptor
+	AuthUnaryServerInterceptor(publicMethods ...string) grpc.UnaryServerInterceptor
 	GetUserProfile(ctx context.Context, userID int64) (*dto.UserResponse, error)
 	UpdateUserProfile(ctx context.Context, user *model.User) error
 	DeleteUser(ctx context.Context, userID int64) error
@@ -156,14 +156,13 @@ func (s *userService) DeleteUser(ctx context.Context, userID int64) error {
 	return s.userStore.DeleteUser(ctx, userID)
 }
 
-func (s *userService) AuthInterceptor(publicMethods ...string) grpc.UnaryServerInterceptor {
+func (s *userService) AuthUnaryServerInterceptor(publicMethods ...string) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 		// 检查是否在白名单中
 		if slices.Contains(publicMethods, info.FullMethod) {
 			// 白名单路径，跳过认证
 			return handler(ctx, req)
 		}
-		log.Println("AuthInterceptor called for method:", info.FullMethod)
 
 		md, ok := metadata.FromIncomingContext(ctx)
 		if !ok {

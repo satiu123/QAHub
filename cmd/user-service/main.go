@@ -6,6 +6,8 @@ import (
 	"qahub/pkg/config"
 	"qahub/pkg/database"
 	"qahub/pkg/health"
+	"qahub/pkg/interceptor"
+	logpkg "qahub/pkg/log"
 	"qahub/pkg/redis"
 	"qahub/pkg/server"
 	"qahub/pkg/util"
@@ -22,6 +24,9 @@ func main() {
 		log.Fatalf("Failed to initialize config: %v", err)
 	}
 	cfg := config.Conf.Services.UserService
+
+	// 初始化日志
+	logpkg.InitLogger(&config.Conf.Log)
 
 	// 初始化业务依赖 (DB, Redis, Store, Service, Handler)
 	serviceName := "user.UserService"
@@ -44,7 +49,10 @@ func main() {
 
 	// 创建服务器
 	serverOpts := []grpc.ServerOption{
-		grpc.UnaryInterceptor(userService.AuthInterceptor(cfg.PublicMethods...)),
+		grpc.ChainUnaryInterceptor(
+			interceptor.LogUnaryServerInterceptor(),
+			userService.AuthUnaryServerInterceptor(config.Conf.Services.UserService.PublicMethods...),
+		),
 	}
 
 	// 创建通用服务器实例

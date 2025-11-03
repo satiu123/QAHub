@@ -11,8 +11,9 @@ import (
 	"qahub/pkg/clients"
 	"qahub/pkg/config"
 	"qahub/pkg/health"
+	"qahub/pkg/interceptor"
+	logpkg "qahub/pkg/log"
 	"qahub/pkg/messaging"
-	"qahub/pkg/middleware"
 	"qahub/pkg/server"
 	"qahub/pkg/util"
 	"qahub/search-service/internal/store"
@@ -27,6 +28,8 @@ func main() {
 	if err := config.Init("configs"); err != nil {
 		log.Fatalf("初始化配置失败: %v", err)
 	}
+	// 初始化日志
+	logpkg.InitLogger(&config.Conf.Log)
 
 	serviceName := "search.SearchService"
 	// 初始化依赖并注入
@@ -52,7 +55,10 @@ func main() {
 
 	// 创建并运行 gRPC 服务器
 	serverOpts := []grpc.ServerOption{
-		grpc.UnaryInterceptor(middleware.GrpcAuthInterceptor(userClient, config.Conf.Services.SearchService.PublicMethods...)),
+		grpc.ChainUnaryInterceptor(
+			interceptor.LogUnaryServerInterceptor(),
+			interceptor.AuthUnaryServerInterceptor(userClient, config.Conf.Services.SearchService.PublicMethods...),
+		),
 	}
 	grpcSrv := server.NewGrpcServer(serviceName, config.Conf.Services.SearchService.GrpcPort, serverOpts...)
 

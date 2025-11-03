@@ -8,6 +8,17 @@ server:
 log:
   level: "info"
   format: "json"
+  Output: "stdout"
+  addSource: True
+  initialFields:
+    service: "qahub"
+    environment: "docker"
+  file:
+    filename: "app.log"
+    maxSize: 100      # MB
+    maxBackups: 7     # 保留的旧日志文件数量
+    maxAge: 30        # 天数
+    compress: True    # 是否压缩归档的日志文件
 
 # MySQL 数据库配置 (Docker容器内部地址)
 mysql:

@@ -203,6 +203,7 @@ services:
       - "27018:27017" # 映射到主机的 27018 端口
     volumes:
       - mongo_data:/data/db # 持久化数据
+      - ./scripts/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro # 初始化脚本
     healthcheck:
       test: [ "CMD", "mongosh", "--eval", "db.runCommand({ ping: 1 })" ]
       interval: 10s
