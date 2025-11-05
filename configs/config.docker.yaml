@@ -8,9 +8,9 @@ server:
 log:
   level: "info"
   format: "json"
-  Output: "stdout"
-  addSource: True
-  initialFields:
+  output: "stdout"
+  add_source: True
+  initial_fields:
     service: "qahub"
     environment: "docker"
   file:
