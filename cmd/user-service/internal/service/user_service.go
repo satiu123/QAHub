@@ -5,13 +5,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"slices"
 	"strings"
 	"time"
 
 	"qahub/pkg/auth"
 	"qahub/pkg/config"
+	"qahub/pkg/log"
 	"qahub/user-service/internal/dto"
 	"qahub/user-service/internal/model"
 	"qahub/user-service/internal/store"
@@ -44,14 +45,22 @@ func NewUserService(store store.UserStore) UserService {
 }
 
 func (s *userService) Register(ctx context.Context, req dto.RegisterRequest) (*dto.UserResponse, error) {
+	logger := log.FromContext(ctx)
+
 	// 检查邮箱是否已存在
 	if existingUser, _ := s.userStore.GetUserByEmail(ctx, req.Email); existingUser != nil {
+		logger.Warn("邮箱已被注册",
+			slog.String("email", req.Email),
+		)
 		return nil, errors.New("该邮箱已被注册")
 	}
 
 	// 验证密码
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
+		logger.Error("密码加密失败",
+			slog.String("error", err.Error()),
+		)
 		return nil, err
 	}
 
@@ -60,24 +69,41 @@ func (s *userService) Register(ctx context.Context, req dto.RegisterRequest) (*d
 
 	newID, err := s.userStore.CreateUser(ctx, newUser)
 	if err != nil {
+		logger.Error("创建用户失败",
+			slog.String("username", req.Username),
+			slog.String("error", err.Error()),
+		)
 		return nil, err
 	}
 
 	// 设置新创建的ID
 	newUser.ID = newID
 
+	logger.Info("用户注册成功",
+		slog.Int64("user_id", newID),
+		slog.String("username", req.Username),
+	)
+
 	// 使用 NewUserResponse 方法转换
 	return dto.NewUserResponse(newUser), nil
 }
 
 func (s *userService) Login(ctx context.Context, username, password string) (string, error) {
+	logger := log.FromContext(ctx)
+
 	user, err := s.userStore.GetUserByUsername(ctx, username)
 	if err != nil {
+		logger.Warn("登录失败：用户不存在",
+			slog.String("username", username),
+		)
 		return "", errors.New("invalid username or password")
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
+		logger.Warn("登录失败：密码错误",
+			slog.String("username", username),
+		)
 		return "", errors.New("invalid username or password")
 	}
 
@@ -92,6 +118,10 @@ func (s *userService) Login(ctx context.Context, username, password string) (str
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(jwtSecret)
 	if err != nil {
+		logger := log.FromContext(ctx)
+		logger.Error("生成 Token 失败",
+			slog.String("error", err.Error()),
+		)
 		return "", err
 	}
 
@@ -100,13 +130,16 @@ func (s *userService) Login(ctx context.Context, username, password string) (str
 
 // Logout 将 token 加入黑名单
 func (s *userService) Logout(ctx context.Context, tokenString string, claims jwt.MapClaims) error {
+	logger := log.FromContext(ctx)
+
 	blacklister, ok := s.userStore.(store.TokenBlacklister)
 	if !ok {
-		log.Println("userStore does not support token blacklisting")
+		logger.Warn("Store 不支持 Token 黑名单")
 		return nil
 	}
 	exp, ok := claims["exp"].(float64)
 	if !ok {
+		logger.Error("无效的 Token 过期时间")
 		return errors.New("invalid token expiration")
 	}
 
@@ -138,22 +171,63 @@ func (s *userService) ValidateToken(ctx context.Context, tokenString string) (au
 }
 
 func (s *userService) GetUserProfile(ctx context.Context, userID int64) (*dto.UserResponse, error) {
+	logger := log.FromContext(ctx)
+
 	user, err := s.userStore.GetUserByID(ctx, userID)
-	log.Println("userService GetUserProfile user:", user)
 	if err != nil {
+		logger.Error("获取用户资料失败",
+			slog.Int64("user_id", userID),
+			slog.String("error", err.Error()),
+		)
 		return nil, err
 	}
+
+	logger.Debug("用户资料获取成功",
+		slog.Int64("user_id", userID),
+		slog.String("username", user.Username),
+	)
 
 	// 使用 NewUserResponse 方法转换
 	return dto.NewUserResponse(user), nil
 }
 
 func (s *userService) UpdateUserProfile(ctx context.Context, user *model.User) error {
-	return s.userStore.UpdateUser(ctx, user)
+	logger := log.FromContext(ctx)
+
+	err := s.userStore.UpdateUser(ctx, user)
+	if err != nil {
+		logger.Error("更新用户资料失败",
+			slog.Int64("user_id", user.ID),
+			slog.String("error", err.Error()),
+		)
+		return err
+	}
+
+	logger.Debug("用户资料更新成功",
+		slog.Int64("user_id", user.ID),
+		slog.String("username", user.Username),
+	)
+
+	return nil
 }
 
 func (s *userService) DeleteUser(ctx context.Context, userID int64) error {
-	return s.userStore.DeleteUser(ctx, userID)
+	logger := log.FromContext(ctx)
+
+	err := s.userStore.DeleteUser(ctx, userID)
+	if err != nil {
+		logger.Error("删除用户失败",
+			slog.Int64("user_id", userID),
+			slog.String("error", err.Error()),
+		)
+		return err
+	}
+
+	logger.Info("用户已删除",
+		slog.Int64("user_id", userID),
+	)
+
+	return nil
 }
 
 func (s *userService) AuthUnaryServerInterceptor(publicMethods ...string) grpc.UnaryServerInterceptor {
