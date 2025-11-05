@@ -3,10 +3,11 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"log"
+	"log/slog"
 	pb "qahub/api/proto/notification"
 	"qahub/notification-service/internal/model"
 	"qahub/notification-service/internal/store"
+	"qahub/pkg/log"
 	"qahub/pkg/messaging"
 	"time"
 
@@ -50,17 +51,40 @@ func (s *notificationService) GetStreamHub() *StreamHub {
 
 // GetNotifications 获取用户的通知列表
 func (s *notificationService) GetNotifications(ctx context.Context, userID int64, limit int32, offset int64) ([]*model.Notification, error) {
-	return s.store.GetByRecipientID(ctx, userID, limit, offset)
+	logger := log.FromContext(ctx)
+	
+	notifications, err := s.store.GetByRecipientID(ctx, userID, limit, offset)
+	if err != nil {
+		logger.Error("获取用户通知失败",
+			slog.Int64("user_id", userID),
+			slog.String("error", err.Error()),
+		)
+		return nil, err
+	}
+	
+	logger.Debug("获取用户通知成功",
+		slog.Int64("user_id", userID),
+		slog.Int("count", len(notifications)),
+		slog.Int("limit", int(limit)),
+		slog.Int64("offset", offset),
+	)
+	return notifications, nil
 }
 
 // MarkNotificationsAsRead 标记通知为已读
 // 如果 notificationIDs 为空，则将该用户所有未读通知标记为已读
 func (s *notificationService) MarkNotificationsAsRead(ctx context.Context, userID int64, notificationIDs []string, markAll bool) (int64, error) {
+	logger := log.FromContext(ctx)
+	
 	// 如果传入的id列表为空且markAll标记为true，则获取所有未读通知并标记
 	if len(notificationIDs) == 0 && markAll {
 		// 为了简化，这里我们获取所有通知（不分页），在实际应用中可能需要考虑性能
 		notifications, err := s.store.GetByRecipientID(ctx, userID, 1000, 0) // 假设最多处理1000条
 		if err != nil {
+			logger.Error("获取用户未读通知失败",
+				slog.Int64("user_id", userID),
+				slog.String("error", err.Error()),
+			)
 			return 0, err
 		}
 		for _, n := range notifications {
@@ -70,26 +94,90 @@ func (s *notificationService) MarkNotificationsAsRead(ctx context.Context, userI
 		}
 		// 如果没有未读通知，直接返回
 		if len(notificationIDs) == 0 {
+			logger.Debug("没有未读通知需要标记",
+				slog.Int64("user_id", userID),
+			)
 			return 0, nil
 		}
 	}
 
-	return s.store.MarkManyAsRead(ctx, notificationIDs, userID)
+	count, err := s.store.MarkManyAsRead(ctx, notificationIDs, userID)
+	if err != nil {
+		logger.Error("标记通知为已读失败",
+			slog.Int64("user_id", userID),
+			slog.Int("notification_count", len(notificationIDs)),
+			slog.String("error", err.Error()),
+		)
+		return 0, err
+	}
+	
+	logger.Info("通知标记为已读成功",
+		slog.Int64("user_id", userID),
+		slog.Int64("marked_count", count),
+	)
+	return count, nil
 }
 
 // DeleteNotification 删除一条通知
 func (s *notificationService) DeleteNotification(ctx context.Context, userID int64, notificationID string) error {
-	return s.store.Delete(ctx, notificationID, userID)
+	logger := log.FromContext(ctx)
+	
+	err := s.store.Delete(ctx, notificationID, userID)
+	if err != nil {
+		logger.Error("删除通知失败",
+			slog.Int64("user_id", userID),
+			slog.String("notification_id", notificationID),
+			slog.String("error", err.Error()),
+		)
+		return err
+	}
+	
+	logger.Info("通知删除成功",
+		slog.Int64("user_id", userID),
+		slog.String("notification_id", notificationID),
+	)
+	return nil
 }
 
 // DeleteNotifications 删除多条通知
 func (s *notificationService) DeleteNotifications(ctx context.Context, userID int64, notificationIDs []string) (int64, error) {
-	return s.store.DeleteMany(ctx, notificationIDs, userID)
+	logger := log.FromContext(ctx)
+	
+	count, err := s.store.DeleteMany(ctx, notificationIDs, userID)
+	if err != nil {
+		logger.Error("删除多条通知失败",
+			slog.Int64("user_id", userID),
+			slog.Int("notification_count", len(notificationIDs)),
+			slog.String("error", err.Error()),
+		)
+		return 0, err
+	}
+	
+	logger.Info("多条通知删除成功",
+		slog.Int64("user_id", userID),
+		slog.Int64("deleted_count", count),
+	)
+	return count, nil
 }
 
 // GetUnreadCount 获取用户的未读通知数量
 func (s *notificationService) GetUnreadCount(ctx context.Context, userID int64) (int64, error) {
-	return s.store.CountUnread(ctx, userID)
+	logger := log.FromContext(ctx)
+	
+	count, err := s.store.CountUnread(ctx, userID)
+	if err != nil {
+		logger.Error("获取未读通知数量失败",
+			slog.Int64("user_id", userID),
+			slog.String("error", err.Error()),
+		)
+		return 0, err
+	}
+	
+	logger.Debug("获取未读通知数量成功",
+		slog.Int64("user_id", userID),
+		slog.Int64("unread_count", count),
+	)
+	return count, nil
 }
 
 // RegisterHandlers 返回此服务处理的事件及其对应的处理函数
@@ -99,11 +187,15 @@ func (s *notificationService) RegisterHandlers() map[messaging.EventType]messagi
 	}
 }
 
-// handleNotificationTriggered 是处理来自 Kafka 的“通知触发”事件的核心方法
+// handleNotificationTriggered 是处理来自 Kafka 的"通知触发"事件的核心方法
 func (s *notificationService) handleNotificationTriggered(ctx context.Context, eventType string, eventMessage []byte) error {
+	logger := log.FromContext(ctx)
+	
 	var event messaging.NotificationTriggeredEvent
 	if err := json.Unmarshal(eventMessage, &event); err != nil {
-		log.Printf("failed to unmarshal event: %v", err)
+		logger.Error("解析通知事件失败",
+			slog.String("error", err.Error()),
+		)
 		return err
 	}
 
@@ -121,15 +213,28 @@ func (s *notificationService) handleNotificationTriggered(ctx context.Context, e
 
 	// 2. 将通知存入数据库
 	if err := s.store.Create(ctx, notification); err != nil {
-		log.Printf("failed to save notification: %v", err)
+		logger.Error("保存通知到数据库失败",
+			slog.Int64("recipient_id", event.Payload.RecipientID),
+			slog.Int64("sender_id", event.Payload.SenderID),
+			slog.String("error", err.Error()),
+		)
 		return err
 	}
+
+	logger.Info("通知已创建并保存",
+		slog.Int64("recipient_id", notification.RecipientID),
+		slog.Int64("sender_id", notification.SenderID),
+		slog.String("notification_type", notification.Type),
+	)
 
 	// 3. 通过 gRPC StreamHub 推送给在线用户
 	if s.streamHub != nil {
 		pbNotification := convertModelToProto(notification)
 		s.streamHub.SendToUser(notification.RecipientID, pbNotification)
-		log.Printf("Notification pushed to user %d via gRPC stream", notification.RecipientID)
+		
+		logger.Debug("通知已通过gRPC流推送给用户",
+			slog.Int64("recipient_id", notification.RecipientID),
+		)
 	}
 
 	return nil
