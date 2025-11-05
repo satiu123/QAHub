@@ -28,8 +28,7 @@ COPY . .
 # 编译指定的服务
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
-    cd ./cmd/${SERVICE_NAME} && CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /workspace/bin/${SERVICE_NAME} .
-
+    CGO_ENABLED=0 GOOS=linux go build -gcflags="all=-trimpath=${PWD}" -ldflags="-s -w" -o /workspace/bin/${SERVICE_NAME} ./cmd/${SERVICE_NAME}/main.go
 # ---- Runtime Stage ----
 FROM alpine:latest
 ARG SERVICE_NAME
