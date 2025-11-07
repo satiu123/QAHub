@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"log"
 	"time"
 
@@ -12,7 +13,7 @@ import (
 
 // NewMySQLConnection 使用提供的配置创建一个新的 sqlx 数据库实例
 // 增加了重试逻辑以应对数据库启动慢的问题
-func NewMySQLConnection(cfg config.MySQL) (*sqlx.DB, error) {
+func NewMySQLConnection(ctx context.Context, cfg config.MySQL) (*sqlx.DB, error) {
 	dsn := cfg.DSN()
 
 	var db *sqlx.DB
@@ -22,7 +23,7 @@ func NewMySQLConnection(cfg config.MySQL) (*sqlx.DB, error) {
 	retryInterval := time.Second * 5
 
 	for i := range maxRetries {
-		db, err = sqlx.Connect("mysql", dsn)
+		db, err = sqlx.ConnectContext(ctx, "mysql", dsn)
 		if err == nil {
 			log.Println("Successfully connected to the database.")
 			db.SetMaxOpenConns(100)

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	pb "qahub/api/proto/notification"
 	"qahub/pkg/auth"
 	"qahub/pkg/log"
 	"qahub/pkg/messaging"
@@ -17,7 +18,7 @@ import (
 
 func (s *qaService) CreateAnswer(ctx context.Context, questionID int64, content string, userID int64) (*model.Answer, error) {
 	logger := log.FromContext(ctx)
-	
+
 	answer := &model.Answer{
 		QuestionID: questionID,
 		Content:    content,
@@ -69,7 +70,7 @@ func (s *qaService) CreateAnswer(ctx context.Context, questionID int64, content 
 			RecipientID:      question.UserID,
 			SenderID:         newAnswer.UserID,
 			SenderName:       senderUsername,
-			NotificationType: messaging.NotificationTypeNewAnswer,
+			NotificationType: pb.NotificationType_NEWANSWER,
 			Content:          fmt.Sprintf("'%s' 回答了你的问题: '%s',内容是'%s'", senderUsername, question.Title, newAnswer.Content),
 			TargetURL:        fmt.Sprintf("/questions/%d#answer-%d", question.ID, newAnswer.ID),
 		}
@@ -141,7 +142,7 @@ func (s *qaService) ListAnswers(ctx context.Context, questionID int64, page int6
 
 func (s *qaService) UpdateAnswer(ctx context.Context, answerID int64, content string, userID int64) (*model.Answer, error) {
 	logger := log.FromContext(ctx)
-	
+
 	answer, err := s.store.GetAnswerByID(ctx, answerID)
 	if err != nil {
 		logger.Error("获取回答失败",
@@ -166,7 +167,7 @@ func (s *qaService) UpdateAnswer(ctx context.Context, answerID int64, content st
 		)
 		return nil, err
 	}
-	
+
 	logger.Info("回答更新成功",
 		slog.Int64("answer_id", answerID),
 		slog.Int64("user_id", userID),
@@ -177,7 +178,7 @@ func (s *qaService) UpdateAnswer(ctx context.Context, answerID int64, content st
 
 func (s *qaService) DeleteAnswer(ctx context.Context, answerID, userID int64) error {
 	logger := log.FromContext(ctx)
-	
+
 	answer, err := s.store.GetAnswerByID(ctx, answerID)
 	if err != nil {
 		logger.Error("获取回答失败",
@@ -194,7 +195,7 @@ func (s *qaService) DeleteAnswer(ctx context.Context, answerID, userID int64) er
 		)
 		return errors.New("无权限删除该回答")
 	}
-	
+
 	err = s.store.DeleteAnswer(ctx, answerID)
 	if err != nil {
 		logger.Error("删除回答失败",
@@ -203,7 +204,7 @@ func (s *qaService) DeleteAnswer(ctx context.Context, answerID, userID int64) er
 		)
 		return err
 	}
-	
+
 	logger.Info("回答删除成功",
 		slog.Int64("answer_id", answerID),
 		slog.Int64("user_id", userID),
@@ -214,7 +215,7 @@ func (s *qaService) DeleteAnswer(ctx context.Context, answerID, userID int64) er
 
 func (s *qaService) UpvoteAnswer(ctx context.Context, answerID, userID int64) error {
 	logger := log.FromContext(ctx)
-	
+
 	err := s.store.ExecTx(ctx, func(tx store.QAStore) error {
 		err := tx.CreateAnswerVote(ctx, answerID, userID, true)
 		if err != nil {
@@ -226,7 +227,7 @@ func (s *qaService) UpvoteAnswer(ctx context.Context, answerID, userID int64) er
 		}
 		return nil
 	})
-	
+
 	if err != nil {
 		logger.Error("点赞回答失败",
 			slog.Int64("answer_id", answerID),
@@ -235,7 +236,7 @@ func (s *qaService) UpvoteAnswer(ctx context.Context, answerID, userID int64) er
 		)
 		return err
 	}
-	
+
 	logger.Debug("回答被点赞",
 		slog.Int64("answer_id", answerID),
 		slog.Int64("user_id", userID),
@@ -245,7 +246,7 @@ func (s *qaService) UpvoteAnswer(ctx context.Context, answerID, userID int64) er
 
 func (s *qaService) DownvoteAnswer(ctx context.Context, answerID, userID int64) error {
 	logger := log.FromContext(ctx)
-	
+
 	err := s.store.ExecTx(ctx, func(tx store.QAStore) error {
 		err := tx.DeleteAnswerVote(ctx, answerID, userID)
 		if err != nil {
@@ -257,7 +258,7 @@ func (s *qaService) DownvoteAnswer(ctx context.Context, answerID, userID int64) 
 		}
 		return nil
 	})
-	
+
 	if err != nil {
 		logger.Error("取消点赞回答失败",
 			slog.Int64("answer_id", answerID),
@@ -266,7 +267,7 @@ func (s *qaService) DownvoteAnswer(ctx context.Context, answerID, userID int64) 
 		)
 		return err
 	}
-	
+
 	logger.Debug("取消对回答的点赞",
 		slog.Int64("answer_id", answerID),
 		slog.Int64("user_id", userID),

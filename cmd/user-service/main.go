@@ -2,6 +2,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"log/slog"
 	"qahub/pkg/config"
@@ -37,9 +38,11 @@ func main() {
 
 	// 初始化业务依赖 (DB, Redis, Store, Service, Handler)
 	serviceName := "user.UserService"
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	logger.Info("初始化数据库连接...")
-	db, err := database.NewMySQLConnection(config.Conf.MySQL)
+	db, err := database.NewMySQLConnection(ctx, config.Conf.MySQL)
 	if err != nil {
 		logger.Error("数据库连接失败",
 			slog.String("error", err.Error()),

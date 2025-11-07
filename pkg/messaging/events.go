@@ -1,6 +1,9 @@
 package messaging
 
-import "time"
+import (
+	pb "qahub/api/proto/notification"
+	"time"
+)
 
 // EventType 是用于区分不同事件类型的字符串
 type EventType string
@@ -78,12 +81,13 @@ const (
 
 // NotificationPayload 是与通知相关的事件所携带的数据
 type NotificationPayload struct {
-	RecipientID      int64  `json:"recipient_id"` // 接收通知的用户ID
-	SenderID         int64  `json:"sender_id"`
-	SenderName       string `json:"sender_name"`
-	NotificationType string `json:"notification_type"` // e.g., "new_answer", "new_comment"
-	Content          string `json:"content"`           // 通知内容
-	TargetURL        string `json:"target_url"`        // 点击通知后跳转的URL
+	RecipientID int64  `json:"recipient_id"` // 接收通知的用户ID
+	SenderID    int64  `json:"sender_id"`
+	SenderName  string `json:"sender_name"`
+	// NotificationType string `json:"notification_type"` // e.g., "new_answer", "new_comment"
+	NotificationType pb.NotificationType `json:"notification_type"`
+	Content          string              `json:"content"`    // 通知内容
+	TargetURL        string              `json:"target_url"` // 点击通知后跳转的URL
 }
 
 // NotificationTriggeredEvent 是通知触发事件的完整结构

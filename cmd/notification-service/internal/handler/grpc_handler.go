@@ -5,8 +5,8 @@ import (
 	"log/slog"
 
 	pb "qahub/api/proto/notification"
-	pkglog "qahub/pkg/log"
 	"qahub/notification-service/internal/service"
+	pkglog "qahub/pkg/log"
 	"qahub/pkg/pagination"
 
 	"google.golang.org/grpc"
@@ -53,9 +53,9 @@ func (s *NotificationGrpcServer) GetNotifications(ctx context.Context, req *pb.G
 			RecipientId: n.RecipientID,
 			SenderId:    n.SenderID,
 			SenderName:  n.SenderName,
-			Type:        n.Type,
+			Type:        pb.NotificationType(n.Type),
 			Content:     n.Content,
-			IsRead:      n.IsRead,
+			Status:      n.Status.ToProto(),
 			CreatedAt:   timestamppb.New(n.CreatedAt),
 			TargetUrl:   n.TargetURL,
 		})

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	pb "qahub/api/proto/notification"
 	"qahub/pkg/auth"
 	"qahub/pkg/log"
 	"qahub/pkg/messaging"
@@ -17,7 +18,7 @@ import (
 // CreateComment 创建一个新评论
 func (s *qaService) CreateComment(ctx context.Context, answerID int64, content string, userID int64) (*model.Comment, error) {
 	logger := log.FromContext(ctx)
-	
+
 	comment := &model.Comment{
 		AnswerID: answerID,
 		Content:  content,
@@ -79,7 +80,7 @@ func (s *qaService) CreateComment(ctx context.Context, answerID int64, content s
 			RecipientID:      answer.UserID,
 			SenderID:         newComment.UserID,
 			SenderName:       senderUsername,
-			NotificationType: messaging.NotificationTypeNewComment,
+			NotificationType: pb.NotificationType_NEWCOMMENT,
 			Content:          fmt.Sprintf("'%s' 评论了你的答案: '%s'", senderUsername, newComment.Content),
 			TargetURL:        fmt.Sprintf("/questions/%d#comment-%d", answer.QuestionID, newComment.ID),
 		}
@@ -138,7 +139,7 @@ func (s *qaService) ListComments(ctx context.Context, answerID int64, page int64
 // UpdateComment 修改评论，只有评论的创建者可以修改
 func (s *qaService) UpdateComment(ctx context.Context, commentID int64, content string, userID int64) (*model.Comment, error) {
 	logger := log.FromContext(ctx)
-	
+
 	comment, err := s.store.GetCommentByID(ctx, commentID)
 	if err != nil {
 		logger.Error("获取评论失败",
@@ -163,7 +164,7 @@ func (s *qaService) UpdateComment(ctx context.Context, commentID int64, content 
 		)
 		return nil, err
 	}
-	
+
 	logger.Info("评论更新成功",
 		slog.Int64("comment_id", commentID),
 		slog.Int64("user_id", userID),
@@ -174,7 +175,7 @@ func (s *qaService) UpdateComment(ctx context.Context, commentID int64, content 
 // DeleteComment 删除评论，只有评论的创建者可以删除
 func (s *qaService) DeleteComment(ctx context.Context, commentID, userID int64) error {
 	logger := log.FromContext(ctx)
-	
+
 	comment, err := s.store.GetCommentByID(ctx, commentID)
 	if err != nil {
 		logger.Error("获取评论失败",
@@ -191,7 +192,7 @@ func (s *qaService) DeleteComment(ctx context.Context, commentID, userID int64) 
 		)
 		return errors.New("无权限删除该评论")
 	}
-	
+
 	err = s.store.DeleteComment(ctx, commentID)
 	if err != nil {
 		logger.Error("删除评论失败",
@@ -200,7 +201,7 @@ func (s *qaService) DeleteComment(ctx context.Context, commentID, userID int64) 
 		)
 		return err
 	}
-	
+
 	logger.Info("评论删除成功",
 		slog.Int64("comment_id", commentID),
 		slog.Int64("user_id", userID),

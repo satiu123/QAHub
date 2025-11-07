@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"log/slog"
 	"os"
@@ -38,8 +39,11 @@ func main() {
 	)
 
 	// 初始化数据库连接
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	logger.Info("初始化 MySQL 连接...")
-	db, err := database.NewMySQLConnection(config.Conf.MySQL)
+	db, err := database.NewMySQLConnection(ctx, config.Conf.MySQL)
 	if err != nil {
 		logger.Error("MySQL 连接失败",
 			slog.String("error", err.Error()),

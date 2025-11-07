@@ -40,19 +40,19 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	logger.Info("初始化 MongoDB 连接...")
-	client, err := database.NewMongoConection(ctx, config.Conf.MongoDB)
+	logger.Info("初始化 Mysql 连接...")
+	client, err := database.NewMySQLConnection(ctx, config.Conf.MySQL)
 	if err != nil {
-		logger.Error("MongoDB 连接失败",
+		logger.Error("Mysql 连接失败",
 			slog.String("error", err.Error()),
 		)
 		log.Fatalf("连接数据库失败: %v", err)
 	}
-	defer util.Cleanup("MongoDB client", func() error { return client.Disconnect(ctx) })
+	defer util.Cleanup("Mysql client", client.Close)
 	logger.Info("MongoDB 连接成功")
 
 	// 3.初始化store, streamHub, service, handler
-	ntStore := store.NewMongoNotificationStore(client.Database(config.Conf.MongoDB.Database))
+	ntStore := store.NewMySQLNotificationStore(client)
 	streamHub := service.NewStreamHub()
 
 	logger.Info("初始化 Kafka 消费者...")
